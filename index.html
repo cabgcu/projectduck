@@ -16,6 +16,13 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- QR Scanner -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <!-- Leaflet for interactive map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -115,6 +122,46 @@
 
         .nav-item.active { color: #BF5AF2; }
         .nav-item.active i { filter: drop-shadow(0 0 8px rgba(191, 90, 242, 0.5)); }
+
+        /* QR scanner video fills container, masks out html5-qrcode UI chrome */
+        #qr-reader { width: 100%; height: 100%; position: absolute; inset: 0; background: #000; }
+        #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+        #qr-reader__dashboard, #qr-reader__scan_region img,
+        #qr-reader__header_message, #qr-reader__camera_selection,
+        #qr-reader__dashboard_section_csr, #qr-reader__dashboard_section_swaplink {
+            display: none !important;
+        }
+        #qr-reader__scan_region { background: transparent !important; padding: 0 !important; min-height: 0 !important; }
+
+        /* Leaflet dark theme tweaks */
+        #leaflet-map { width: 100%; height: 100%; border-radius: 1rem; background: #0f172a; }
+        .leaflet-container { font-family: 'Outfit', sans-serif; background: #0f172a; }
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+            background: rgba(15, 23, 42, 0.95); color: #fff;
+            border: 1px solid rgba(168, 85, 247, 0.4);
+        }
+        .leaflet-popup-content { margin: 10px 14px; font-size: 12px; }
+        .leaflet-control-attribution { background: rgba(0,0,0,0.5) !important; color: #94a3b8 !important; font-size: 9px !important; }
+        .leaflet-control-attribution a { color: #c4b5fd !important; }
+        .duck-marker {
+            width: 18px; height: 18px; border-radius: 50%;
+            background: radial-gradient(circle, #c084fc, #7c3aed);
+            box-shadow: 0 0 12px rgba(168, 85, 247, 0.9);
+            border: 2px solid #fff;
+        }
+
+        /* On mobile, app card fills the viewport for native feel */
+        @media (max-width: 640px) {
+            main { padding: 0 !important; }
+            footer { display: none; }
+            .app-card {
+                max-width: 100% !important;
+                width: 100% !important;
+                min-height: 100dvh !important;
+                border-radius: 0 !important;
+                border-left: 0; border-right: 0;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-white min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans flex flex-col">
@@ -132,7 +179,7 @@
     <!-- Main Content Container -->
     <main class="relative z-10 flex-1 w-full flex flex-col justify-center items-center p-4 sm:p-8">
         
-        <div class="w-full max-w-sm glass-card rounded-3xl shadow-2xl overflow-hidden flex flex-col min-h-[580px]">
+        <div id="appCard" class="app-card w-full max-w-sm glass-card rounded-3xl shadow-2xl overflow-hidden flex flex-col">
             
             <!-- VIEW: LOGIN/AUTH FLOW -->
             <div id="authContainer" class="p-6 sm:p-10">
@@ -223,7 +270,7 @@
             </div>
 
             <!-- VIEW: HOME SCREEN -->
-            <div id="homeScreen" class="hidden flex flex-col flex-1 transition-all h-full">
+            <div id="homeScreen" class="hidden flex flex-col flex-1 transition-all sm:min-h-[640px]">
                 <!-- Top Header -->
                 <div class="p-6 pb-0 flex flex-col items-center text-center">
                     <div class="w-10 h-10 bg-white/10 rounded-xl p-1.5 mb-2 flex items-center justify-center border border-white/10">
@@ -245,17 +292,32 @@
                     <div id="tab-scan" class="tab-content active h-full">
                         <label class="block mb-4 text-white/50 text-[10px] font-bold uppercase tracking-wider text-center">Scan Duck QR</label>
                         <div class="scanner-container relative">
-                            <div class="absolute inset-0 flex flex-col items-center justify-center text-white/20 p-8 text-center">
-                                <i data-lucide="camera" class="w-12 h-12 mb-2 opacity-50"></i>
-                                <p class="text-xs">Camera Feed Ready</p>
+                            <!-- Live camera feed mounts here -->
+                            <div id="qr-reader"></div>
+
+                            <!-- Idle / pre-camera state -->
+                            <div id="scanIdle" class="absolute inset-0 flex flex-col items-center justify-center text-white/40 p-8 text-center z-20 bg-black/40">
+                                <i data-lucide="camera" class="w-12 h-12 mb-3 opacity-70"></i>
+                                <p class="text-xs mb-4">Tap to start scanning</p>
+                                <button id="startScanBtn" type="button" onclick="startScanner()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg">
+                                    Start Camera
+                                </button>
+                                <p id="scanError" class="hidden mt-3 text-[10px] text-red-300"></p>
                             </div>
-                            <div class="scanner-line animate-scan"></div>
-                            <div class="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-purple-500/50 rounded-tl-lg"></div>
-                            <div class="absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 border-purple-500/50 rounded-tr-lg"></div>
-                            <div class="absolute bottom-6 left-6 w-8 h-8 border-b-2 border-l-2 border-blue-500/50 rounded-bl-lg"></div>
-                            <div class="absolute bottom-6 right-6 w-8 h-8 border-b-2 border-r-2 border-blue-500/50 rounded-br-lg"></div>
+
+                            <div id="scanFrame" class="hidden">
+                                <div class="scanner-line animate-scan"></div>
+                                <div class="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-purple-500/80 rounded-tl-lg z-20"></div>
+                                <div class="absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 border-purple-500/80 rounded-tr-lg z-20"></div>
+                                <div class="absolute bottom-6 left-6 w-8 h-8 border-b-2 border-l-2 border-blue-500/80 rounded-bl-lg z-20"></div>
+                                <div class="absolute bottom-6 right-6 w-8 h-8 border-b-2 border-r-2 border-blue-500/80 rounded-br-lg z-20"></div>
+                                <button type="button" onclick="stopScanner()" class="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-black/60 hover:bg-black/80 border border-white/10 text-[10px] text-white/80 z-30">
+                                    Stop
+                                </button>
+                            </div>
                         </div>
-                        <p class="text-center mt-4 text-[10px] text-white/40 italic">Find a duck, scan the code, win prizes.</p>
+                        <p id="scanResult" class="hidden text-center mt-3 text-xs text-green-300 font-medium break-all"></p>
+                        <p class="text-center mt-3 text-[10px] text-white/40 italic">Find a duck, scan the code, win prizes.</p>
                     </div>
 
                     <!-- TAB: LEADERBOARD -->
@@ -298,19 +360,11 @@
 
                     <!-- TAB: MAP -->
                     <div id="tab-map" class="tab-content">
-                        <h3 class="text-center text-white/50 text-[10px] font-bold uppercase tracking-wider mb-4">Hunting Grounds</h3>
-                        <div class="bg-white/5 border border-white/10 rounded-2xl aspect-square relative overflow-hidden flex items-center justify-center p-4">
-                            <!-- Stylized Map Placeholder -->
-                            <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 20px 20px;"></div>
-                            <div class="z-10 text-center p-4">
-                                <i data-lucide="map-pin" class="w-8 h-8 text-blue-400 mx-auto mb-2 animate-bounce"></i>
-                                <p class="text-xs text-white/70 font-medium">Interactive Map Loading...</p>
-                                <p class="text-[10px] text-white/30 mt-1 uppercase tracking-widest">Zone: GCU Campus</p>
-                            </div>
-                            <!-- Mock Points -->
-                            <div class="absolute top-1/4 left-1/3 w-3 h-3 bg-purple-500 rounded-full shadow-[0_0_10px_purple] animate-pulse"></div>
-                            <div class="absolute bottom-1/3 right-1/4 w-3 h-3 bg-blue-500 rounded-full shadow-[0_0_10px_blue] animate-pulse" style="animation-delay: 1s;"></div>
+                        <h3 class="text-center text-white/50 text-[10px] font-bold uppercase tracking-wider mb-4">Hunting Grounds &middot; GCU Campus</h3>
+                        <div class="bg-white/5 border border-white/10 rounded-2xl aspect-square relative overflow-hidden">
+                            <div id="leaflet-map"></div>
                         </div>
+                        <p class="text-center mt-3 text-[10px] text-white/40 italic">Glowing markers show recent duck sightings.</p>
                     </div>
 
                     <!-- TAB: INFO -->
@@ -417,6 +471,143 @@
 
             // Refresh icons for dynamic content
             lucide.createIcons();
+
+            // Stop scanner when leaving the scan tab
+            if (tabName !== 'scan') stopScanner();
+
+            // Lazy-init / refresh map when entering the map tab
+            if (tabName === 'map') initMap();
+        }
+
+        // ---------- QR Scanner ----------
+        let html5Qr = null;
+        let scannerActive = false;
+
+        function setScanError(msg) {
+            const el = document.getElementById('scanError');
+            if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+
+        function onScanSuccess(decodedText) {
+            const result = document.getElementById('scanResult');
+            result.textContent = 'Duck found: ' + decodedText;
+            result.classList.remove('hidden');
+            // Brief haptic feedback if supported
+            if (navigator.vibrate) navigator.vibrate(120);
+            stopScanner();
+        }
+
+        async function startScanner() {
+            if (scannerActive) return;
+            setScanError('');
+            if (typeof Html5Qrcode === 'undefined') {
+                setScanError('Scanner library failed to load. Check your connection.');
+                return;
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                setScanError('Camera not supported on this device/browser.');
+                return;
+            }
+            try {
+                document.getElementById('scanIdle').classList.add('hidden');
+                document.getElementById('scanFrame').classList.remove('hidden');
+                document.getElementById('scanResult').classList.add('hidden');
+
+                html5Qr = new Html5Qrcode('qr-reader', { verbose: false });
+                await html5Qr.start(
+                    { facingMode: { ideal: 'environment' } },
+                    { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
+                    onScanSuccess,
+                    () => {} // ignore per-frame decode errors
+                );
+                scannerActive = true;
+            } catch (err) {
+                console.error('Scanner start failed', err);
+                scannerActive = false;
+                document.getElementById('scanIdle').classList.remove('hidden');
+                document.getElementById('scanFrame').classList.add('hidden');
+                const name = (err && err.name) || '';
+                if (name === 'NotAllowedError' || /permission/i.test(String(err))) {
+                    setScanError('Camera permission denied. Allow camera access and try again.');
+                } else if (name === 'NotFoundError') {
+                    setScanError('No camera found on this device.');
+                } else {
+                    setScanError('Could not start camera. Try again.');
+                }
+            }
+        }
+
+        async function stopScanner() {
+            if (!html5Qr) {
+                document.getElementById('scanIdle').classList.remove('hidden');
+                document.getElementById('scanFrame').classList.add('hidden');
+                return;
+            }
+            try {
+                if (scannerActive) await html5Qr.stop();
+                await html5Qr.clear();
+            } catch (e) { /* noop */ }
+            html5Qr = null;
+            scannerActive = false;
+            document.getElementById('scanIdle').classList.remove('hidden');
+            document.getElementById('scanFrame').classList.add('hidden');
+        }
+
+        // ---------- GCU Campus Map ----------
+        let gcuMap = null;
+        const GCU_CENTER = [33.5095, -112.1875];
+        const GCU_LOCATIONS = [
+            { name: 'GCU Arena',              coords: [33.5104, -112.1861] },
+            { name: 'Student Union',          coords: [33.5093, -112.1880] },
+            { name: 'Library / Learning Lounge', coords: [33.5086, -112.1872] },
+            { name: 'Lopes Way',              coords: [33.5099, -112.1875] },
+            { name: 'Thunderground',          coords: [33.5083, -112.1859] },
+            { name: 'Promenade',              coords: [33.5101, -112.1894] },
+            { name: 'Antelope Gym',           coords: [33.5078, -112.1881] }
+        ];
+
+        function initMap() {
+            if (typeof L === 'undefined') return;
+            if (gcuMap) {
+                // Recompute size in case the tab was hidden when map was created
+                setTimeout(() => gcuMap.invalidateSize(), 50);
+                return;
+            }
+            gcuMap = L.map('leaflet-map', {
+                center: GCU_CENTER,
+                zoom: 16,
+                minZoom: 14,
+                maxZoom: 19,
+                zoomControl: true,
+                attributionControl: true
+            });
+
+            // Restrict panning roughly to the campus bounds
+            gcuMap.setMaxBounds([[33.500, -112.200], [33.520, -112.175]]);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(gcuMap);
+
+            const duckIcon = L.divIcon({
+                className: '',
+                html: '<div class="duck-marker"></div>',
+                iconSize: [18, 18],
+                iconAnchor: [9, 9]
+            });
+
+            GCU_LOCATIONS.forEach(loc => {
+                L.marker(loc.coords, { icon: duckIcon })
+                    .addTo(gcuMap)
+                    .bindPopup('<strong>' + loc.name + '</strong><br/><span style="color:#a78bfa">Possible duck zone</span>');
+            });
+
+            // Ensure correct layout after the tab becomes visible
+            setTimeout(() => gcuMap.invalidateSize(), 100);
         }
 
         function handleContinue() {
