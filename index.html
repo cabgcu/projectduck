@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Duck Hunt 2026 - Login</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    animation: { 
+                        'blob': 'blob 20s infinite ease-in-out',
+                        'scan': 'scan 2s linear infinite'
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(40vw, 30vh) scale(1.2)' },
+                            '66%': { transform: 'translate(-30vw, 20vh) scale(0.8)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' }
+                        },
+                        scan: {
+                            '0%': { top: '0%' },
+                            '100%': { top: '100%' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 1); }
+        ::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 10px; }
+
+        /* Glassmorphism utilities */
+        .glass-card {
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+        
+        .glass-button {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Loaders */
+        .loader { display: none; width: 16px; height: 16px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: smooth-spin 1s linear infinite; }
+        @keyframes smooth-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Input styling */
+        .control-input {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
+            color: white; border-radius: 0.75rem; padding: 0.8rem 1rem; margin-bottom: 0.75rem; 
+            outline: none; transition: all 0.2s ease;
+        }
+        .control-input:focus { border-color: rgba(168, 85, 247, 0.5); background: rgba(255,255,255,0.1); box-shadow: 0 0 15px rgba(168, 85, 247, 0.2); }
+        
+        /* Pin input specific */
+        .pin-input { letter-spacing: 0.5em; font-size: 1.5rem; font-weight: bold; text-align: center; }
+
+        /* Scanner Overlay */
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+            background: rgba(0,0,0,0.3);
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .scanner-line {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #BF5AF2, #0A84FF, #BF5AF2, transparent);
+            box-shadow: 0 0 15px 2px rgba(168, 85, 247, 0.5);
+            z-index: 10;
+        }
+
+        /* Tab Transitions */
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; flex-direction: column; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .nav-item.active { color: #BF5AF2; }
+        .nav-item.active i { filter: drop-shadow(0 0 8px rgba(191, 90, 242, 0.5)); }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans flex flex-col">
+
+    <!-- Animated Color Blobs (Hidden on Mobile) -->
+    <div class="hidden md:block fixed inset-0 w-full h-full overflow-hidden pointer-events-none z-[-2]">
+        <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-600 rounded-full mix-blend-screen filter blur-[128px] opacity-60 animate-blob"></div>
+        <div class="absolute top-[20%] right-[-10%] w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[128px] opacity-60 animate-blob" style="animation-delay: 7s;"></div>
+        <div class="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-fuchsia-600 rounded-full mix-blend-screen filter blur-[128px] opacity-50 animate-blob" style="animation-delay: 14s;"></div>
+    </div>
+
+    <!-- Dark Overlay -->
+    <div id="bg-overlay" class="fixed top-0 left-0 w-full h-full z-[-1] bg-black/40"></div>
+
+    <!-- Main Content Container -->
+    <main class="relative z-10 flex-1 w-full flex flex-col justify-center items-center p-4 sm:p-8">
+        
+        <div class="w-full max-w-sm glass-card rounded-3xl shadow-2xl overflow-hidden flex flex-col min-h-[580px]">
+            
+            <!-- VIEW: LOGIN/AUTH FLOW -->
+            <div id="authContainer" class="p-6 sm:p-10">
+                <!-- Header Section -->
+                <div class="flex flex-col items-center text-center mb-8">
+                    <div class="w-16 h-16 bg-white/10 rounded-2xl p-2 mb-4 flex items-center justify-center border border-white/10">
+                        <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="w-full h-full object-contain rounded-xl">
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-bold mb-2 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">
+                        DUCK HUNT 2026
+                    </h1>
+                    <p class="text-white/50 text-xs sm:text-sm font-light tracking-wide">
+                        Ready your zapper. The season is open.
+                    </p>
+                </div>
+
+                <!-- Error Message Container -->
+                <div id="errorMsg" class="hidden text-red-400 text-[10px] sm:text-xs text-center mb-4 font-bold bg-red-400/10 py-2 rounded-lg border border-red-400/20"></div>
+
+                <!-- Step 1: Student ID Entry -->
+                <div id="step1" class="flex flex-col w-full transition-all">
+                    <div class="mb-8">
+                        <label class="block mb-2 text-white/50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-center">Student ID</label>
+                        <input type="text" id="studentId" inputmode="numeric" class="control-input !mb-0 text-center" placeholder="Enter your GCU Student ID" onkeyup="if(event.key==='Enter') handleContinue()">
+                        
+                        <div class="text-center mt-3">
+                            <a href="#" class="text-[10px] sm:text-xs text-purple-400 hover:text-purple-300 transition-colors font-medium">What is Duck Hunt?</a>
+                        </div>
+                    </div>
+
+                    <button type="button" id="continueBtn" onclick="handleContinue()" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all shadow-lg">
+                        <span>Continue</span>
+                        <div class="loader" id="continueLoader"></div>
+                    </button>
+                </div>
+
+                <!-- Step 2: Create PIN & Profile -->
+                <div id="stepCreatePin" class="flex flex-col w-full hidden transition-all">
+                    <div class="text-center mb-6">
+                        <p class="text-sm text-purple-400 font-bold mb-1">New Hunter Detected</p>
+                        <p class="text-[11px] sm:text-xs text-white/50 leading-relaxed">Fill in your details to secure your profile.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block mb-2 text-white/50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-center">Full Name</label>
+                        <input type="text" id="fullName" class="control-input !mb-0 text-center" placeholder="Your Name" onkeyup="if(event.key==='Enter') document.getElementById('newPin').focus()">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block mb-2 text-white/50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-center">New PIN</label>
+                        <input type="text" id="newPin" inputmode="numeric" maxlength="4" class="control-input !mb-0 pin-input" placeholder="0000" onkeyup="if(event.key==='Enter') document.getElementById('confirmPin').focus()">
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block mb-2 text-white/50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-center">Confirm PIN</label>
+                        <input type="text" id="confirmPin" inputmode="numeric" maxlength="4" class="control-input !mb-0 pin-input" placeholder="0000" onkeyup="if(event.key==='Enter') handleRegister()">
+                    </div>
+
+                    <button type="button" id="registerBtn" onclick="handleRegister()" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all shadow-lg">
+                        <span>Create & Enter</span>
+                        <div class="loader" id="registerLoader"></div>
+                    </button>
+                    <button type="button" onclick="goBack()" class="w-full mt-4 text-[10px] sm:text-xs text-white/40 hover:text-white transition-colors uppercase tracking-widest font-bold">← Back</button>
+                </div>
+
+                <!-- Step 3: Enter PIN (Returning) -->
+                <div id="stepEnterPin" class="flex flex-col w-full hidden transition-all">
+                    <div class="text-center mb-6">
+                        <p class="text-sm text-blue-400 font-bold mb-1">Welcome Back<span id="welcomeName"></span></p>
+                        <p class="text-[11px] sm:text-xs text-white/50 leading-relaxed">Enter your 4-digit PIN to resume your session.</p>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block mb-2 text-white/50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-center">Enter PIN</label>
+                        <input type="password" id="existingPin" inputmode="numeric" maxlength="4" class="control-input !mb-0 pin-input" placeholder="••••" onkeyup="if(event.key==='Enter') handleLoginSubmit()">
+                        
+                        <div class="text-center mt-3">
+                            <a href="#" class="text-[10px] sm:text-xs text-purple-400 hover:text-purple-300 transition-colors font-medium">Forgot PIN?</a>
+                        </div>
+                    </div>
+
+                    <button type="button" id="loginSubmitBtn" onclick="handleLoginSubmit()" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all shadow-lg">
+                        <span>Enter Arcade</span>
+                        <div class="loader" id="loginLoader"></div>
+                    </button>
+                    <button type="button" onclick="goBack()" class="w-full mt-4 text-[10px] sm:text-xs text-white/40 hover:text-white transition-colors uppercase tracking-widest font-bold">← Change ID</button>
+                </div>
+            </div>
+
+            <!-- VIEW: HOME SCREEN -->
+            <div id="homeScreen" class="hidden flex flex-col flex-1 transition-all h-full">
+                <!-- Top Header -->
+                <div class="p-6 pb-0 flex flex-col items-center text-center">
+                    <div class="w-10 h-10 bg-white/10 rounded-xl p-1.5 mb-2 flex items-center justify-center border border-white/10">
+                        <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="w-full h-full object-contain rounded-lg">
+                    </div>
+                    <h2 class="text-lg font-bold tracking-tight text-white">
+                        Hello, <span id="userNameDisplay" class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">Hunter</span>!
+                    </h2>
+                    <div class="flex items-center gap-1.5 mt-1">
+                        <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                        <p class="text-white/40 text-[9px] uppercase tracking-widest font-bold">Duck Season Live</p>
+                    </div>
+                </div>
+
+                <!-- Tab Content Area -->
+                <div id="tabsContainer" class="flex-1 p-6 overflow-y-auto">
+                    
+                    <!-- TAB: SCAN -->
+                    <div id="tab-scan" class="tab-content active h-full">
+                        <label class="block mb-4 text-white/50 text-[10px] font-bold uppercase tracking-wider text-center">Scan Duck QR</label>
+                        <div class="scanner-container relative">
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-white/20 p-8 text-center">
+                                <i data-lucide="camera" class="w-12 h-12 mb-2 opacity-50"></i>
+                                <p class="text-xs">Camera Feed Ready</p>
+                            </div>
+                            <div class="scanner-line animate-scan"></div>
+                            <div class="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-purple-500/50 rounded-tl-lg"></div>
+                            <div class="absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 border-purple-500/50 rounded-tr-lg"></div>
+                            <div class="absolute bottom-6 left-6 w-8 h-8 border-b-2 border-l-2 border-blue-500/50 rounded-bl-lg"></div>
+                            <div class="absolute bottom-6 right-6 w-8 h-8 border-b-2 border-r-2 border-blue-500/50 rounded-br-lg"></div>
+                        </div>
+                        <p class="text-center mt-4 text-[10px] text-white/40 italic">Find a duck, scan the code, win prizes.</p>
+                    </div>
+
+                    <!-- TAB: LEADERBOARD -->
+                    <div id="tab-leaderboard" class="tab-content">
+                        <h3 class="text-center text-white/50 text-[10px] font-bold uppercase tracking-wider mb-4">Top Hunters</h3>
+                        <div class="space-y-2">
+                            <!-- Top 3 -->
+                            <div class="bg-gradient-to-r from-purple-600/20 to-blue-600/20 p-3 rounded-xl border border-purple-500/30 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xl font-bold text-yellow-400 italic">1</span>
+                                    <span class="text-sm font-semibold">Tyler W.</span>
+                                </div>
+                                <span class="text-sm font-bold text-purple-400">42 Ducks</span>
+                            </div>
+                            <div class="bg-white/5 p-3 rounded-xl border border-white/10 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-lg font-bold text-slate-400 italic">2</span>
+                                    <span class="text-sm font-medium text-white/80">Sarah K.</span>
+                                </div>
+                                <span class="text-sm font-bold text-white/60">38 Ducks</span>
+                            </div>
+                            <div class="bg-white/5 p-3 rounded-xl border border-white/10 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-lg font-bold text-orange-400/80 italic">3</span>
+                                    <span class="text-sm font-medium text-white/80">Jacob M.</span>
+                                </div>
+                                <span class="text-sm font-bold text-white/60">35 Ducks</span>
+                            </div>
+                            <!-- Others -->
+                            <div class="px-3 py-2 flex items-center justify-between text-white/40 border-b border-white/5 mx-1">
+                                <span class="text-[11px] font-medium italic">4. Emily R.</span>
+                                <span class="text-[11px]">29 Ducks</span>
+                            </div>
+                            <div class="px-3 py-2 flex items-center justify-between text-white/40 border-b border-white/5 mx-1">
+                                <span class="text-[11px] font-medium italic">5. David L.</span>
+                                <span class="text-[11px]">24 Ducks</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB: MAP -->
+                    <div id="tab-map" class="tab-content">
+                        <h3 class="text-center text-white/50 text-[10px] font-bold uppercase tracking-wider mb-4">Hunting Grounds</h3>
+                        <div class="bg-white/5 border border-white/10 rounded-2xl aspect-square relative overflow-hidden flex items-center justify-center p-4">
+                            <!-- Stylized Map Placeholder -->
+                            <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 20px 20px;"></div>
+                            <div class="z-10 text-center p-4">
+                                <i data-lucide="map-pin" class="w-8 h-8 text-blue-400 mx-auto mb-2 animate-bounce"></i>
+                                <p class="text-xs text-white/70 font-medium">Interactive Map Loading...</p>
+                                <p class="text-[10px] text-white/30 mt-1 uppercase tracking-widest">Zone: GCU Campus</p>
+                            </div>
+                            <!-- Mock Points -->
+                            <div class="absolute top-1/4 left-1/3 w-3 h-3 bg-purple-500 rounded-full shadow-[0_0_10px_purple] animate-pulse"></div>
+                            <div class="absolute bottom-1/3 right-1/4 w-3 h-3 bg-blue-500 rounded-full shadow-[0_0_10px_blue] animate-pulse" style="animation-delay: 1s;"></div>
+                        </div>
+                    </div>
+
+                    <!-- TAB: INFO -->
+                    <div id="tab-info" class="tab-content">
+                        <h3 class="text-center text-white/50 text-[10px] font-bold uppercase tracking-wider mb-4">How to Play</h3>
+                        <div class="space-y-4 px-2">
+                            <div class="flex gap-4">
+                                <div class="w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0">
+                                    <span class="text-xs font-bold text-purple-400">1</span>
+                                </div>
+                                <p class="text-[11px] text-white/60 leading-relaxed"><strong class="text-white block">Explore</strong> Find hidden rubber ducks hidden throughout campus during the event week.</p>
+                            </div>
+                            <div class="flex gap-4">
+                                <div class="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0">
+                                    <span class="text-xs font-bold text-blue-400">2</span>
+                                </div>
+                                <p class="text-[11px] text-white/60 leading-relaxed"><strong class="text-white block">Scan</strong> Use this app to scan the unique QR code on the bottom of every duck you find.</p>
+                            </div>
+                            <div class="flex gap-4">
+                                <div class="w-8 h-8 rounded-lg bg-fuchsia-500/20 border border-fuchsia-500/30 flex items-center justify-center shrink-0">
+                                    <span class="text-xs font-bold text-fuchsia-400">3</span>
+                                </div>
+                                <p class="text-[11px] text-white/60 leading-relaxed"><strong class="text-white block">Win</strong> Log your finds to climb the leaderboard and win a prize at the CAB table!</p>
+                            </div>
+                            <div class="pt-4 mt-4 border-t border-white/5 text-center">
+                                <button onclick="handleLogout()" class="text-[9px] uppercase tracking-[0.2em] font-bold text-white/30 hover:text-red-400/80 transition-colors">Sign Out of Profile</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Bottom Navigation Bar -->
+                <nav class="bg-white/5 border-t border-white/10 px-4 py-3 flex justify-between items-center z-20">
+                    <button onclick="switchTab('scan')" id="nav-scan" class="nav-item active flex flex-col items-center gap-1 flex-1 transition-all">
+                        <i data-lucide="scan" class="w-5 h-5"></i>
+                        <span class="text-[8px] font-bold uppercase tracking-wider">Scan</span>
+                    </button>
+                    <button onclick="switchTab('leaderboard')" id="nav-leaderboard" class="nav-item flex flex-col items-center gap-1 flex-1 transition-all text-white/40 hover:text-white/70">
+                        <i data-lucide="trophy" class="w-5 h-5"></i>
+                        <span class="text-[8px] font-bold uppercase tracking-wider">Board</span>
+                    </button>
+                    <button onclick="switchTab('map')" id="nav-map" class="nav-item flex flex-col items-center gap-1 flex-1 transition-all text-white/40 hover:text-white/70">
+                        <i data-lucide="map" class="w-5 h-5"></i>
+                        <span class="text-[8px] font-bold uppercase tracking-wider">Map</span>
+                    </button>
+                    <button onclick="switchTab('info')" id="nav-info" class="nav-item flex flex-col items-center gap-1 flex-1 transition-all text-white/40 hover:text-white/70">
+                        <i data-lucide="info" class="w-5 h-5"></i>
+                        <span class="text-[8px] font-bold uppercase tracking-wider">Info</span>
+                    </button>
+                </nav>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full py-6 text-center text-white/30 text-[10px] sm:text-xs tracking-widest uppercase z-10">
+        © Canyon Activities Board
+    </footer>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Local Storage Mock DB setup
+        if (!localStorage.getItem('duckHuntUsers')) {
+            localStorage.setItem('duckHuntUsers', JSON.stringify({}));
+        }
+
+        let currentStudentId = "";
+
+        function showError(msg) {
+            const errDiv = document.getElementById('errorMsg');
+            errDiv.textContent = msg;
+            errDiv.classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('errorMsg').classList.add('hidden');
+        }
+
+        function switchStep(hideId, showId) {
+            document.getElementById(hideId).classList.add('hidden');
+            document.getElementById(showId).classList.remove('hidden');
+            hideError();
+        }
+
+        function switchTab(tabName) {
+            // Hide all content
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            // Remove active style from nav
+            document.querySelectorAll('.nav-item').forEach(n => {
+                n.classList.remove('active', 'text-white/40');
+                n.classList.add('text-white/40');
+            });
+
+            // Show selected
+            document.getElementById('tab-' + tabName).classList.add('active');
+            const navBtn = document.getElementById('nav-' + tabName);
+            navBtn.classList.add('active');
+            navBtn.classList.remove('text-white/40');
+
+            // Refresh icons for dynamic content
+            lucide.createIcons();
+        }
+
+        function handleContinue() {
+            const idInput = document.getElementById('studentId').value.trim();
+            if (!idInput) {
+                showError("Please enter your Student ID.");
+                return;
+            }
+            if (!/^\d+$/.test(idInput)) {
+                showError("Student ID must contain only numbers.");
+                return;
+            }
+
+            currentStudentId = idInput;
+            const users = JSON.parse(localStorage.getItem('duckHuntUsers'));
+
+            const btn = document.getElementById('continueBtn');
+            const loader = document.getElementById('continueLoader');
+            btn.disabled = true; loader.style.display = 'inline-block';
+
+            setTimeout(() => {
+                btn.disabled = false; loader.style.display = 'none';
+                if (users[currentStudentId]) {
+                    switchStep('step1', 'stepEnterPin');
+                    const fullName = users[currentStudentId].name || "Hunter";
+                    const firstName = fullName.split(' ')[0];
+                    document.getElementById('welcomeName').textContent = firstName ? `, ${firstName}` : "";
+                    document.getElementById('existingPin').focus();
+                } else {
+                    switchStep('step1', 'stepCreatePin');
+                    document.getElementById('fullName').focus();
+                }
+            }, 600);
+        }
+
+        function goBack() {
+            document.getElementById('stepCreatePin').classList.add('hidden');
+            document.getElementById('stepEnterPin').classList.add('hidden');
+            document.getElementById('step1').classList.remove('hidden');
+            document.getElementById('fullName').value = "";
+            document.getElementById('newPin').value = "";
+            document.getElementById('confirmPin').value = "";
+            document.getElementById('existingPin').value = "";
+            hideError();
+        }
+
+        function showHome(name) {
+            document.getElementById('authContainer').classList.add('hidden');
+            document.getElementById('homeScreen').classList.remove('hidden');
+            document.getElementById('userNameDisplay').textContent = name.split(' ')[0];
+            switchTab('scan'); // Default tab
+        }
+
+        function handleLogout() {
+            document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('authContainer').classList.remove('hidden');
+            goBack();
+        }
+
+        function handleRegister() {
+            const name = document.getElementById('fullName').value.trim();
+            const pin = document.getElementById('newPin').value;
+            const confirmPin = document.getElementById('confirmPin').value;
+
+            if (!name) { showError("Please enter your full name."); return; }
+            if (!/^\d{4}$/.test(pin)) { showError("PIN must be 4 digits."); return; }
+            if (pin !== confirmPin) { showError("PINs do not match."); return; }
+
+            const btn = document.getElementById('registerBtn');
+            const loader = document.getElementById('registerLoader');
+            btn.disabled = true; loader.style.display = "inline-block";
+
+            setTimeout(() => {
+                const users = JSON.parse(localStorage.getItem('duckHuntUsers'));
+                users[currentStudentId] = { pin, name };
+                localStorage.setItem('duckHuntUsers', JSON.stringify(users));
+                
+                showHome(name);
+                btn.disabled = false; loader.style.display = "none";
+                document.getElementById('fullName').value = "";
+                document.getElementById('newPin').value = "";
+                document.getElementById('confirmPin').value = "";
+            }, 1000);
+        }
+
+        function handleLoginSubmit() {
+            const pin = document.getElementById('existingPin').value;
+            const users = JSON.parse(localStorage.getItem('duckHuntUsers'));
+
+            if (users[currentStudentId].pin !== pin) {
+                showError("Incorrect PIN. Try again.");
+                return;
+            }
+
+            const btn = document.getElementById('loginSubmitBtn');
+            const loader = document.getElementById('loginLoader');
+            btn.disabled = true; loader.style.display = "inline-block";
+
+            setTimeout(() => {
+                showHome(users[currentStudentId].name);
+                btn.disabled = false; loader.style.display = "none";
+                document.getElementById('existingPin').value = "";
+            }, 800);
+        }
+    </script>
+</body>
+</html>
