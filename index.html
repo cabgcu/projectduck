@@ -9,6 +9,9 @@
     
     <link rel="icon" href="data:," />
     
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -115,14 +118,14 @@
 
                     <div class="mb-3 text-center">
                         <label class="form-label">Student ID</label>
-                        <input type="number" id="loginStudentID" class="control-item text-center text-lg tracking-widest !py-3 sm:!py-3.5 max-w-[240px] mx-auto block" placeholder="e.g. 123456" autocomplete="off" onkeyup="if(event.key==='Enter') mockStudentLogin()"/>
+                        <input type="number" id="loginStudentID" class="control-item text-center text-lg tracking-widest !py-3 sm:!py-3.5 max-w-[240px] mx-auto block" placeholder="e.g. 123456" autocomplete="off" onkeyup="if(event.key==='Enter') studentLogin()"/>
                     </div>
                     
                     <div class="mb-6 text-center">
                         <a href="#" class="text-sm text-zinc-400 hover:text-purple-400 underline underline-offset-4 transition-colors">What is Duck Hunt?</a>
                     </div>
 
-                    <button class="w-full max-w-[240px] mx-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3 sm:py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-base border border-purple-500/50" id="loginBtn" onclick="mockStudentLogin()">
+                    <button class="w-full max-w-[240px] mx-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3 sm:py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-base border border-purple-500/50" id="loginBtn" onclick="studentLogin()">
                         <span>Begin</span>
                         <div class="loader" id="loginLoader"></div>
                     </button>
@@ -163,7 +166,7 @@
                         </div>
                     </div>
 
-                    <button class="w-full max-w-[240px] mx-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3 sm:py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-base border border-purple-500/50" id="regBtn" onclick="mockRegisterSubmit()">
+                    <button class="w-full max-w-[240px] mx-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3 sm:py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-base border border-purple-500/50" id="regBtn" onclick="registerPlayer()">
                         <span>Join The Hunt</span>
                         <div class="loader" id="regLoader"></div>
                     </button>
@@ -175,45 +178,53 @@
             </div>
 
             <!-- SCANNER VIEW (Home Card) -->
-            <div id="scannerView" class="view mx-auto w-full pb-20" style="max-width: min(24rem, calc(100% - 2.5rem));">
+            <div id="scannerView" class="view mx-auto w-full pb-24" style="max-width: min(24rem, calc(100% - 2.5rem));">
                 <div class="glass-card primary-card rounded-3xl px-4 py-6 sm:p-8 text-center">
                     <!-- Personalized Welcome -->
                     <div class="flex justify-between items-start mb-6 border-b border-zinc-800 pb-4">
                         <div class="text-left">
-                            <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white leading-tight">Welcome, <span id="playerNameDisplay" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Player</span></h3>
+                            <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white leading-tight">Welcome <span id="playerNameDisplay" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 capitalize">Player</span></h3>
                             <p class="text-purple-400 text-[10px] font-bold uppercase tracking-widest mt-1">Status: Active Hunter</p>
                         </div>
-                        <button class="text-zinc-400 hover:text-rose-400 bg-zinc-800/80 hover:bg-zinc-700 p-2 rounded-xl transition-colors" onclick="switchView('loginView')" title="Log Out">
+                        <button class="text-zinc-400 hover:text-rose-400 bg-zinc-800/80 hover:bg-zinc-700 p-2.5 rounded-xl transition-colors" onclick="switchView('loginView')" title="Log Out">
                             <i data-lucide="log-out" class="w-5 h-5"></i>
                         </button>
                     </div>
 
-                    <!-- Player Stats Grid -->
-                    <div class="grid grid-cols-3 gap-2 mb-6">
-                        <div class="bg-zinc-900/50 rounded-2xl border border-zinc-800 p-3 flex flex-col items-center">
-                            <span class="text-zinc-500 text-[9px] font-bold uppercase tracking-wider mb-1">Ducks</span>
-                            <span class="text-xl font-black text-white" id="statDucks">12</span>
-                        </div>
-                        <div class="bg-zinc-900/50 rounded-2xl border border-zinc-800 p-3 flex flex-col items-center">
-                            <span class="text-zinc-500 text-[9px] font-bold uppercase tracking-wider mb-1">Points</span>
-                            <span class="text-xl font-black text-white" id="statPoints">450</span>
-                        </div>
-                        <div class="bg-zinc-900/50 rounded-2xl border border-zinc-800 p-3 flex flex-col items-center">
-                            <span class="text-zinc-500 text-[9px] font-bold uppercase tracking-wider mb-1">Rank</span>
-                            <span class="text-xl font-black text-purple-400" id="statRank">#8</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Scanner Window -->
-                    <div class="relative w-full aspect-square bg-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden mb-6 flex items-center justify-center shadow-inner">
+                    <!-- Scanner Window with Integrated Stats -->
+                    <div class="relative w-full aspect-square bg-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden mb-6 flex items-center justify-center shadow-inner group">
+                        <!-- Live Video Feed -->
                         <video id="cameraFeed" autoplay playsinline class="absolute inset-0 w-full h-full object-cover hidden"></video>
-                        <i id="cameraFallbackIcon" data-lucide="qr-code" class="w-20 h-20 text-zinc-800 absolute z-0"></i>
-                        <div class="absolute inset-0 bg-purple-900/10 pointer-events-none z-10"></div>
-                        <div class="absolute left-0 w-full h-[2px] bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)] animate-[scan_3s_ease-in-out_infinite] z-20"></div>
-                        <div class="absolute top-6 left-6 w-8 h-8 border-t-4 border-l-4 border-purple-500/80 rounded-tl-lg z-20"></div>
-                        <div class="absolute top-6 right-6 w-8 h-8 border-t-4 border-r-4 border-purple-500/80 rounded-tr-lg z-20"></div>
-                        <div class="absolute bottom-6 left-6 w-8 h-8 border-b-4 border-l-4 border-purple-500/80 rounded-bl-lg z-20"></div>
-                        <div class="absolute bottom-6 right-6 w-8 h-8 border-b-4 border-r-4 border-purple-500/80 rounded-br-lg z-20"></div>
+                        
+                        <!-- Animated Scanning Elements & Fallback Icon (Restricted to bracket area) -->
+                        <div class="absolute top-24 bottom-8 left-8 right-8 pointer-events-none z-10 overflow-hidden flex items-center justify-center">
+                            <!-- Camera mock icon -->
+                            <i id="cameraFallbackIcon" data-lucide="qr-code" class="w-20 h-20 text-zinc-800 absolute z-0"></i>
+                            <div class="absolute inset-0 bg-purple-900/20"></div>
+                            <div class="absolute left-0 w-full h-[2px] bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)] animate-[scan_3s_ease-in-out_infinite] z-20"></div>
+                        </div>
+                        
+                        <!-- Overlay Stats Bar (Improved Gap & Padding) -->
+                        <div class="absolute top-0 left-0 w-full bg-zinc-950/80 backdrop-blur-md border-b border-white/10 py-3 px-6 z-30 flex justify-between items-center">
+                            <div class="flex flex-col items-center">
+                                <span class="text-[8px] text-zinc-500 font-black uppercase tracking-[0.1em] leading-none mb-1">Ducks</span>
+                                <span class="text-sm font-black text-white" id="statDucks">0</span>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <span class="text-[8px] text-zinc-500 font-black uppercase tracking-[0.1em] leading-none mb-1">Points</span>
+                                <span class="text-sm font-black text-white" id="statPoints">0</span>
+                            </div>
+                            <div class="flex flex-col items-center">
+                                <span class="text-[8px] text-zinc-500 font-black uppercase tracking-[0.1em] leading-none mb-1">Rank</span>
+                                <span class="text-sm font-black text-purple-400" id="statRank">--</span>
+                            </div>
+                        </div>
+
+                        <!-- Target Brackets (Shifted down for better gap) -->
+                        <div class="absolute top-24 left-8 w-10 h-10 border-t-4 border-l-4 border-purple-500/80 rounded-tl-lg z-20"></div>
+                        <div class="absolute top-24 right-8 w-10 h-10 border-t-4 border-r-4 border-purple-500/80 rounded-tr-lg z-20"></div>
+                        <div class="absolute bottom-8 left-8 w-10 h-10 border-b-4 border-l-4 border-purple-500/80 rounded-bl-lg z-20"></div>
+                        <div class="absolute bottom-8 right-8 w-10 h-10 border-b-4 border-r-4 border-purple-500/80 rounded-br-lg z-20"></div>
                     </div>
 
                     <!-- Scan History Section -->
@@ -223,40 +234,16 @@
                             <span class="text-[10px] text-purple-400 font-bold uppercase cursor-pointer hover:underline">View All</span>
                         </div>
                         <div class="space-y-2 overflow-y-auto max-h-[160px] pr-1" id="scanHistoryContainer">
-                            <!-- Mock Scan Items -->
-                            <div class="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-3 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                                        <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
-                                    </div>
-                                    <div>
-                                        <div class="text-xs font-bold text-white">Golden Mallard</div>
-                                        <div class="text-[10px] text-zinc-500">2 minutes ago</div>
-                                    </div>
-                                </div>
-                                <div class="text-xs font-black text-emerald-400">+50 PTS</div>
-                            </div>
-                            <div class="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-3 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center">
-                                        <i data-lucide="hash" class="w-4 h-4 text-zinc-500"></i>
-                                    </div>
-                                    <div>
-                                        <div class="text-xs font-bold text-white">Pond #4</div>
-                                        <div class="text-[10px] text-zinc-500">1 hour ago</div>
-                                    </div>
-                                </div>
-                                <div class="text-xs font-black text-zinc-400">+10 PTS</div>
-                            </div>
+                            <div class="text-zinc-600 text-xs text-center py-4 italic">No scans found yet. Go find some ducks!</div>
                         </div>
                     </div>
                     
-                    <p id="cameraErrorMsg" class="hidden text-xs text-rose-400 mt-4">Camera access denied. Please enable permissions.</p>
+                    <p id="cameraErrorMsg" class="hidden text-xs text-rose-400 mt-4">Camera access denied. Please enable permissions in settings.</p>
                 </div>
             </div>
 
             <!-- LEADERBOARD VIEW -->
-            <div id="leaderboardView" class="view mx-auto w-full pb-20" style="max-width: min(24rem, calc(100% - 2.5rem));">
+            <div id="leaderboardView" class="view mx-auto w-full pb-24" style="max-width: min(24rem, calc(100% - 2.5rem));">
                 <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
                     <div class="w-16 h-16 bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
                         <i data-lucide="trophy" class="w-8 h-8 text-purple-400"></i>
@@ -264,15 +251,14 @@
                     <h3 class="text-2xl font-extrabold tracking-tight text-white mb-2">Leaderboard</h3>
                     <p class="text-zinc-400 text-sm mb-6 leading-relaxed">See who is dominating the hunt.</p>
                     
-                    <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-8 flex flex-col items-center justify-center">
-                        <i data-lucide="bar-chart-2" class="w-10 h-10 text-zinc-600 mb-3"></i>
-                        <span class="text-zinc-500 text-sm font-medium">Rankings coming soon...</span>
+                    <div id="leaderboardContainer" class="space-y-3 text-left">
+                        <div class="text-center py-8 text-zinc-500 text-sm">Loading rankings...</div>
                     </div>
                 </div>
             </div>
 
             <!-- MAP VIEW -->
-            <div id="mapView" class="view mx-auto w-full pb-20" style="max-width: min(24rem, calc(100% - 2.5rem));">
+            <div id="mapView" class="view mx-auto w-full pb-24" style="max-width: min(24rem, calc(100% - 2.5rem));">
                 <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
                     <div class="w-16 h-16 bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.4)]">
                         <i data-lucide="map" class="w-8 h-8 text-blue-400"></i>
@@ -280,15 +266,15 @@
                     <h3 class="text-2xl font-extrabold tracking-tight text-white mb-2">Hunt Map</h3>
                     <p class="text-zinc-400 text-sm mb-6 leading-relaxed">Discover active scanning locations.</p>
                     
-                    <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-8 flex flex-col items-center justify-center">
+                    <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-12 flex flex-col items-center justify-center">
                         <i data-lucide="map-pin" class="w-10 h-10 text-zinc-600 mb-3"></i>
-                        <span class="text-zinc-500 text-sm font-medium">Map data loading...</span>
+                        <span class="text-zinc-500 text-sm font-medium">Interactive Map Coming Soon</span>
                     </div>
                 </div>
             </div>
 
             <!-- INFO VIEW -->
-            <div id="infoView" class="view mx-auto w-full pb-20" style="max-width: min(24rem, calc(100% - 2.5rem));">
+            <div id="infoView" class="view mx-auto w-full pb-24" style="max-width: min(24rem, calc(100% - 2.5rem));">
                 <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
                     <div class="w-16 h-16 bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.4)]">
                         <i data-lucide="info" class="w-8 h-8 text-emerald-400"></i>
@@ -296,14 +282,18 @@
                     <h3 class="text-2xl font-extrabold tracking-tight text-white mb-2">Information</h3>
                     <p class="text-zinc-400 text-sm mb-6 leading-relaxed">Rules, FAQs, and Account details.</p>
                     
-                    <div class="space-y-3 mb-6">
-                        <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 text-left flex items-center gap-3">
+                    <div class="space-y-3 mb-8 text-left">
+                        <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 flex items-center gap-3">
                             <i data-lucide="book-open" class="w-5 h-5 text-zinc-400"></i>
                             <span class="text-zinc-300 text-sm font-medium">How to Play</span>
                         </div>
-                        <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 text-left flex items-center gap-3">
+                        <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 flex items-center gap-3">
                             <i data-lucide="help-circle" class="w-5 h-5 text-zinc-400"></i>
-                            <span class="text-zinc-300 text-sm font-medium">Frequently Asked Questions</span>
+                            <span class="text-zinc-300 text-sm font-medium">FAQs</span>
+                        </div>
+                        <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 flex items-center gap-3">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-zinc-400"></i>
+                            <span class="text-zinc-300 text-sm font-medium">Account Security</span>
                         </div>
                     </div>
 
@@ -340,84 +330,37 @@
         </div>
     </nav>
 
-    <!-- Admin Modal -->
+    <!-- Staff Login Modal -->
     <div id="gateModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
         <div class="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" onclick="hideGate()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30 transition-all duration-500">
-            <div class="w-16 h-16 bg-zinc-900 rounded-2xl p-3 mb-4 flex items-center justify-center border border-zinc-800">
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30">
+            <div class="w-16 h-16 bg-zinc-900 rounded-2xl p-3 mb-4 flex items-center justify-center border border-zinc-800 transition-transform hover:rotate-12">
                 <i data-lucide="lock" class="w-8 h-8 text-zinc-400"></i>
             </div>
             <h3 class="text-2xl font-bold mb-1 text-white">Staff Login</h3>
             <p class="text-zinc-400 text-sm mb-6">Enter admin password to access system settings.</p>
             <input type="password" id="adminPass" class="control-item text-center mb-6 no-save-pass" placeholder="Password" />
-            <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2" id="gateBtn" onclick="mockAdminLogin()">
-                <span>Authorize</span> <div class="loader" id="gateLoader"></div>
+            <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]" id="gateBtn" onclick="alert('Staff features under development.')">
+                <span>Authorize</span>
             </button>
         </div>
     </div>
 
 <script>
-    // App State
-    let currentPlayer = {
-        name: "Player",
-        id: "",
-        ducks: 0,
-        points: 0,
-        rank: "--"
-    };
+    // Supabase Configuration
+    const SUPABASE_URL = "https://tnaqzfollfoobjaymxqy.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_d0JzltkYdsqNWGhEe-clbw_oaRctt-0";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Initialize standard dynamic elements
+    // Global Player State
+    let currentPlayer = null;
+    let currentStream = null;
+
+    // Initialize UI
     document.getElementById('year').textContent = new Date().getFullYear();
     lucide.createIcons();
 
-    // --- Camera Logic ---
-    let currentStream = null;
-
-    async function startCamera() {
-        const video = document.getElementById('cameraFeed');
-        const fallbackIcon = document.getElementById('cameraFallbackIcon');
-        const errorMsg = document.getElementById('cameraErrorMsg');
-        
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment" } 
-            });
-            currentStream = stream;
-            video.srcObject = stream;
-            video.classList.remove('hidden');
-            fallbackIcon.classList.add('hidden');
-            errorMsg.classList.add('hidden');
-        } catch (err) {
-            console.error("Camera error:", err);
-            video.classList.add('hidden');
-            fallbackIcon.classList.remove('hidden');
-            errorMsg.classList.remove('hidden');
-        }
-    }
-
-    function stopCamera() {
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-            currentStream = null;
-        }
-        const video = document.getElementById('cameraFeed');
-        const fallbackIcon = document.getElementById('cameraFallbackIcon');
-        if (video) {
-            video.srcObject = null;
-            video.classList.add('hidden');
-        }
-        if (fallbackIcon) fallbackIcon.classList.remove('hidden');
-    }
-
-    // Update the UI with Player's data
-    function updatePlayerUI() {
-        document.getElementById('playerNameDisplay').textContent = currentPlayer.name;
-        document.getElementById('statDucks').textContent = currentPlayer.ducks;
-        document.getElementById('statPoints').textContent = currentPlayer.points;
-        document.getElementById('statRank').textContent = currentPlayer.rank;
-    }
-
-    // View Switching Logic
+    // --- View Handling ---
     function switchView(viewId) {
         document.querySelectorAll('.view').forEach(v => {
             v.classList.remove('active');
@@ -430,15 +373,20 @@
             setTimeout(() => target.classList.add('active'), 10);
         }
 
+        // Camera Activation Handling
         if (viewId === 'scannerView') {
             startCamera();
         } else {
             stopCamera();
         }
 
+        // Refresh Data on specific views
+        if (viewId === 'scannerView') refreshPlayerStats();
+        if (viewId === 'leaderboardView') loadLeaderboard();
+
+        // Bottom Nav Logic
         const navViews = ['scannerView', 'leaderboardView', 'mapView', 'infoView'];
         const nav = document.getElementById('mainNav');
-        
         if (navViews.includes(viewId)) {
             nav.style.display = 'block';
             document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -457,94 +405,208 @@
         lucide.createIcons();
     }
 
-    function showGate() { 
-        document.getElementById('gateModal').style.display = 'flex'; 
-        document.getElementById('gateModal').classList.remove('hidden');
-    }
-    
-    function hideGate() { 
-        document.getElementById('gateModal').style.display = 'none'; 
-        document.getElementById('gateModal').classList.add('hidden');
-        document.getElementById('adminPass').value = ""; 
+    // --- Camera Functions ---
+    async function startCamera() {
+        const video = document.getElementById('cameraFeed');
+        const fallback = document.getElementById('cameraFallbackIcon');
+        const error = document.getElementById('cameraErrorMsg');
+        
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment" } 
+            });
+            currentStream = stream;
+            video.srcObject = stream;
+            video.classList.remove('hidden');
+            fallback.classList.add('hidden');
+            error.classList.add('hidden');
+        } catch (err) {
+            video.classList.add('hidden');
+            fallback.classList.remove('hidden');
+            error.classList.remove('hidden');
+        }
     }
 
-    function mockStudentLogin() {
-        const studentIdInput = document.getElementById('loginStudentID').value;
-        if (!studentIdInput) return;
+    function stopCamera() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+            currentStream = null;
+        }
+        const video = document.getElementById('cameraFeed');
+        if (video) video.srcObject = null;
+    }
+
+    // --- Supabase Operations ---
+
+    async function studentLogin() {
+        const studentId = document.getElementById('loginStudentID').value;
+        if (!studentId) return;
 
         const btn = document.getElementById('loginBtn');
         const loader = document.getElementById('loginLoader');
-        
-        btn.disabled = true; 
-        loader.style.display = 'block';
-        
-        setTimeout(() => {
-            btn.disabled = false; 
-            loader.style.display = 'none';
-            
-            // Existing user mock
-            if (studentIdInput === '123456') {
-                currentPlayer = {
-                    name: "Alex Hunter",
-                    id: studentIdInput,
-                    ducks: 14,
-                    points: 520,
-                    rank: "#12"
-                };
-                updatePlayerUI();
+        btn.disabled = true; loader.style.display = 'block';
+
+        try {
+            const { data, error } = await _supabase
+                .from('players')
+                .select('*')
+                .eq('student_id', studentId)
+                .single();
+
+            if (error || !data) {
+                // New User: Go to Registration
+                document.getElementById('regStudentID').value = studentId;
+                switchView('registerView');
+            } else {
+                // Existing User: Go to Scanner
+                currentPlayer = data;
                 switchView('scannerView');
                 document.getElementById('loginStudentID').value = '';
-            } else {
-                // New user flow
-                document.getElementById('regStudentID').value = studentIdInput;
-                switchView('registerView');
-                document.getElementById('loginStudentID').value = '';
             }
-        }, 1200);
+        } catch (err) {
+            console.error("Login Error:", err);
+            alert("Database connection failed. Check your credentials.");
+        } finally {
+            btn.disabled = false; loader.style.display = 'none';
+        }
     }
 
-    function mockRegisterSubmit() {
-        const nameInput = document.getElementById('regName').value.trim();
+    async function registerPlayer() {
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const pin = document.getElementById('regPin').value;
         const studentId = document.getElementById('regStudentID').value;
-        
-        if (!nameInput) {
-            alert("Please enter your name.");
-            return;
-        }
+
+        if (!name || !email || !pin) return alert("Please fill out all fields.");
 
         const btn = document.getElementById('regBtn');
         const loader = document.getElementById('regLoader');
-        
-        btn.disabled = true; 
-        loader.style.display = 'block';
-        
-        setTimeout(() => {
-            btn.disabled = false; 
-            loader.style.display = 'none';
-            
-            // Initialize new player state
-            currentPlayer = {
-                name: nameInput,
-                id: studentId,
-                ducks: 0,
-                points: 0,
-                rank: "New"
-            };
-            
-            updatePlayerUI();
+        btn.disabled = true; loader.style.display = 'block';
+
+        try {
+            const { data, error } = await _supabase
+                .from('players')
+                .insert([{ 
+                    student_id: studentId, 
+                    name: name, 
+                    email: email, 
+                    pin: pin 
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+            currentPlayer = data;
             switchView('scannerView');
-        }, 1500);
+        } catch (err) {
+            console.error("Reg Error:", err);
+            alert("Registration failed: " + err.message);
+        } finally {
+            btn.disabled = false; loader.style.display = 'none';
+        }
     }
 
-    function mockAdminLogin() {
-        const btn = document.getElementById('gateBtn');
-        const loader = document.getElementById('gateLoader');
-        btn.disabled = true; loader.style.display = 'block';
-        setTimeout(() => {
-            btn.disabled = false; loader.style.display = 'none';
-            alert("Admin authenticated.");
-        }, 1500);
+    async function refreshPlayerStats() {
+        if (!currentPlayer) return;
+
+        // Fetch Player Rank from View
+        const { data: rankData } = await _supabase
+            .from('player_rankings')
+            .select('player_rank')
+            .eq('student_id', currentPlayer.student_id)
+            .single();
+
+        // Fetch Fresh Data (Ducks, Points)
+        const { data: freshPlayer } = await _supabase
+            .from('players')
+            .select('ducks, points, name')
+            .eq('student_id', currentPlayer.student_id)
+            .single();
+
+        // Fetch Recent Scans
+        const { data: history } = await _supabase
+            .from('scans')
+            .select('*')
+            .eq('player_id', currentPlayer.student_id)
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (freshPlayer) currentPlayer = { ...currentPlayer, ...freshPlayer };
+
+        // Helper to get first name in title case
+        let firstName = currentPlayer.name.split(' ')[0];
+        firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+
+        // Update Dashboard UI
+        document.getElementById('playerNameDisplay').textContent = firstName;
+        document.getElementById('statDucks').textContent = currentPlayer.ducks || 0;
+        document.getElementById('statPoints').textContent = currentPlayer.points || 0;
+        document.getElementById('statRank').textContent = rankData ? '#' + rankData.player_rank : '--';
+
+        // Update History List
+        const historyList = document.getElementById('scanHistoryContainer');
+        if (history && history.length > 0) {
+            historyList.innerHTML = history.map(scan => `
+                <div class="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-3 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-white">${scan.duck_name}</div>
+                            <div class="text-[10px] text-zinc-500">${new Date(scan.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
+                    </div>
+                    <div class="text-xs font-black text-emerald-400">+${scan.points_earned} PTS</div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        } else {
+            historyList.innerHTML = '<div class="text-zinc-600 text-xs text-center py-4 italic">No scans found yet. Go find some ducks!</div>';
+        }
     }
+
+    async function loadLeaderboard() {
+        const { data, error } = await _supabase
+            .from('players')
+            .select('name, points')
+            .order('points', { ascending: false })
+            .limit(20);
+
+        const container = document.getElementById('leaderboardContainer');
+        if (data && data.length > 0) {
+            container.innerHTML = data.map((player, index) => {
+                const isMe = currentPlayer && player.name === currentPlayer.name;
+                
+                // Format the name to First Name + Last Initial
+                let displayName = player.name;
+                if (displayName) {
+                    const nameParts = displayName.trim().split(/\s+/);
+                    if (nameParts.length > 1) {
+                        const firstName = nameParts[0];
+                        const lastInitial = nameParts[nameParts.length - 1].charAt(0).toUpperCase();
+                        displayName = `${firstName} ${lastInitial}.`;
+                    }
+                }
+
+                return `
+                    <div class="flex items-center justify-between p-3 ${isMe ? 'bg-purple-900/20 border-purple-500/40' : 'bg-zinc-900/50 border-zinc-800'} rounded-xl border mb-2">
+                        <div class="flex items-center gap-3">
+                            <span class="text-zinc-500 font-bold w-4">#${index + 1}</span>
+                            <span class="${isMe ? 'text-purple-400' : 'text-white'} text-sm font-medium">${displayName}</span>
+                        </div>
+                        <span class="text-purple-400 font-bold text-sm">${player.points} PTS</span>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            container.innerHTML = '<div class="text-center py-8 text-zinc-500 text-sm italic">No hunters ranked yet.</div>';
+        }
+    }
+
+    // --- Modal Logic ---
+    function showGate() { document.getElementById('gateModal').classList.remove('hidden'); }
+    function hideGate() { document.getElementById('gateModal').classList.add('hidden'); }
 </script>
 </body>
 </html>
