@@ -23,6 +23,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -318,38 +321,9 @@
                     <!-- TAB: LEADERBOARD -->
                     <div id="tab-leaderboard" class="tab-content">
                         <h3 class="text-center text-white/50 text-[10px] font-bold uppercase tracking-wider mb-4">Top Hunters</h3>
-                        <div class="space-y-2">
-                            <!-- Top 3 -->
-                            <div class="bg-gradient-to-r from-purple-600/20 to-blue-600/20 p-3 rounded-xl border border-purple-500/30 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-xl font-bold text-yellow-400 italic">1</span>
-                                    <span class="text-sm font-semibold">Tyler W.</span>
-                                </div>
-                                <span class="text-sm font-bold text-purple-400">42 Ducks</span>
-                            </div>
-                            <div class="bg-white/5 p-3 rounded-xl border border-white/10 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-lg font-bold text-slate-400 italic">2</span>
-                                    <span class="text-sm font-medium text-white/80">Sarah K.</span>
-                                </div>
-                                <span class="text-sm font-bold text-white/60">38 Ducks</span>
-                            </div>
-                            <div class="bg-white/5 p-3 rounded-xl border border-white/10 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-lg font-bold text-orange-400/80 italic">3</span>
-                                    <span class="text-sm font-medium text-white/80">Jacob M.</span>
-                                </div>
-                                <span class="text-sm font-bold text-white/60">35 Ducks</span>
-                            </div>
-                            <!-- Others -->
-                            <div class="px-3 py-2 flex items-center justify-between text-white/40 border-b border-white/5 mx-1">
-                                <span class="text-[11px] font-medium italic">4. Emily R.</span>
-                                <span class="text-[11px]">29 Ducks</span>
-                            </div>
-                            <div class="px-3 py-2 flex items-center justify-between text-white/40 border-b border-white/5 mx-1">
-                                <span class="text-[11px] font-medium italic">5. David L.</span>
-                                <span class="text-[11px]">24 Ducks</span>
-                            </div>
+                        <div id="leaderboardList" class="flex flex-col">
+                            <!-- Populated dynamically from Supabase -->
+                            <div class="text-center text-white/50 text-xs py-4 animate-pulse">Syncing with cloud...</div>
                         </div>
                     </div>
 
@@ -418,15 +392,21 @@
     </main>
 
     <script>
-        // Initialize Icons
-        lucide.createIcons();
+        // Ensure lucide is defined before calling createIcons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
 
-        // Local Storage Mock DB setup
-        if (!localStorage.getItem('duckHuntUsers')) {
-            localStorage.setItem('duckHuntUsers', JSON.stringify({}));
+        // Supabase Setup
+        const supabaseUrl = 'https://tnaqzfollfoobjaymxqy.supabase.co';
+        const supabaseKey = 'sb_publishable_d0JzltkYdsqNWGhEe-clbw_oaRctt-0';
+        let supabase = null;
+        if (window.supabase) {
+           supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         }
 
         let currentStudentId = "";
+        let currentUserData = null; // Replaces local storage mocking
 
         function showError(msg) {
             const errDiv = document.getElementById('errorMsg');
@@ -456,17 +436,78 @@
             // Show selected
             document.getElementById('tab-' + tabName).classList.add('active');
             const navBtn = document.getElementById('nav-' + tabName);
-            navBtn.classList.add('active');
-            navBtn.classList.remove('text-white/40');
+            if(navBtn) {
+                navBtn.classList.add('active');
+                navBtn.classList.remove('text-white/40');
+            }
 
             // Refresh icons for dynamic content
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
 
             // Stop scanner when leaving the scan tab
             if (tabName !== 'scan') stopScanner();
 
             // Lazy-init / refresh map when entering the map tab
             if (tabName === 'map') initMap();
+            
+            // Fetch live leaderboard
+            if (tabName === 'leaderboard') fetchLeaderboard();
+        }
+
+        async function fetchLeaderboard() {
+            const container = document.getElementById('leaderboardList');
+            if (!container) return;
+            
+            if(!supabase) {
+                 container.innerHTML = '<div class="text-center text-red-400 text-xs py-4">Supabase not initialized.</div>';
+                 return;
+            }
+
+            container.innerHTML = '<div class="text-center text-white/50 text-xs py-4 animate-pulse">Syncing with cloud...</div>';
+
+            const { data, error } = await supabase.from('hunters').select('name, ducks');
+            if (error) {
+                container.innerHTML = '<div class="text-center text-red-400 text-xs py-4">Failed to load leaderboard.</div>';
+                return;
+            }
+
+            // Sort locally by array length to find top hunters
+            const sorted = data.sort((a, b) => (b.ducks?.length || 0) - (a.ducks?.length || 0)).slice(0, 10);
+            
+            container.innerHTML = '';
+            if (sorted.length === 0) {
+                container.innerHTML = '<div class="text-center text-white/50 text-xs py-4">No hunters found yet. Be the first!</div>';
+                return;
+            }
+
+            sorted.forEach((hunter, index) => {
+                const count = hunter.ducks?.length || 0;
+                // Abbreviate last name for privacy on the board
+                const nameParts = hunter.name.split(' ');
+                const displayName = nameParts[0] + (nameParts[1] ? ' ' + nameParts[1][0] + '.' : '');
+                
+                let html = '';
+                if (index === 0) {
+                    html = `<div class="bg-gradient-to-r from-purple-600/20 to-blue-600/20 p-3 rounded-xl border border-purple-500/30 flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-3"><span class="text-xl font-bold text-yellow-400 italic">1</span><span class="text-sm font-semibold">${displayName}</span></div>
+                                <span class="text-sm font-bold text-purple-400">${count} Ducks</span>
+                            </div>`;
+                } else if (index === 1 || index === 2) {
+                    const colors = index === 1 ? 'text-slate-400' : 'text-orange-400/80';
+                    html = `<div class="bg-white/5 p-3 rounded-xl border border-white/10 flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-3"><span class="text-lg font-bold ${colors} italic">${index + 1}</span><span class="text-sm font-medium text-white/80">${displayName}</span></div>
+                                <span class="text-sm font-bold text-white/60">${count} Ducks</span>
+                            </div>`;
+                } else {
+                    html = `<div class="px-3 py-2 flex items-center justify-between text-white/40 border-b border-white/5 mx-1">
+                                <span class="text-[11px] font-medium italic">${index + 1}. ${displayName}</span>
+                                <span class="text-[11px]">${count} Ducks</span>
+                            </div>`;
+                }
+                container.insertAdjacentHTML('beforeend', html);
+            });
         }
 
         // ---------- QR Scanner ----------
@@ -480,22 +521,41 @@
             el.classList.remove('hidden');
         }
 
-        function onScanSuccess(decodedText) {
-            const users = JSON.parse(localStorage.getItem('duckHuntUsers'));
-            const user = users[currentStudentId];
-            if (!user.ducks) user.ducks = [];
+        async function onScanSuccess(decodedText) {
+            if (!currentUserData) return;
+            if (!currentUserData.ducks) currentUserData.ducks = [];
 
             const result = document.getElementById('scanResult');
             result.classList.remove('hidden', 'text-green-300', 'text-red-300', 'text-yellow-300');
 
-            if (user.ducks.includes(decodedText)) {
+            if (currentUserData.ducks.includes(decodedText)) {
                 result.textContent = 'Already scanned this duck!';
                 result.classList.add('text-yellow-300');
             } else {
-                user.ducks.push(decodedText);
-                localStorage.setItem('duckHuntUsers', JSON.stringify(users));
-                result.textContent = `Duck found! Total: ${user.ducks.length} ducks.`;
-                result.classList.add('text-green-300');
+                // Optimistically update local UI state
+                currentUserData.ducks.push(decodedText);
+                result.textContent = `Saving...`;
+                
+                if (supabase) {
+                    // Save updated array to Supabase
+                    const { error } = await supabase
+                        .from('hunters')
+                        .update({ ducks: currentUserData.ducks })
+                        .eq('student_id', currentStudentId);
+
+                    if (error) {
+                        console.error("Supabase Error:", error);
+                        currentUserData.ducks.pop(); // revert local array on fail
+                        result.textContent = 'Network error saving duck.';
+                        result.classList.add('text-red-300');
+                    } else {
+                        result.textContent = `Duck found! Total: ${currentUserData.ducks.length} ducks.`;
+                        result.classList.add('text-green-300');
+                    }
+                } else {
+                     result.textContent = `Duck found! Total: ${currentUserData.ducks.length} ducks. (Local save only)`;
+                     result.classList.add('text-green-300');
+                }
             }
 
             // Brief haptic feedback if supported
@@ -624,7 +684,7 @@
             setTimeout(() => gcuMap.invalidateSize(), 100);
         }
 
-        function handleContinue() {
+        async function handleContinue() {
             const idInput = document.getElementById('studentId').value.trim();
             if (!idInput) {
                 showError("Please enter your Student ID.");
@@ -636,25 +696,42 @@
             }
 
             currentStudentId = idInput;
-            const users = JSON.parse(localStorage.getItem('duckHuntUsers'));
 
             const btn = document.getElementById('continueBtn');
             const loader = document.getElementById('continueLoader');
             btn.disabled = true; loader.style.display = 'inline-block';
 
-            setTimeout(() => {
+            if (!supabase) {
+                showError("Supabase client not initialized.");
                 btn.disabled = false; loader.style.display = 'none';
-                if (users[currentStudentId]) {
-                    switchStep('step1', 'stepEnterPin');
-                    const fullName = users[currentStudentId].name || "Hunter";
-                    const firstName = fullName.split(' ')[0];
-                    document.getElementById('welcomeName').textContent = firstName ? `, ${firstName}` : "";
-                    document.getElementById('existingPin').focus();
-                } else {
-                    switchStep('step1', 'stepCreatePin');
-                    document.getElementById('fullName').focus();
-                }
-            }, 600);
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('hunters')
+                .select('*')
+                .eq('student_id', currentStudentId)
+                .single();
+
+            btn.disabled = false; loader.style.display = 'none';
+
+            if (error && error.code === 'PGRST116') {
+                // PGRST116 means 0 rows returned (New User)
+                currentUserData = null;
+                switchStep('step1', 'stepCreatePin');
+                document.getElementById('fullName').focus();
+            } else if (data) {
+                // User Found
+                currentUserData = data;
+                switchStep('step1', 'stepEnterPin');
+                const fullName = data.name || "Hunter";
+                const firstName = fullName.split(' ')[0];
+                document.getElementById('welcomeName').textContent = firstName ? `, ${firstName}` : "";
+                document.getElementById('existingPin').focus();
+            } else {
+                showError("Network error. Try again.");
+                console.error(error);
+            }
         }
 
         function goBack() {
@@ -678,10 +755,11 @@
         function handleLogout() {
             document.getElementById('homeScreen').classList.add('hidden');
             document.getElementById('authContainer').classList.remove('hidden');
+            currentUserData = null; // clear session
             goBack();
         }
 
-        function handleRegister() {
+        async function handleRegister() {
             const name = document.getElementById('fullName').value.trim();
             const pin = document.getElementById('newPin').value;
             const confirmPin = document.getElementById('confirmPin').value;
@@ -694,24 +772,38 @@
             const loader = document.getElementById('registerLoader');
             btn.disabled = true; loader.style.display = "inline-block";
 
-            setTimeout(() => {
-                const users = JSON.parse(localStorage.getItem('duckHuntUsers'));
-                users[currentStudentId] = { pin, name, ducks: [] };
-                localStorage.setItem('duckHuntUsers', JSON.stringify(users));
-                
-                showHome(name);
+            const newHunter = { student_id: currentStudentId, pin: pin, name: name, ducks: [] };
+
+            if (!supabase) {
+                showError("Supabase client not initialized.");
                 btn.disabled = false; loader.style.display = "none";
-                document.getElementById('fullName').value = "";
-                document.getElementById('newPin').value = "";
-                document.getElementById('confirmPin').value = "";
-            }, 1000);
+                return;
+            }
+
+            const { error } = await supabase
+                .from('hunters')
+                .insert([newHunter]);
+
+            if (error) {
+                console.error("Supabase Insert Error:", error);
+                showError("Failed to register. You may already have an account.");
+                btn.disabled = false; loader.style.display = "none";
+                return;
+            }
+
+            currentUserData = newHunter;
+            showHome(name);
+            
+            btn.disabled = false; loader.style.display = "none";
+            document.getElementById('fullName').value = "";
+            document.getElementById('newPin').value = "";
+            document.getElementById('confirmPin').value = "";
         }
 
         function handleLoginSubmit() {
             const pin = document.getElementById('existingPin').value;
-            const users = JSON.parse(localStorage.getItem('duckHuntUsers'));
 
-            if (users[currentStudentId].pin !== pin) {
+            if (!currentUserData || currentUserData.pin !== pin) {
                 showError("Incorrect PIN. Try again.");
                 return;
             }
@@ -721,7 +813,7 @@
             btn.disabled = true; loader.style.display = "inline-block";
 
             setTimeout(() => {
-                showHome(users[currentStudentId].name);
+                showHome(currentUserData.name);
                 btn.disabled = false; loader.style.display = "none";
                 document.getElementById('existingPin').value = "";
             }, 800);
