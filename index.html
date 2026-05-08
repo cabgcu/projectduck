@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Timesheet Login UI</title>
+    <title>Duck Hunt 2026</title>
     
     <link rel="icon" href="data:," />
     
@@ -175,42 +175,83 @@
             </div>
 
             <!-- SCANNER VIEW (Home Card) -->
-            <div id="scannerView" class="view mx-auto w-full" style="max-width: min(24rem, calc(100% - 2.5rem));">
-                <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
-                    <div class="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
+            <div id="scannerView" class="view mx-auto w-full pb-20" style="max-width: min(24rem, calc(100% - 2.5rem));">
+                <div class="glass-card primary-card rounded-3xl px-4 py-6 sm:p-8 text-center">
+                    <!-- Personalized Welcome -->
+                    <div class="flex justify-between items-start mb-6 border-b border-zinc-800 pb-4">
                         <div class="text-left">
-                            <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white">Scanner</h3>
-                            <p class="text-purple-400 text-xs font-bold uppercase tracking-wider mt-1">Player Ready</p>
+                            <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white leading-tight">Welcome, <span id="playerNameDisplay" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Player</span></h3>
+                            <p class="text-purple-400 text-[10px] font-bold uppercase tracking-widest mt-1">Status: Active Hunter</p>
                         </div>
-                        <button class="text-zinc-400 hover:text-rose-400 bg-zinc-800/80 hover:bg-zinc-700 p-2.5 rounded-xl transition-colors" onclick="switchView('loginView')" title="Log Out">
+                        <button class="text-zinc-400 hover:text-rose-400 bg-zinc-800/80 hover:bg-zinc-700 p-2 rounded-xl transition-colors" onclick="switchView('loginView')" title="Log Out">
                             <i data-lucide="log-out" class="w-5 h-5"></i>
                         </button>
                     </div>
-                    
-                    <p class="text-zinc-400 text-sm mb-6 leading-relaxed">Position the QR code within the frame below to scan.</p>
 
+                    <!-- Player Stats Grid -->
+                    <div class="grid grid-cols-3 gap-2 mb-6">
+                        <div class="bg-zinc-900/50 rounded-2xl border border-zinc-800 p-3 flex flex-col items-center">
+                            <span class="text-zinc-500 text-[9px] font-bold uppercase tracking-wider mb-1">Ducks</span>
+                            <span class="text-xl font-black text-white" id="statDucks">12</span>
+                        </div>
+                        <div class="bg-zinc-900/50 rounded-2xl border border-zinc-800 p-3 flex flex-col items-center">
+                            <span class="text-zinc-500 text-[9px] font-bold uppercase tracking-wider mb-1">Points</span>
+                            <span class="text-xl font-black text-white" id="statPoints">450</span>
+                        </div>
+                        <div class="bg-zinc-900/50 rounded-2xl border border-zinc-800 p-3 flex flex-col items-center">
+                            <span class="text-zinc-500 text-[9px] font-bold uppercase tracking-wider mb-1">Rank</span>
+                            <span class="text-xl font-black text-purple-400" id="statRank">#8</span>
+                        </div>
+                    </div>
+                    
                     <!-- Scanner Window -->
-                    <div class="relative w-full aspect-square bg-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden mb-2 flex items-center justify-center shadow-inner">
-                        <!-- Live Video Feed -->
+                    <div class="relative w-full aspect-square bg-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden mb-6 flex items-center justify-center shadow-inner">
                         <video id="cameraFeed" autoplay playsinline class="absolute inset-0 w-full h-full object-cover hidden"></video>
-                        
-                        <!-- Camera mock icon (shows while loading or if permission denied) -->
                         <i id="cameraFallbackIcon" data-lucide="qr-code" class="w-20 h-20 text-zinc-800 absolute z-0"></i>
-                        
-                        <!-- Purple overlay tint -->
                         <div class="absolute inset-0 bg-purple-900/10 pointer-events-none z-10"></div>
-                        
-                        <!-- Animated Scan Line -->
                         <div class="absolute left-0 w-full h-[2px] bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)] animate-[scan_3s_ease-in-out_infinite] z-20"></div>
-                        
-                        <!-- Target Brackets -->
                         <div class="absolute top-6 left-6 w-8 h-8 border-t-4 border-l-4 border-purple-500/80 rounded-tl-lg z-20"></div>
                         <div class="absolute top-6 right-6 w-8 h-8 border-t-4 border-r-4 border-purple-500/80 rounded-tr-lg z-20"></div>
                         <div class="absolute bottom-6 left-6 w-8 h-8 border-b-4 border-l-4 border-purple-500/80 rounded-bl-lg z-20"></div>
                         <div class="absolute bottom-6 right-6 w-8 h-8 border-b-4 border-r-4 border-purple-500/80 rounded-br-lg z-20"></div>
                     </div>
+
+                    <!-- Scan History Section -->
+                    <div class="text-left">
+                        <div class="flex justify-between items-center mb-3 px-1">
+                            <span class="text-xs font-bold text-zinc-500 uppercase tracking-widest">Recent Scans</span>
+                            <span class="text-[10px] text-purple-400 font-bold uppercase cursor-pointer hover:underline">View All</span>
+                        </div>
+                        <div class="space-y-2 overflow-y-auto max-h-[160px] pr-1" id="scanHistoryContainer">
+                            <!-- Mock Scan Items -->
+                            <div class="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-3 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                                        <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-bold text-white">Golden Mallard</div>
+                                        <div class="text-[10px] text-zinc-500">2 minutes ago</div>
+                                    </div>
+                                </div>
+                                <div class="text-xs font-black text-emerald-400">+50 PTS</div>
+                            </div>
+                            <div class="bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-3 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center">
+                                        <i data-lucide="hash" class="w-4 h-4 text-zinc-500"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-bold text-white">Pond #4</div>
+                                        <div class="text-[10px] text-zinc-500">1 hour ago</div>
+                                    </div>
+                                </div>
+                                <div class="text-xs font-black text-zinc-400">+10 PTS</div>
+                            </div>
+                        </div>
+                    </div>
                     
-                    <p id="cameraErrorMsg" class="hidden text-xs text-rose-400 mt-2">Camera access denied. Please enable permissions.</p>
+                    <p id="cameraErrorMsg" class="hidden text-xs text-rose-400 mt-4">Camera access denied. Please enable permissions.</p>
                 </div>
             </div>
 
@@ -277,7 +318,7 @@
 
     </main>
 
-    <!-- BOTTOM NAVIGATION (Appears when logged in) -->
+    <!-- BOTTOM NAVIGATION -->
     <nav id="mainNav" class="fixed bottom-0 left-0 w-full z-40 bg-zinc-950/80 backdrop-blur-xl border-t border-purple-500/20 hidden" style="padding-bottom: max(0px, env(safe-area-inset-bottom));">
         <div class="max-w-md mx-auto flex justify-between items-center px-6 py-3">
             <button onclick="switchView('scannerView')" id="nav-scannerView" class="nav-btn flex flex-col items-center gap-1.5 text-purple-400 transition-colors w-16">
@@ -299,25 +340,32 @@
         </div>
     </nav>
 
-    <!-- Admin Login Modal -->
+    <!-- Admin Modal -->
     <div id="gateModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
         <div class="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" onclick="hideGate()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30 transition-all duration-500 hover:shadow-[0_0_40px_rgba(168,85,247,0.2)] hover:-translate-y-2">
-            <div class="w-16 h-16 bg-zinc-900 rounded-2xl p-3 mb-4 flex items-center justify-center border border-zinc-800 transition-transform hover:rotate-12">
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30 transition-all duration-500">
+            <div class="w-16 h-16 bg-zinc-900 rounded-2xl p-3 mb-4 flex items-center justify-center border border-zinc-800">
                 <i data-lucide="lock" class="w-8 h-8 text-zinc-400"></i>
             </div>
             <h3 class="text-2xl font-bold mb-1 text-white">Staff Login</h3>
-            <p class="text-zinc-400 text-sm mb-6">Enter admin password to access system settings and master hours.</p>
-            
-            <input type="password" id="adminPass" class="control-item text-center mb-6 no-save-pass" placeholder="Password" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') mockAdminLogin()"/>
-            
-            <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_15px_rgba(168,85,247,0.3)]" id="gateBtn" onclick="mockAdminLogin()">
+            <p class="text-zinc-400 text-sm mb-6">Enter admin password to access system settings.</p>
+            <input type="password" id="adminPass" class="control-item text-center mb-6 no-save-pass" placeholder="Password" />
+            <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2" id="gateBtn" onclick="mockAdminLogin()">
                 <span>Authorize</span> <div class="loader" id="gateLoader"></div>
             </button>
         </div>
     </div>
 
 <script>
+    // App State
+    let currentPlayer = {
+        name: "Player",
+        id: "",
+        ducks: 0,
+        points: 0,
+        rank: "--"
+    };
+
     // Initialize standard dynamic elements
     document.getElementById('year').textContent = new Date().getFullYear();
     lucide.createIcons();
@@ -331,14 +379,11 @@
         const errorMsg = document.getElementById('cameraErrorMsg');
         
         try {
-            // Request the rear-facing camera
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { facingMode: "environment" } 
             });
             currentStream = stream;
             video.srcObject = stream;
-            
-            // Show video, hide fallback
             video.classList.remove('hidden');
             fallbackIcon.classList.add('hidden');
             errorMsg.classList.add('hidden');
@@ -364,36 +409,38 @@
         if (fallbackIcon) fallbackIcon.classList.remove('hidden');
     }
 
+    // Update the UI with Player's data
+    function updatePlayerUI() {
+        document.getElementById('playerNameDisplay').textContent = currentPlayer.name;
+        document.getElementById('statDucks').textContent = currentPlayer.ducks;
+        document.getElementById('statPoints').textContent = currentPlayer.points;
+        document.getElementById('statRank').textContent = currentPlayer.rank;
+    }
+
     // View Switching Logic
     function switchView(viewId) {
-        // Hide all views
         document.querySelectorAll('.view').forEach(v => {
             v.classList.remove('active');
             v.style.display = 'none'; 
         });
         
-        // Show target view
         const target = document.getElementById(viewId);
         if (target) {
             target.style.display = 'block';
             setTimeout(() => target.classList.add('active'), 10);
         }
 
-        // Camera Activation Handling
         if (viewId === 'scannerView') {
             startCamera();
         } else {
             stopCamera();
         }
 
-        // Toggle Navigation Bar logic
         const navViews = ['scannerView', 'leaderboardView', 'mapView', 'infoView'];
         const nav = document.getElementById('mainNav');
         
         if (navViews.includes(viewId)) {
             nav.style.display = 'block';
-            
-            // Update active colors on nav buttons
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('text-purple-400');
                 btn.classList.add('text-zinc-500');
@@ -407,11 +454,9 @@
             nav.style.display = 'none';
         }
         
-        // Re-render icons if a new view has loaded them
         lucide.createIcons();
     }
 
-    // Modal display logic for Staff Access
     function showGate() { 
         document.getElementById('gateModal').style.display = 'flex'; 
         document.getElementById('gateModal').classList.remove('hidden');
@@ -423,10 +468,9 @@
         document.getElementById('adminPass').value = ""; 
     }
 
-    // Mock functionality to preview loading animations
     function mockStudentLogin() {
         const studentIdInput = document.getElementById('loginStudentID').value;
-        if (!studentIdInput) return; // Prevent empty submission
+        if (!studentIdInput) return;
 
         const btn = document.getElementById('loginBtn');
         const loader = document.getElementById('loginLoader');
@@ -434,38 +478,60 @@
         btn.disabled = true; 
         loader.style.display = 'block';
         
-        // Simulate checking the database...
         setTimeout(() => {
             btn.disabled = false; 
             loader.style.display = 'none';
             
-            // MOCK LOGIC: If ID is "123456", treat as existing account and go to scanner
+            // Existing user mock
             if (studentIdInput === '123456') {
+                currentPlayer = {
+                    name: "Alex Hunter",
+                    id: studentIdInput,
+                    ducks: 14,
+                    points: 520,
+                    rank: "#12"
+                };
+                updatePlayerUI();
                 switchView('scannerView');
-                document.getElementById('loginStudentID').value = ''; // clear for next time
+                document.getElementById('loginStudentID').value = '';
             } else {
-                // Otherwise, treat as new account and go to Registration
+                // New user flow
                 document.getElementById('regStudentID').value = studentIdInput;
                 switchView('registerView');
-                document.getElementById('loginStudentID').value = ''; // clear for next time
+                document.getElementById('loginStudentID').value = '';
             }
-            
         }, 1200);
     }
 
     function mockRegisterSubmit() {
+        const nameInput = document.getElementById('regName').value.trim();
+        const studentId = document.getElementById('regStudentID').value;
+        
+        if (!nameInput) {
+            alert("Please enter your name.");
+            return;
+        }
+
         const btn = document.getElementById('regBtn');
         const loader = document.getElementById('regLoader');
         
         btn.disabled = true; 
         loader.style.display = 'block';
         
-        // Simulate profile creation...
         setTimeout(() => {
             btn.disabled = false; 
             loader.style.display = 'none';
             
-            // Route to scanner after "registration" completes
+            // Initialize new player state
+            currentPlayer = {
+                name: nameInput,
+                id: studentId,
+                ducks: 0,
+                points: 0,
+                rank: "New"
+            };
+            
+            updatePlayerUI();
             switchView('scannerView');
         }, 1500);
     }
@@ -473,14 +539,10 @@
     function mockAdminLogin() {
         const btn = document.getElementById('gateBtn');
         const loader = document.getElementById('gateLoader');
-        
-        btn.disabled = true; 
-        loader.style.display = 'block';
-        
-        // Reset after 1.5 seconds to preview the interaction
+        btn.disabled = true; loader.style.display = 'block';
         setTimeout(() => {
-            btn.disabled = false; 
-            loader.style.display = 'none';
+            btn.disabled = false; loader.style.display = 'none';
+            alert("Admin authenticated.");
         }, 1500);
     }
 </script>
