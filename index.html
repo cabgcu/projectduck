@@ -295,6 +295,9 @@
                                     Start Camera
                                 </button>
                                 <p id="scanError" class="hidden mt-3 text-[10px] text-red-300"></p>
+                                <button id="simulateScanBtn" type="button" onclick="simulateScan()" class="hidden mt-3 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-xs font-bold shadow-lg transition-all">
+                                    Simulate Scan (Demo)
+                                </button>
                             </div>
 
                             <div id="scanFrame" class="hidden">
@@ -478,23 +481,46 @@
         }
 
         function onScanSuccess(decodedText) {
+            const users = JSON.parse(localStorage.getItem('duckHuntUsers'));
+            const user = users[currentStudentId];
+            if (!user.ducks) user.ducks = [];
+
             const result = document.getElementById('scanResult');
-            result.textContent = 'Duck found: ' + decodedText;
-            result.classList.remove('hidden');
+            result.classList.remove('hidden', 'text-green-300', 'text-red-300', 'text-yellow-300');
+
+            if (user.ducks.includes(decodedText)) {
+                result.textContent = 'Already scanned this duck!';
+                result.classList.add('text-yellow-300');
+            } else {
+                user.ducks.push(decodedText);
+                localStorage.setItem('duckHuntUsers', JSON.stringify(users));
+                result.textContent = `Duck found! Total: ${user.ducks.length} ducks.`;
+                result.classList.add('text-green-300');
+            }
+
             // Brief haptic feedback if supported
             if (navigator.vibrate) navigator.vibrate(120);
             stopScanner();
         }
 
+        function simulateScan() {
+            const randomDuckId = "DUCK_CODE_" + Math.floor(Math.random() * 10000);
+            onScanSuccess(randomDuckId);
+        }
+
         async function startScanner() {
             if (scannerActive) return;
             setScanError('');
+            document.getElementById('simulateScanBtn').classList.add('hidden');
+            
             if (typeof Html5Qrcode === 'undefined') {
                 setScanError('Scanner library failed to load. Check your connection.');
+                document.getElementById('simulateScanBtn').classList.remove('hidden');
                 return;
             }
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 setScanError('Camera not supported on this device/browser.');
+                document.getElementById('simulateScanBtn').classList.remove('hidden');
                 return;
             }
             try {
@@ -504,8 +530,8 @@
 
                 html5Qr = new Html5Qrcode('qr-reader', { verbose: false });
                 await html5Qr.start(
-                    { facingMode: { ideal: 'environment' } },
-                    { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 220, height: 220 } },
                     onScanSuccess,
                     () => {} // ignore per-frame decode errors
                 );
@@ -517,12 +543,13 @@
                 document.getElementById('scanFrame').classList.add('hidden');
                 const name = (err && err.name) || '';
                 if (name === 'NotAllowedError' || /permission/i.test(String(err))) {
-                    setScanError('Camera permission denied. Allow camera access and try again.');
+                    setScanError('Camera permission denied. (Use Simulate below)');
                 } else if (name === 'NotFoundError') {
-                    setScanError('No camera found on this device.');
+                    setScanError('No camera found on this device. (Use Simulate below)');
                 } else {
-                    setScanError('Could not start camera. Try again.');
+                    setScanError('Could not start camera. (Use Simulate below)');
                 }
+                document.getElementById('simulateScanBtn').classList.remove('hidden');
             }
         }
 
@@ -669,7 +696,7 @@
 
             setTimeout(() => {
                 const users = JSON.parse(localStorage.getItem('duckHuntUsers'));
-                users[currentStudentId] = { pin, name };
+                users[currentStudentId] = { pin, name, ducks: [] };
                 localStorage.setItem('duckHuntUsers', JSON.stringify(users));
                 
                 showHome(name);
