@@ -2,8 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Duck Hunt 2026 - Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Timesheet Login UI</title>
+    
+    <link rel="icon" href="data:," />
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,40 +15,20 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- QR Scanner -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-
-    <!-- Leaflet for interactive map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: { sans: ['Outfit', 'sans-serif'] },
-                    animation: { 
-                        'blob': 'blob 20s infinite ease-in-out',
-                        'scan': 'scan 2s linear infinite'
-                    },
-                    keyframes: {
-                        blob: {
-                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                            '33%': { transform: 'translate(40vw, 30vh) scale(1.2)' },
-                            '66%': { transform: 'translate(-30vw, 20vh) scale(0.8)' },
-                            '100%': { transform: 'translate(0px, 0px) scale(1)' }
-                        },
-                        scan: {
-                            '0%': { top: '0%' },
-                            '100%': { top: '100%' }
+                    colors: {
+                        zinc: {
+                            900: '#18181b',
+                            950: '#09090b',
                         }
                     }
                 }
@@ -54,770 +38,451 @@
 
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #71717a; }
+        .no-save-pass { -webkit-text-security: disc !important; text-security: disc !important; }
+        html { background-color: #09090b; }
 
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 1); }
-        ::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 10px; }
-
-        /* Glassmorphism utilities */
         .glass-card {
-            background: rgba(0, 0, 0, 0.55);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            background: rgba(9, 9, 11, 0.65);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         }
         
-        .glass-button {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-        }
-        
-        .glass-button:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        /* Loaders */
-        .loader { display: none; width: 16px; height: 16px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: smooth-spin 1s linear infinite; }
-        @keyframes smooth-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        /* Input styling */
-        .control-input {
-            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
-            color: white; border-radius: 0.75rem; padding: 0.8rem 1rem; margin-bottom: 0.75rem; 
-            outline: none; transition: all 0.2s ease;
-        }
-        .control-input:focus { border-color: rgba(168, 85, 247, 0.5); background: rgba(255,255,255,0.1); box-shadow: 0 0 15px rgba(168, 85, 247, 0.2); }
-        
-        /* Pin input specific */
-        .pin-input { letter-spacing: 0.5em; font-size: 1.5rem; font-weight: bold; text-align: center; }
-
-        /* Scanner Overlay */
-        .scanner-container {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 1/1;
-            background: rgba(0,0,0,0.3);
-            border-radius: 1.5rem;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .scanner-line {
-            position: absolute;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(to right, transparent, #BF5AF2, #0A84FF, #BF5AF2, transparent);
-            box-shadow: 0 0 15px 2px rgba(168, 85, 247, 0.5);
-            z-index: 10;
-        }
-
-        /* Tab Transitions */
-        .tab-content { display: none; }
-        .tab-content.active { display: flex; flex-direction: column; animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .nav-item.active { color: #BF5AF2; }
-        .nav-item.active i { filter: drop-shadow(0 0 8px rgba(191, 90, 242, 0.5)); }
-
-        /* QR scanner video fills container, masks out html5-qrcode UI chrome */
-        #qr-reader { width: 100%; height: 100%; position: absolute; inset: 0; background: #000; }
-        #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
-        #qr-reader__dashboard, #qr-reader__scan_region img,
-        #qr-reader__header_message, #qr-reader__camera_selection,
-        #qr-reader__dashboard_section_csr, #qr-reader__dashboard_section_swaplink {
-            display: none !important;
-        }
-        #qr-reader__scan_region { background: transparent !important; padding: 0 !important; min-height: 0 !important; }
-
-        /* Leaflet dark theme tweaks */
-        #leaflet-map { width: 100%; height: 100%; border-radius: 1rem; background: #0f172a; }
-        .leaflet-container { font-family: 'Outfit', sans-serif; background: #0f172a; }
-        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-            background: rgba(15, 23, 42, 0.95); color: #fff;
+        .primary-card {
             border: 1px solid rgba(168, 85, 247, 0.4);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.05);
         }
-        .leaflet-popup-content { margin: 10px 14px; font-size: 12px; }
-        .leaflet-control-attribution { background: rgba(0,0,0,0.5) !important; color: #94a3b8 !important; font-size: 9px !important; }
-        .leaflet-control-attribution a { color: #c4b5fd !important; }
-        .duck-marker {
-            width: 18px; height: 18px; border-radius: 50%;
-            background: radial-gradient(circle, #c084fc, #7c3aed);
-            box-shadow: 0 0 12px rgba(168, 85, 247, 0.9);
-            border: 2px solid #fff;
+
+        .view { display: none; opacity: 0; transform: translateY(15px); transition: 0.4s ease; width: 100%; }
+        .view.active { display: block; opacity: 1; transform: translateY(0); }
+
+        .control-item {
+            width: 100%;
+            background: #18181b;
+            border: 1px solid #27272a;
+            color: #ffffff;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
         }
+        @media (min-width: 640px) {
+            .control-item { padding: 1rem 1.25rem; }
+        }
+        @media (hover: hover) {
+            .control-item:hover {
+                border-color: rgba(168, 85, 247, 0.4);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+            }
+        }
+        .control-item::placeholder { color: rgba(255, 255, 255, 0.5); }
+        .control-item:focus {
+            border-color: #a855f7;
+            background: #27272a;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.15);
+        }
+
+        .form-label { display: block; margin-bottom: 0.75rem; color: #ffffff; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.4; }
+        
+        .loader { display: none; width: 18px; height: 18px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: rotation 1s linear infinite; margin-left: 10px; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
     </style>
 </head>
-<body class="bg-slate-950 text-white min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans flex flex-col">
-
-    <!-- Animated Color Blobs -->
-    <div class="fixed inset-0 w-full h-full overflow-hidden pointer-events-none z-[-2]">
-        <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-600 rounded-full mix-blend-screen filter blur-[128px] opacity-60 animate-blob"></div>
-        <div class="absolute top-[20%] right-[-10%] w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[128px] opacity-60 animate-blob" style="animation-delay: 7s;"></div>
-        <div class="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-fuchsia-600 rounded-full mix-blend-screen filter blur-[128px] opacity-50 animate-blob" style="animation-delay: 14s;"></div>
-    </div>
+<body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans" style="background-image: url('https://i.imgur.com/23ZFgoY.jpeg'); background-size: cover; background-position: center top; background-attachment: scroll;">
 
     <!-- Dark Overlay -->
-    <div id="bg-overlay" class="fixed top-0 left-0 w-full h-full z-[-1] bg-black/40"></div>
+    <div class="fixed inset-0 bg-zinc-950/70 z-[-1]"></div>
 
-    <!-- Main Content Container -->
-    <main class="relative z-10 flex-1 w-full flex flex-col justify-center items-center p-4 sm:p-8">
-        
-        <div id="appCard" class="app-card w-full max-w-sm glass-card rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-            
-            <!-- VIEW: LOGIN/AUTH FLOW -->
-            <div id="authContainer" class="p-6 sm:p-10">
-                <!-- Header Section -->
-                <div class="flex flex-col items-center text-center mb-8">
-                    <div class="w-16 h-16 bg-white/10 rounded-2xl p-2 mb-4 flex items-center justify-center border border-white/10">
-                        <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="w-full h-full object-contain rounded-xl">
-                    </div>
-                    <h1 class="text-2xl sm:text-3xl font-bold mb-2 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">
-                        DUCK HUNT 2026
-                    </h1>
-                    <p class="text-white/50 text-xs sm:text-sm font-light tracking-wide">
-                        Ready your zapper. The season is open.
-                    </p>
-                </div>
+    <main class="relative z-10 w-full max-w-7xl mx-auto px-3 py-4 sm:p-8 min-h-[100dvh] flex flex-col">
 
-                <!-- Error Message Container -->
-                <div id="errorMsg" class="hidden text-red-400 text-[10px] sm:text-xs text-center mb-4 font-bold bg-red-400/10 py-2 rounded-lg border border-red-400/20"></div>
+        <div class="flex-1 w-full flex flex-col items-center justify-center py-8 sm:py-10">
 
-                <!-- Step 1: Student ID Entry -->
-                <div id="step1" class="flex flex-col w-full transition-all">
-                    <div class="mb-8">
-                        <label class="block mb-2 text-white/50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-center">Student ID</label>
-                        <input type="text" id="studentId" inputmode="numeric" class="control-input !mb-0 text-center" placeholder="Enter your GCU Student ID" onkeyup="if(event.key==='Enter') handleContinue()">
-                        
-                        <div class="text-center mt-3">
-                            <a href="#" class="text-[10px] sm:text-xs text-purple-400 hover:text-purple-300 transition-colors font-medium">What is Duck Hunt?</a>
-                        </div>
-                    </div>
+            <!-- LOGIN VIEW -->
+            <div id="loginView" class="view active mx-auto w-full" style="max-width: min(22rem, calc(100% - 2.5rem));">
+                <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
+                    <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-12 sm:h-16 w-auto mx-auto mb-5 sm:mb-6 object-contain" />
+                    <h3 class="text-2xl sm:text-3xl font-extrabold mb-2 sm:mb-3 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Duck Hunt 2026</h3>
+                    <p class="text-zinc-400 mb-6 sm:mb-8 font-medium text-sm leading-relaxed">Enter Your Student ID</p>
 
-                    <button type="button" id="continueBtn" onclick="handleContinue()" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all shadow-lg">
-                        <span>Continue</span>
-                        <div class="loader" id="continueLoader"></div>
-                    </button>
-                </div>
-
-                <!-- Step 2: Create PIN & Profile -->
-                <div id="stepCreatePin" class="flex flex-col w-full hidden transition-all">
-                    <div class="text-center mb-6">
-                        <p class="text-sm text-purple-400 font-bold mb-1">New Hunter Detected</p>
-                        <p class="text-[11px] sm:text-xs text-white/50 leading-relaxed">Fill in your details to secure your profile.</p>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block mb-2 text-white/50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-center">Full Name</label>
-                        <input type="text" id="fullName" class="control-input !mb-0 text-center" placeholder="Your Name" onkeyup="if(event.key==='Enter') document.getElementById('newPin').focus()">
+                    <div class="mb-3 text-center">
+                        <label class="form-label">Student ID</label>
+                        <input type="number" id="loginStudentID" class="control-item text-center text-lg tracking-widest !py-3 sm:!py-3.5 max-w-[240px] mx-auto block" placeholder="e.g. 123456" autocomplete="off" onkeyup="if(event.key==='Enter') mockStudentLogin()"/>
                     </div>
                     
-                    <div class="mb-4">
-                        <label class="block mb-2 text-white/50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-center">New PIN</label>
-                        <input type="text" id="newPin" inputmode="numeric" maxlength="4" class="control-input !mb-0 pin-input" placeholder="0000" onkeyup="if(event.key==='Enter') document.getElementById('confirmPin').focus()">
+                    <div class="mb-6 text-center">
+                        <a href="#" class="text-sm text-zinc-400 hover:text-purple-400 underline underline-offset-4 transition-colors">What is Duck Hunt?</a>
                     </div>
 
-                    <div class="mb-6">
-                        <label class="block mb-2 text-white/50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-center">Confirm PIN</label>
-                        <input type="text" id="confirmPin" inputmode="numeric" maxlength="4" class="control-input !mb-0 pin-input" placeholder="0000" onkeyup="if(event.key==='Enter') handleRegister()">
-                    </div>
-
-                    <button type="button" id="registerBtn" onclick="handleRegister()" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all shadow-lg">
-                        <span>Create & Enter</span>
-                        <div class="loader" id="registerLoader"></div>
-                    </button>
-                    <button type="button" onclick="goBack()" class="w-full mt-4 text-[10px] sm:text-xs text-white/40 hover:text-white transition-colors uppercase tracking-widest font-bold">← Back</button>
-                </div>
-
-                <!-- Step 3: Enter PIN (Returning) -->
-                <div id="stepEnterPin" class="flex flex-col w-full hidden transition-all">
-                    <div class="text-center mb-6">
-                        <p class="text-sm text-blue-400 font-bold mb-1">Welcome Back<span id="welcomeName"></span></p>
-                        <p class="text-[11px] sm:text-xs text-white/50 leading-relaxed">Enter your 4-digit PIN to resume your session.</p>
-                    </div>
-                    
-                    <div class="mb-6">
-                        <label class="block mb-2 text-white/50 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-center">Enter PIN</label>
-                        <input type="password" id="existingPin" inputmode="numeric" maxlength="4" class="control-input !mb-0 pin-input" placeholder="••••" onkeyup="if(event.key==='Enter') handleLoginSubmit()">
-                        
-                        <div class="text-center mt-3">
-                            <a href="#" class="text-[10px] sm:text-xs text-purple-400 hover:text-purple-300 transition-colors font-medium">Forgot PIN?</a>
-                        </div>
-                    </div>
-
-                    <button type="button" id="loginSubmitBtn" onclick="handleLoginSubmit()" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all shadow-lg">
-                        <span>Enter Arcade</span>
+                    <button class="w-full max-w-[240px] mx-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3 sm:py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-base border border-purple-500/50" id="loginBtn" onclick="mockStudentLogin()">
+                        <span>Begin</span>
                         <div class="loader" id="loginLoader"></div>
                     </button>
-                    <button type="button" onclick="goBack()" class="w-full mt-4 text-[10px] sm:text-xs text-white/40 hover:text-white transition-colors uppercase tracking-widest font-bold">← Change ID</button>
-                </div>
-                
-                <!-- Footer (Moved inside card) -->
-                <div class="mt-8 text-center text-white/30 text-[10px] sm:text-xs tracking-widest uppercase">
-                    © Canyon Activities Board
+
+                    <div class="mt-5 pt-4 border-t border-zinc-800 flex flex-col items-center gap-1">
+                        <span class="text-zinc-600 text-xs tracking-wider">© <span id="year"></span> Canyon Activities Board</span>
+                        <button class="opacity-50 hover:opacity-100 transition-opacity uppercase tracking-widest bg-transparent border-none text-[10px] cursor-pointer text-zinc-500 p-1 mt-1" onclick="showGate()">Staff Access</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- VIEW: HOME SCREEN -->
-            <div id="homeScreen" class="hidden flex flex-col flex-1 transition-all sm:min-h-[640px]">
-                <!-- Top Header -->
-                <div class="p-6 pb-0 flex flex-col items-center text-center">
-                    <div class="w-10 h-10 bg-white/10 rounded-xl p-1.5 mb-2 flex items-center justify-center border border-white/10">
-                        <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="w-full h-full object-contain rounded-lg">
+            <!-- REGISTER VIEW (First Time Login) -->
+            <div id="registerView" class="view mx-auto w-full" style="max-width: min(24rem, calc(100% - 2.5rem));">
+                <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8">
+                    <div class="text-center mb-6">
+                        <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-10 sm:h-12 w-auto mx-auto mb-4 object-contain" />
+                        <h3 class="text-2xl sm:text-3xl font-extrabold mb-2 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Welcome To The Hunt!</h3>
+                        <p class="text-zinc-400 text-sm font-medium">Create your player profile</p>
                     </div>
-                    <h2 class="text-lg font-bold tracking-tight text-white">
-                        Hello, <span id="userNameDisplay" class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">Hunter</span>!
-                    </h2>
-                    <div class="flex items-center gap-1.5 mt-1">
-                        <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                        <p class="text-white/40 text-[9px] uppercase tracking-widest font-bold">Duck Season Live</p>
-                    </div>
-                </div>
 
-                <!-- Tab Content Area -->
-                <div id="tabsContainer" class="flex-1 p-6 overflow-y-auto">
+                    <div class="space-y-4 mb-8 text-center">
+                        <div>
+                            <label class="form-label">Full Name</label>
+                            <input type="text" id="regName" class="control-item text-center" placeholder="First & Last Name" autocomplete="name" />
+                        </div>
+                        <div>
+                            <label class="form-label">Student ID</label>
+                            <input type="number" id="regStudentID" class="control-item bg-zinc-900/50 text-zinc-400 cursor-not-allowed border-zinc-800 focus:border-zinc-800 focus:box-shadow-none text-center" readonly />
+                        </div>
+                        <div>
+                            <label class="form-label">Email Address</label>
+                            <input type="email" id="regEmail" class="control-item text-center" placeholder="student@my.gcu.edu" autocomplete="email" />
+                        </div>
+                        <div>
+                            <label class="form-label">Create a PIN</label>
+                            <input type="password" id="regPin" class="control-item no-save-pass tracking-[0.5em] text-center" placeholder="••••" maxlength="4" inputmode="numeric" pattern="\d*" />
+                            <p class="text-[10px] text-zinc-500 mt-1.5 text-center uppercase tracking-wider">4-Digit Number</p>
+                        </div>
+                    </div>
+
+                    <button class="w-full max-w-[240px] mx-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3 sm:py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-base border border-purple-500/50" id="regBtn" onclick="mockRegisterSubmit()">
+                        <span>Join The Hunt</span>
+                        <div class="loader" id="regLoader"></div>
+                    </button>
                     
-                    <!-- TAB: SCAN -->
-                    <div id="tab-scan" class="tab-content active h-full">
-                        <label class="block mb-4 text-white/50 text-[10px] font-bold uppercase tracking-wider text-center">Scan Duck QR</label>
-                        <div class="scanner-container relative">
-                            <!-- Live camera feed mounts here -->
-                            <div id="qr-reader"></div>
-
-                            <!-- Idle / pre-camera state -->
-                            <div id="scanIdle" class="absolute inset-0 flex flex-col items-center justify-center text-white/40 p-8 text-center z-20 bg-black/40">
-                                <i data-lucide="camera" class="w-12 h-12 mb-3 opacity-70"></i>
-                                <p class="text-xs mb-4">Tap to start scanning</p>
-                                <button id="startScanBtn" type="button" onclick="startScanner()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg">
-                                    Start Camera
-                                </button>
-                                <p id="scanError" class="hidden mt-3 text-[10px] text-red-300"></p>
-                                <button id="simulateScanBtn" type="button" onclick="simulateScan()" class="hidden mt-3 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-xs font-bold shadow-lg transition-all">
-                                    Simulate Scan (Demo)
-                                </button>
-                            </div>
-
-                            <div id="scanFrame" class="hidden">
-                                <div class="scanner-line animate-scan"></div>
-                                <div class="absolute top-6 left-6 w-8 h-8 border-t-2 border-l-2 border-purple-500/80 rounded-tl-lg z-20"></div>
-                                <div class="absolute top-6 right-6 w-8 h-8 border-t-2 border-r-2 border-purple-500/80 rounded-tr-lg z-20"></div>
-                                <div class="absolute bottom-6 left-6 w-8 h-8 border-b-2 border-l-2 border-blue-500/80 rounded-bl-lg z-20"></div>
-                                <div class="absolute bottom-6 right-6 w-8 h-8 border-b-2 border-r-2 border-blue-500/80 rounded-br-lg z-20"></div>
-                                <button type="button" onclick="stopScanner()" class="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-black/60 hover:bg-black/80 border border-white/10 text-[10px] text-white/80 z-30">
-                                    Stop
-                                </button>
-                            </div>
-                        </div>
-                        <p id="scanResult" class="hidden text-center mt-3 text-xs text-green-300 font-medium break-all"></p>
-                        <p class="text-center mt-3 text-[10px] text-white/40 italic">Find a duck, scan the code, win prizes.</p>
-                    </div>
-
-                    <!-- TAB: LEADERBOARD -->
-                    <div id="tab-leaderboard" class="tab-content">
-                        <h3 class="text-center text-white/50 text-[10px] font-bold uppercase tracking-wider mb-4">Top Hunters</h3>
-                        <div id="leaderboardList" class="flex flex-col">
-                            <!-- Populated dynamically from Supabase -->
-                            <div class="text-center text-white/50 text-xs py-4 animate-pulse">Syncing with cloud...</div>
-                        </div>
-                    </div>
-
-                    <!-- TAB: MAP -->
-                    <div id="tab-map" class="tab-content">
-                        <h3 class="text-center text-white/50 text-[10px] font-bold uppercase tracking-wider mb-4">Hunting Grounds &middot; GCU Campus</h3>
-                        <div class="bg-white/5 border border-white/10 rounded-2xl aspect-square relative overflow-hidden">
-                            <div id="leaflet-map"></div>
-                        </div>
-                        <p class="text-center mt-3 text-[10px] text-white/40 italic">Glowing markers show recent duck sightings.</p>
-                    </div>
-
-                    <!-- TAB: INFO -->
-                    <div id="tab-info" class="tab-content">
-                        <h3 class="text-center text-white/50 text-[10px] font-bold uppercase tracking-wider mb-4">How to Play</h3>
-                        <div class="space-y-4 px-2">
-                            <div class="flex gap-4">
-                                <div class="w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0">
-                                    <span class="text-xs font-bold text-purple-400">1</span>
-                                </div>
-                                <p class="text-[11px] text-white/60 leading-relaxed"><strong class="text-white block">Explore</strong> Find hidden rubber ducks hidden throughout campus during the event week.</p>
-                            </div>
-                            <div class="flex gap-4">
-                                <div class="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0">
-                                    <span class="text-xs font-bold text-blue-400">2</span>
-                                </div>
-                                <p class="text-[11px] text-white/60 leading-relaxed"><strong class="text-white block">Scan</strong> Use this app to scan the unique QR code on the bottom of every duck you find.</p>
-                            </div>
-                            <div class="flex gap-4">
-                                <div class="w-8 h-8 rounded-lg bg-fuchsia-500/20 border border-fuchsia-500/30 flex items-center justify-center shrink-0">
-                                    <span class="text-xs font-bold text-fuchsia-400">3</span>
-                                </div>
-                                <p class="text-[11px] text-white/60 leading-relaxed"><strong class="text-white block">Win</strong> Log your finds to climb the leaderboard and win a prize at the CAB table!</p>
-                            </div>
-                            <div class="pt-4 mt-4 border-t border-white/5 text-center">
-                                <button onclick="handleLogout()" class="text-[9px] uppercase tracking-[0.2em] font-bold text-white/30 hover:text-red-400/80 transition-colors">Sign Out of Profile</button>
-                            </div>
-                        </div>
-                    </div>
-
+                    <button class="w-full mt-4 text-zinc-500 hover:text-white text-sm font-medium transition-colors" onclick="switchView('loginView')">
+                        Cancel & Return
+                    </button>
                 </div>
+            </div>
 
-                <!-- Bottom Navigation Bar -->
-                <nav class="bg-white/5 border-t border-white/10 px-4 py-3 flex justify-between items-center z-20">
-                    <button onclick="switchTab('scan')" id="nav-scan" class="nav-item active flex flex-col items-center gap-1 flex-1 transition-all">
-                        <i data-lucide="scan" class="w-5 h-5"></i>
-                        <span class="text-[8px] font-bold uppercase tracking-wider">Scan</span>
+            <!-- SCANNER VIEW (Home Card) -->
+            <div id="scannerView" class="view mx-auto w-full" style="max-width: min(24rem, calc(100% - 2.5rem));">
+                <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
+                    <div class="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
+                        <div class="text-left">
+                            <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white">Scanner</h3>
+                            <p class="text-purple-400 text-xs font-bold uppercase tracking-wider mt-1">Player Ready</p>
+                        </div>
+                        <button class="text-zinc-400 hover:text-rose-400 bg-zinc-800/80 hover:bg-zinc-700 p-2.5 rounded-xl transition-colors" onclick="switchView('loginView')" title="Log Out">
+                            <i data-lucide="log-out" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    
+                    <p class="text-zinc-400 text-sm mb-6 leading-relaxed">Position the QR code within the frame below to scan.</p>
+
+                    <!-- Scanner Window -->
+                    <div class="relative w-full aspect-square bg-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden mb-2 flex items-center justify-center shadow-inner">
+                        <!-- Live Video Feed -->
+                        <video id="cameraFeed" autoplay playsinline class="absolute inset-0 w-full h-full object-cover hidden"></video>
+                        
+                        <!-- Camera mock icon (shows while loading or if permission denied) -->
+                        <i id="cameraFallbackIcon" data-lucide="qr-code" class="w-20 h-20 text-zinc-800 absolute z-0"></i>
+                        
+                        <!-- Purple overlay tint -->
+                        <div class="absolute inset-0 bg-purple-900/10 pointer-events-none z-10"></div>
+                        
+                        <!-- Animated Scan Line -->
+                        <div class="absolute left-0 w-full h-[2px] bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)] animate-[scan_3s_ease-in-out_infinite] z-20"></div>
+                        
+                        <!-- Target Brackets -->
+                        <div class="absolute top-6 left-6 w-8 h-8 border-t-4 border-l-4 border-purple-500/80 rounded-tl-lg z-20"></div>
+                        <div class="absolute top-6 right-6 w-8 h-8 border-t-4 border-r-4 border-purple-500/80 rounded-tr-lg z-20"></div>
+                        <div class="absolute bottom-6 left-6 w-8 h-8 border-b-4 border-l-4 border-purple-500/80 rounded-bl-lg z-20"></div>
+                        <div class="absolute bottom-6 right-6 w-8 h-8 border-b-4 border-r-4 border-purple-500/80 rounded-br-lg z-20"></div>
+                    </div>
+                    
+                    <p id="cameraErrorMsg" class="hidden text-xs text-rose-400 mt-2">Camera access denied. Please enable permissions.</p>
+                </div>
+            </div>
+
+            <!-- LEADERBOARD VIEW -->
+            <div id="leaderboardView" class="view mx-auto w-full pb-20" style="max-width: min(24rem, calc(100% - 2.5rem));">
+                <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
+                    <div class="w-16 h-16 bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+                        <i data-lucide="trophy" class="w-8 h-8 text-purple-400"></i>
+                    </div>
+                    <h3 class="text-2xl font-extrabold tracking-tight text-white mb-2">Leaderboard</h3>
+                    <p class="text-zinc-400 text-sm mb-6 leading-relaxed">See who is dominating the hunt.</p>
+                    
+                    <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-8 flex flex-col items-center justify-center">
+                        <i data-lucide="bar-chart-2" class="w-10 h-10 text-zinc-600 mb-3"></i>
+                        <span class="text-zinc-500 text-sm font-medium">Rankings coming soon...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAP VIEW -->
+            <div id="mapView" class="view mx-auto w-full pb-20" style="max-width: min(24rem, calc(100% - 2.5rem));">
+                <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
+                    <div class="w-16 h-16 bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.4)]">
+                        <i data-lucide="map" class="w-8 h-8 text-blue-400"></i>
+                    </div>
+                    <h3 class="text-2xl font-extrabold tracking-tight text-white mb-2">Hunt Map</h3>
+                    <p class="text-zinc-400 text-sm mb-6 leading-relaxed">Discover active scanning locations.</p>
+                    
+                    <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-8 flex flex-col items-center justify-center">
+                        <i data-lucide="map-pin" class="w-10 h-10 text-zinc-600 mb-3"></i>
+                        <span class="text-zinc-500 text-sm font-medium">Map data loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INFO VIEW -->
+            <div id="infoView" class="view mx-auto w-full pb-20" style="max-width: min(24rem, calc(100% - 2.5rem));">
+                <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
+                    <div class="w-16 h-16 bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+                        <i data-lucide="info" class="w-8 h-8 text-emerald-400"></i>
+                    </div>
+                    <h3 class="text-2xl font-extrabold tracking-tight text-white mb-2">Information</h3>
+                    <p class="text-zinc-400 text-sm mb-6 leading-relaxed">Rules, FAQs, and Account details.</p>
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 text-left flex items-center gap-3">
+                            <i data-lucide="book-open" class="w-5 h-5 text-zinc-400"></i>
+                            <span class="text-zinc-300 text-sm font-medium">How to Play</span>
+                        </div>
+                        <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 text-left flex items-center gap-3">
+                            <i data-lucide="help-circle" class="w-5 h-5 text-zinc-400"></i>
+                            <span class="text-zinc-300 text-sm font-medium">Frequently Asked Questions</span>
+                        </div>
+                    </div>
+
+                    <button class="w-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold py-3.5 rounded-xl transition-all duration-300 flex justify-center items-center gap-2" onclick="switchView('loginView')">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                        <span>Log Out</span>
                     </button>
-                    <button onclick="switchTab('leaderboard')" id="nav-leaderboard" class="nav-item flex flex-col items-center gap-1 flex-1 transition-all text-white/40 hover:text-white/70">
-                        <i data-lucide="trophy" class="w-5 h-5"></i>
-                        <span class="text-[8px] font-bold uppercase tracking-wider">Board</span>
-                    </button>
-                    <button onclick="switchTab('map')" id="nav-map" class="nav-item flex flex-col items-center gap-1 flex-1 transition-all text-white/40 hover:text-white/70">
-                        <i data-lucide="map" class="w-5 h-5"></i>
-                        <span class="text-[8px] font-bold uppercase tracking-wider">Map</span>
-                    </button>
-                    <button onclick="switchTab('info')" id="nav-info" class="nav-item flex flex-col items-center gap-1 flex-1 transition-all text-white/40 hover:text-white/70">
-                        <i data-lucide="info" class="w-5 h-5"></i>
-                        <span class="text-[8px] font-bold uppercase tracking-wider">Info</span>
-                    </button>
-                </nav>
+                </div>
             </div>
 
         </div>
 
     </main>
 
-    <script>
-        // Ensure lucide is defined before calling createIcons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
+    <!-- BOTTOM NAVIGATION (Appears when logged in) -->
+    <nav id="mainNav" class="fixed bottom-0 left-0 w-full z-40 bg-zinc-950/80 backdrop-blur-xl border-t border-purple-500/20 hidden" style="padding-bottom: max(0px, env(safe-area-inset-bottom));">
+        <div class="max-w-md mx-auto flex justify-between items-center px-6 py-3">
+            <button onclick="switchView('scannerView')" id="nav-scannerView" class="nav-btn flex flex-col items-center gap-1.5 text-purple-400 transition-colors w-16">
+                <i data-lucide="scan" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Scanner</span>
+            </button>
+            <button onclick="switchView('leaderboardView')" id="nav-leaderboardView" class="nav-btn flex flex-col items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors w-16">
+                <i data-lucide="trophy" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Leaders</span>
+            </button>
+            <button onclick="switchView('mapView')" id="nav-mapView" class="nav-btn flex flex-col items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors w-16">
+                <i data-lucide="map" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Map</span>
+            </button>
+            <button onclick="switchView('infoView')" id="nav-infoView" class="nav-btn flex flex-col items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors w-16">
+                <i data-lucide="info" class="w-6 h-6"></i>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Info</span>
+            </button>
+        </div>
+    </nav>
 
-        // Supabase Setup
-        const supabaseUrl = 'https://tnaqzfollfoobjaymxqy.supabase.co';
-        const supabaseKey = 'sb_publishable_d0JzltkYdsqNWGhEe-clbw_oaRctt-0';
-        let supabase = null;
-        if (window.supabase) {
-           supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-        }
+    <!-- Admin Login Modal -->
+    <div id="gateModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" onclick="hideGate()"></div>
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30 transition-all duration-500 hover:shadow-[0_0_40px_rgba(168,85,247,0.2)] hover:-translate-y-2">
+            <div class="w-16 h-16 bg-zinc-900 rounded-2xl p-3 mb-4 flex items-center justify-center border border-zinc-800 transition-transform hover:rotate-12">
+                <i data-lucide="lock" class="w-8 h-8 text-zinc-400"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-1 text-white">Staff Login</h3>
+            <p class="text-zinc-400 text-sm mb-6">Enter admin password to access system settings and master hours.</p>
+            
+            <input type="password" id="adminPass" class="control-item text-center mb-6 no-save-pass" placeholder="Password" autocomplete="off" spellcheck="false" onkeyup="if(event.key==='Enter') mockAdminLogin()"/>
+            
+            <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_15px_rgba(168,85,247,0.3)]" id="gateBtn" onclick="mockAdminLogin()">
+                <span>Authorize</span> <div class="loader" id="gateLoader"></div>
+            </button>
+        </div>
+    </div>
 
-        let currentStudentId = "";
-        let currentUserData = null; // Replaces local storage mocking
+<script>
+    // Initialize standard dynamic elements
+    document.getElementById('year').textContent = new Date().getFullYear();
+    lucide.createIcons();
 
-        function showError(msg) {
-            const errDiv = document.getElementById('errorMsg');
-            errDiv.textContent = msg;
-            errDiv.classList.remove('hidden');
-        }
+    // --- Camera Logic ---
+    let currentStream = null;
 
-        function hideError() {
-            document.getElementById('errorMsg').classList.add('hidden');
-        }
-
-        function switchStep(hideId, showId) {
-            document.getElementById(hideId).classList.add('hidden');
-            document.getElementById(showId).classList.remove('hidden');
-            hideError();
-        }
-
-        function switchTab(tabName) {
-            // Hide all content
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            // Remove active style from nav
-            document.querySelectorAll('.nav-item').forEach(n => {
-                n.classList.remove('active', 'text-white/40');
-                n.classList.add('text-white/40');
+    async function startCamera() {
+        const video = document.getElementById('cameraFeed');
+        const fallbackIcon = document.getElementById('cameraFallbackIcon');
+        const errorMsg = document.getElementById('cameraErrorMsg');
+        
+        try {
+            // Request the rear-facing camera
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "environment" } 
             });
-
-            // Show selected
-            document.getElementById('tab-' + tabName).classList.add('active');
-            const navBtn = document.getElementById('nav-' + tabName);
-            if(navBtn) {
-                navBtn.classList.add('active');
-                navBtn.classList.remove('text-white/40');
-            }
-
-            // Refresh icons for dynamic content
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-
-            // Stop scanner when leaving the scan tab
-            if (tabName !== 'scan') stopScanner();
-
-            // Lazy-init / refresh map when entering the map tab
-            if (tabName === 'map') initMap();
+            currentStream = stream;
+            video.srcObject = stream;
             
-            // Fetch live leaderboard
-            if (tabName === 'leaderboard') fetchLeaderboard();
+            // Show video, hide fallback
+            video.classList.remove('hidden');
+            fallbackIcon.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+        } catch (err) {
+            console.error("Camera error:", err);
+            video.classList.add('hidden');
+            fallbackIcon.classList.remove('hidden');
+            errorMsg.classList.remove('hidden');
+        }
+    }
+
+    function stopCamera() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+            currentStream = null;
+        }
+        const video = document.getElementById('cameraFeed');
+        const fallbackIcon = document.getElementById('cameraFallbackIcon');
+        if (video) {
+            video.srcObject = null;
+            video.classList.add('hidden');
+        }
+        if (fallbackIcon) fallbackIcon.classList.remove('hidden');
+    }
+
+    // View Switching Logic
+    function switchView(viewId) {
+        // Hide all views
+        document.querySelectorAll('.view').forEach(v => {
+            v.classList.remove('active');
+            v.style.display = 'none'; 
+        });
+        
+        // Show target view
+        const target = document.getElementById(viewId);
+        if (target) {
+            target.style.display = 'block';
+            setTimeout(() => target.classList.add('active'), 10);
         }
 
-        async function fetchLeaderboard() {
-            const container = document.getElementById('leaderboardList');
-            if (!container) return;
+        // Camera Activation Handling
+        if (viewId === 'scannerView') {
+            startCamera();
+        } else {
+            stopCamera();
+        }
+
+        // Toggle Navigation Bar logic
+        const navViews = ['scannerView', 'leaderboardView', 'mapView', 'infoView'];
+        const nav = document.getElementById('mainNav');
+        
+        if (navViews.includes(viewId)) {
+            nav.style.display = 'block';
             
-            if(!supabase) {
-                 container.innerHTML = '<div class="text-center text-red-400 text-xs py-4">Supabase not initialized.</div>';
-                 return;
-            }
-
-            container.innerHTML = '<div class="text-center text-white/50 text-xs py-4 animate-pulse">Syncing with cloud...</div>';
-
-            const { data, error } = await supabase.from('hunters').select('name, ducks');
-            if (error) {
-                container.innerHTML = '<div class="text-center text-red-400 text-xs py-4">Failed to load leaderboard.</div>';
-                return;
-            }
-
-            // Sort locally by array length to find top hunters
-            const sorted = data.sort((a, b) => (b.ducks?.length || 0) - (a.ducks?.length || 0)).slice(0, 10);
-            
-            container.innerHTML = '';
-            if (sorted.length === 0) {
-                container.innerHTML = '<div class="text-center text-white/50 text-xs py-4">No hunters found yet. Be the first!</div>';
-                return;
-            }
-
-            sorted.forEach((hunter, index) => {
-                const count = hunter.ducks?.length || 0;
-                // Abbreviate last name for privacy on the board
-                const nameParts = hunter.name.split(' ');
-                const displayName = nameParts[0] + (nameParts[1] ? ' ' + nameParts[1][0] + '.' : '');
-                
-                let html = '';
-                if (index === 0) {
-                    html = `<div class="bg-gradient-to-r from-purple-600/20 to-blue-600/20 p-3 rounded-xl border border-purple-500/30 flex items-center justify-between mb-2">
-                                <div class="flex items-center gap-3"><span class="text-xl font-bold text-yellow-400 italic">1</span><span class="text-sm font-semibold">${displayName}</span></div>
-                                <span class="text-sm font-bold text-purple-400">${count} Ducks</span>
-                            </div>`;
-                } else if (index === 1 || index === 2) {
-                    const colors = index === 1 ? 'text-slate-400' : 'text-orange-400/80';
-                    html = `<div class="bg-white/5 p-3 rounded-xl border border-white/10 flex items-center justify-between mb-2">
-                                <div class="flex items-center gap-3"><span class="text-lg font-bold ${colors} italic">${index + 1}</span><span class="text-sm font-medium text-white/80">${displayName}</span></div>
-                                <span class="text-sm font-bold text-white/60">${count} Ducks</span>
-                            </div>`;
-                } else {
-                    html = `<div class="px-3 py-2 flex items-center justify-between text-white/40 border-b border-white/5 mx-1">
-                                <span class="text-[11px] font-medium italic">${index + 1}. ${displayName}</span>
-                                <span class="text-[11px]">${count} Ducks</span>
-                            </div>`;
-                }
-                container.insertAdjacentHTML('beforeend', html);
+            // Update active colors on nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-purple-400');
+                btn.classList.add('text-zinc-500');
             });
+            const activeBtn = document.getElementById('nav-' + viewId);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-zinc-500');
+                activeBtn.classList.add('text-purple-400');
+            }
+        } else {
+            nav.style.display = 'none';
         }
+        
+        // Re-render icons if a new view has loaded them
+        lucide.createIcons();
+    }
 
-        // ---------- QR Scanner ----------
-        let html5Qr = null;
-        let scannerActive = false;
+    // Modal display logic for Staff Access
+    function showGate() { 
+        document.getElementById('gateModal').style.display = 'flex'; 
+        document.getElementById('gateModal').classList.remove('hidden');
+    }
+    
+    function hideGate() { 
+        document.getElementById('gateModal').style.display = 'none'; 
+        document.getElementById('gateModal').classList.add('hidden');
+        document.getElementById('adminPass').value = ""; 
+    }
 
-        function setScanError(msg) {
-            const el = document.getElementById('scanError');
-            if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
-            el.textContent = msg;
-            el.classList.remove('hidden');
-        }
+    // Mock functionality to preview loading animations
+    function mockStudentLogin() {
+        const studentIdInput = document.getElementById('loginStudentID').value;
+        if (!studentIdInput) return; // Prevent empty submission
 
-        async function onScanSuccess(decodedText) {
-            if (!currentUserData) return;
-            if (!currentUserData.ducks) currentUserData.ducks = [];
-
-            const result = document.getElementById('scanResult');
-            result.classList.remove('hidden', 'text-green-300', 'text-red-300', 'text-yellow-300');
-
-            if (currentUserData.ducks.includes(decodedText)) {
-                result.textContent = 'Already scanned this duck!';
-                result.classList.add('text-yellow-300');
+        const btn = document.getElementById('loginBtn');
+        const loader = document.getElementById('loginLoader');
+        
+        btn.disabled = true; 
+        loader.style.display = 'block';
+        
+        // Simulate checking the database...
+        setTimeout(() => {
+            btn.disabled = false; 
+            loader.style.display = 'none';
+            
+            // MOCK LOGIC: If ID is "123456", treat as existing account and go to scanner
+            if (studentIdInput === '123456') {
+                switchView('scannerView');
+                document.getElementById('loginStudentID').value = ''; // clear for next time
             } else {
-                // Optimistically update local UI state
-                currentUserData.ducks.push(decodedText);
-                result.textContent = `Saving...`;
-                
-                if (supabase) {
-                    // Save updated array to Supabase
-                    const { error } = await supabase
-                        .from('hunters')
-                        .update({ ducks: currentUserData.ducks })
-                        .eq('student_id', currentStudentId);
-
-                    if (error) {
-                        console.error("Supabase Error:", error);
-                        currentUserData.ducks.pop(); // revert local array on fail
-                        result.textContent = 'Network error saving duck.';
-                        result.classList.add('text-red-300');
-                    } else {
-                        result.textContent = `Duck found! Total: ${currentUserData.ducks.length} ducks.`;
-                        result.classList.add('text-green-300');
-                    }
-                } else {
-                     result.textContent = `Duck found! Total: ${currentUserData.ducks.length} ducks. (Local save only)`;
-                     result.classList.add('text-green-300');
-                }
+                // Otherwise, treat as new account and go to Registration
+                document.getElementById('regStudentID').value = studentIdInput;
+                switchView('registerView');
+                document.getElementById('loginStudentID').value = ''; // clear for next time
             }
-
-            // Brief haptic feedback if supported
-            if (navigator.vibrate) navigator.vibrate(120);
-            stopScanner();
-        }
-
-        function simulateScan() {
-            const randomDuckId = "DUCK_CODE_" + Math.floor(Math.random() * 10000);
-            onScanSuccess(randomDuckId);
-        }
-
-        async function startScanner() {
-            if (scannerActive) return;
-            setScanError('');
-            document.getElementById('simulateScanBtn').classList.add('hidden');
             
-            if (typeof Html5Qrcode === 'undefined') {
-                setScanError('Scanner library failed to load. Check your connection.');
-                document.getElementById('simulateScanBtn').classList.remove('hidden');
-                return;
-            }
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                setScanError('Camera not supported on this device/browser.');
-                document.getElementById('simulateScanBtn').classList.remove('hidden');
-                return;
-            }
-            try {
-                document.getElementById('scanIdle').classList.add('hidden');
-                document.getElementById('scanFrame').classList.remove('hidden');
-                document.getElementById('scanResult').classList.add('hidden');
+        }, 1200);
+    }
 
-                html5Qr = new Html5Qrcode('qr-reader', { verbose: false });
-                await html5Qr.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 220, height: 220 } },
-                    onScanSuccess,
-                    () => {} // ignore per-frame decode errors
-                );
-                scannerActive = true;
-            } catch (err) {
-                console.error('Scanner start failed', err);
-                scannerActive = false;
-                document.getElementById('scanIdle').classList.remove('hidden');
-                document.getElementById('scanFrame').classList.add('hidden');
-                const name = (err && err.name) || '';
-                if (name === 'NotAllowedError' || /permission/i.test(String(err))) {
-                    setScanError('Camera permission denied. (Use Simulate below)');
-                } else if (name === 'NotFoundError') {
-                    setScanError('No camera found on this device. (Use Simulate below)');
-                } else {
-                    setScanError('Could not start camera. (Use Simulate below)');
-                }
-                document.getElementById('simulateScanBtn').classList.remove('hidden');
-            }
-        }
-
-        async function stopScanner() {
-            if (!html5Qr) {
-                document.getElementById('scanIdle').classList.remove('hidden');
-                document.getElementById('scanFrame').classList.add('hidden');
-                return;
-            }
-            try {
-                if (scannerActive) await html5Qr.stop();
-                await html5Qr.clear();
-            } catch (e) { /* noop */ }
-            html5Qr = null;
-            scannerActive = false;
-            document.getElementById('scanIdle').classList.remove('hidden');
-            document.getElementById('scanFrame').classList.add('hidden');
-        }
-
-        // ---------- GCU Campus Map ----------
-        let gcuMap = null;
-        const GCU_CENTER = [33.5095, -112.1875];
-        const GCU_LOCATIONS = [
-            { name: 'GCU Arena',              coords: [33.5104, -112.1861] },
-            { name: 'Student Union',          coords: [33.5093, -112.1880] },
-            { name: 'Library / Learning Lounge', coords: [33.5086, -112.1872] },
-            { name: 'Lopes Way',              coords: [33.5099, -112.1875] },
-            { name: 'Thunderground',          coords: [33.5083, -112.1859] },
-            { name: 'Promenade',              coords: [33.5101, -112.1894] },
-            { name: 'Antelope Gym',           coords: [33.5078, -112.1881] }
-        ];
-
-        function initMap() {
-            if (typeof L === 'undefined') return;
-            if (gcuMap) {
-                // Recompute size in case the tab was hidden when map was created
-                setTimeout(() => gcuMap.invalidateSize(), 50);
-                return;
-            }
-            gcuMap = L.map('leaflet-map', {
-                center: GCU_CENTER,
-                zoom: 16,
-                minZoom: 14,
-                maxZoom: 19,
-                zoomControl: true,
-                attributionControl: true
-            });
-
-            // Restrict panning roughly to the campus bounds
-            gcuMap.setMaxBounds([[33.500, -112.200], [33.520, -112.175]]);
-
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap &copy; CARTO',
-                subdomains: 'abcd',
-                maxZoom: 19
-            }).addTo(gcuMap);
-
-            const duckIcon = L.divIcon({
-                className: '',
-                html: '<div class="duck-marker"></div>',
-                iconSize: [18, 18],
-                iconAnchor: [9, 9]
-            });
-
-            GCU_LOCATIONS.forEach(loc => {
-                L.marker(loc.coords, { icon: duckIcon })
-                    .addTo(gcuMap)
-                    .bindPopup('<strong>' + loc.name + '</strong><br/><span style="color:#a78bfa">Possible duck zone</span>');
-            });
-
-            // Ensure correct layout after the tab becomes visible
-            setTimeout(() => gcuMap.invalidateSize(), 100);
-        }
-
-        async function handleContinue() {
-            const idInput = document.getElementById('studentId').value.trim();
-            if (!idInput) {
-                showError("Please enter your Student ID.");
-                return;
-            }
-            if (!/^\d+$/.test(idInput)) {
-                showError("Student ID must contain only numbers.");
-                return;
-            }
-
-            currentStudentId = idInput;
-
-            const btn = document.getElementById('continueBtn');
-            const loader = document.getElementById('continueLoader');
-            btn.disabled = true; loader.style.display = 'inline-block';
-
-            if (!supabase) {
-                showError("Supabase client not initialized.");
-                btn.disabled = false; loader.style.display = 'none';
-                return;
-            }
-
-            const { data, error } = await supabase
-                .from('hunters')
-                .select('*')
-                .eq('student_id', currentStudentId)
-                .single();
-
-            btn.disabled = false; loader.style.display = 'none';
-
-            if (error && error.code === 'PGRST116') {
-                // PGRST116 means 0 rows returned (New User)
-                currentUserData = null;
-                switchStep('step1', 'stepCreatePin');
-                document.getElementById('fullName').focus();
-            } else if (data) {
-                // User Found
-                currentUserData = data;
-                switchStep('step1', 'stepEnterPin');
-                const fullName = data.name || "Hunter";
-                const firstName = fullName.split(' ')[0];
-                document.getElementById('welcomeName').textContent = firstName ? `, ${firstName}` : "";
-                document.getElementById('existingPin').focus();
-            } else {
-                showError("Network error. Try again.");
-                console.error(error);
-            }
-        }
-
-        function goBack() {
-            document.getElementById('stepCreatePin').classList.add('hidden');
-            document.getElementById('stepEnterPin').classList.add('hidden');
-            document.getElementById('step1').classList.remove('hidden');
-            document.getElementById('fullName').value = "";
-            document.getElementById('newPin').value = "";
-            document.getElementById('confirmPin').value = "";
-            document.getElementById('existingPin').value = "";
-            hideError();
-        }
-
-        function showHome(name) {
-            document.getElementById('authContainer').classList.add('hidden');
-            document.getElementById('homeScreen').classList.remove('hidden');
-            document.getElementById('userNameDisplay').textContent = name.split(' ')[0];
-            switchTab('scan'); // Default tab
-        }
-
-        function handleLogout() {
-            document.getElementById('homeScreen').classList.add('hidden');
-            document.getElementById('authContainer').classList.remove('hidden');
-            currentUserData = null; // clear session
-            goBack();
-        }
-
-        async function handleRegister() {
-            const name = document.getElementById('fullName').value.trim();
-            const pin = document.getElementById('newPin').value;
-            const confirmPin = document.getElementById('confirmPin').value;
-
-            if (!name) { showError("Please enter your full name."); return; }
-            if (!/^\d{4}$/.test(pin)) { showError("PIN must be 4 digits."); return; }
-            if (pin !== confirmPin) { showError("PINs do not match."); return; }
-
-            const btn = document.getElementById('registerBtn');
-            const loader = document.getElementById('registerLoader');
-            btn.disabled = true; loader.style.display = "inline-block";
-
-            const newHunter = { student_id: currentStudentId, pin: pin, name: name, ducks: [] };
-
-            if (!supabase) {
-                showError("Supabase client not initialized.");
-                btn.disabled = false; loader.style.display = "none";
-                return;
-            }
-
-            const { error } = await supabase
-                .from('hunters')
-                .insert([newHunter]);
-
-            if (error) {
-                console.error("Supabase Insert Error:", error);
-                showError("Failed to register. You may already have an account.");
-                btn.disabled = false; loader.style.display = "none";
-                return;
-            }
-
-            currentUserData = newHunter;
-            showHome(name);
+    function mockRegisterSubmit() {
+        const btn = document.getElementById('regBtn');
+        const loader = document.getElementById('regLoader');
+        
+        btn.disabled = true; 
+        loader.style.display = 'block';
+        
+        // Simulate profile creation...
+        setTimeout(() => {
+            btn.disabled = false; 
+            loader.style.display = 'none';
             
-            btn.disabled = false; loader.style.display = "none";
-            document.getElementById('fullName').value = "";
-            document.getElementById('newPin').value = "";
-            document.getElementById('confirmPin').value = "";
-        }
+            // Route to scanner after "registration" completes
+            switchView('scannerView');
+        }, 1500);
+    }
 
-        function handleLoginSubmit() {
-            const pin = document.getElementById('existingPin').value;
-
-            if (!currentUserData || currentUserData.pin !== pin) {
-                showError("Incorrect PIN. Try again.");
-                return;
-            }
-
-            const btn = document.getElementById('loginSubmitBtn');
-            const loader = document.getElementById('loginLoader');
-            btn.disabled = true; loader.style.display = "inline-block";
-
-            setTimeout(() => {
-                showHome(currentUserData.name);
-                btn.disabled = false; loader.style.display = "none";
-                document.getElementById('existingPin').value = "";
-            }, 800);
-        }
-    </script>
+    function mockAdminLogin() {
+        const btn = document.getElementById('gateBtn');
+        const loader = document.getElementById('gateLoader');
+        
+        btn.disabled = true; 
+        loader.style.display = 'block';
+        
+        // Reset after 1.5 seconds to preview the interaction
+        setTimeout(() => {
+            btn.disabled = false; 
+            loader.style.display = 'none';
+        }, 1500);
+    }
+</script>
 </body>
 </html>
