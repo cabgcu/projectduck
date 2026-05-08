@@ -124,14 +124,30 @@
         .nav-item.active i { filter: drop-shadow(0 0 8px rgba(191, 90, 242, 0.5)); }
 
         /* QR scanner video fills container, masks out html5-qrcode UI chrome */
-        #qr-reader { width: 100%; height: 100%; position: absolute; inset: 0; background: #000; }
-        #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
-        #qr-reader__dashboard, #qr-reader__scan_region img,
-        #qr-reader__header_message, #qr-reader__camera_selection,
-        #qr-reader__dashboard_section_csr, #qr-reader__dashboard_section_swaplink {
+        #qr-reader {
+            width: 100% !important; height: 100% !important;
+            position: absolute; inset: 0; background: #000;
+            border: none !important;
+        }
+        #qr-reader video {
+            width: 100% !important; height: 100% !important;
+            object-fit: cover; display: block !important;
+        }
+        #qr-reader__dashboard, #qr-reader__header_message,
+        #qr-reader__camera_selection, #qr-reader__dashboard_section_csr,
+        #qr-reader__dashboard_section_swaplink, #qr-reader__scan_region img,
+        #qr-reader__scan_region canvas {
             display: none !important;
         }
-        #qr-reader__scan_region { background: transparent !important; padding: 0 !important; min-height: 0 !important; }
+        #qr-reader__scan_region {
+            background: transparent !important;
+            padding: 0 !important;
+            min-height: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            position: absolute !important;
+            inset: 0 !important;
+        }
 
         /* Leaflet dark theme tweaks */
         #leaflet-map { width: 100%; height: 100%; border-radius: 1rem; background: #0f172a; }
@@ -161,6 +177,19 @@
                 border-radius: 0 !important;
                 border-left: 0; border-right: 0;
             }
+        }
+
+        /* iOS safe-area: keep nav above home indicator */
+        nav {
+            padding-bottom: max(0.75rem, env(safe-area-inset-bottom)) !important;
+        }
+
+        /* Prevent tap callout / text selection on interactive elements */
+        button, a { -webkit-touch-callout: none; user-select: none; }
+
+        /* Make scanner container fill better on very small screens */
+        @media (max-height: 650px) {
+            .scanner-container { aspect-ratio: 4/3; }
         }
     </style>
 </head>
@@ -507,7 +536,7 @@
                 return;
             }
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                setScanError('Camera not supported on this device/browser.');
+                setScanError('Camera not supported on this browser. Try Chrome or Safari.');
                 return;
             }
             try {
@@ -515,12 +544,17 @@
                 document.getElementById('scanFrame').classList.remove('hidden');
                 document.getElementById('scanResult').classList.add('hidden');
 
+                // Responsive qrbox: 65% of the container width, capped at 250px
+                const container = document.querySelector('.scanner-container');
+                const side = Math.min(Math.floor((container ? container.offsetWidth : 280) * 0.65), 250);
+
                 html5Qr = new Html5Qrcode('qr-reader', { verbose: false });
                 await html5Qr.start(
                     { facingMode: { ideal: 'environment' } },
-                    { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.0 },
+                    // No aspectRatio: library default avoids device compatibility issues
+                    { fps: 10, qrbox: { width: side, height: side } },
                     onScanSuccess,
-                    () => {} // ignore per-frame decode errors
+                    () => {}
                 );
                 scannerActive = true;
             } catch (err) {
@@ -530,29 +564,30 @@
                 document.getElementById('scanFrame').classList.add('hidden');
                 const name = (err && err.name) || '';
                 if (name === 'NotAllowedError' || /permission/i.test(String(err))) {
-                    setScanError('Camera permission denied. Allow camera access and try again.');
+                    setScanError('Camera permission denied. Tap the camera icon in your browser bar and allow access.');
                 } else if (name === 'NotFoundError') {
                     setScanError('No camera found on this device.');
+                } else if (name === 'NotReadableError' || name === 'AbortError') {
+                    setScanError('Camera is in use by another app. Close it and try again.');
                 } else {
-                    setScanError('Could not start camera. Try again.');
+                    setScanError('Could not start camera: ' + (err && err.message ? err.message : 'unknown error'));
                 }
             }
         }
 
         async function stopScanner() {
-            if (!html5Qr) {
-                document.getElementById('scanIdle').classList.remove('hidden');
-                document.getElementById('scanFrame').classList.add('hidden');
-                return;
+            const idleEl = document.getElementById('scanIdle');
+            const frameEl = document.getElementById('scanFrame');
+            if (html5Qr) {
+                try {
+                    if (scannerActive) await html5Qr.stop();
+                } catch (e) { /* noop */ }
+                try { await html5Qr.clear(); } catch (e) { /* noop */ }
+                html5Qr = null;
             }
-            try {
-                if (scannerActive) await html5Qr.stop();
-                await html5Qr.clear();
-            } catch (e) { /* noop */ }
-            html5Qr = null;
             scannerActive = false;
-            document.getElementById('scanIdle').classList.remove('hidden');
-            document.getElementById('scanFrame').classList.add('hidden');
+            idleEl.classList.remove('hidden');
+            frameEl.classList.add('hidden');
         }
 
         // ---------- GCU Campus Map ----------
