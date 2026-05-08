@@ -23,6 +23,11 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- QR Code Generator & Scanner Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -98,6 +103,22 @@
         .loader { display: none; width: 18px; height: 18px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: rotation 1s linear infinite; margin-left: 10px; }
         @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
+        
+        @keyframes flyUp {
+            0% { transform: translateY(10vh) translateX(0) rotate(0deg) scale(0.5); opacity: 1; }
+            50% { transform: translateY(-40vh) translateX(30px) rotate(15deg) scale(1.5); opacity: 1; }
+            100% { transform: translateY(-110vh) translateX(-30px) rotate(-10deg) scale(1); opacity: 0; }
+        }
+        .flying-duck {
+            position: fixed;
+            font-size: 3rem;
+            z-index: 9999;
+            pointer-events: none;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
+        }
+        
+        /* Admin specific styles */
+        .admin-tab.active { background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.5); color: #c084fc; }
     </style>
 </head>
 <body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans" style="background-image: url('https://i.imgur.com/23ZFgoY.jpeg'); background-size: cover; background-position: center top; background-attachment: scroll;">
@@ -186,7 +207,7 @@
                             <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white leading-tight">Welcome <span id="playerNameDisplay" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 capitalize">Player</span></h3>
                             <p class="text-purple-400 text-[10px] font-bold uppercase tracking-widest mt-1">Status: Active Hunter</p>
                         </div>
-                        <button class="text-zinc-400 hover:text-rose-400 bg-zinc-800/80 hover:bg-zinc-700 p-2.5 rounded-xl transition-colors" onclick="switchView('loginView')" title="Log Out">
+                        <button class="text-zinc-400 hover:text-rose-400 bg-zinc-800/80 hover:bg-zinc-700 p-2.5 rounded-xl transition-colors" onclick="logout()" title="Log Out">
                             <i data-lucide="log-out" class="w-5 h-5"></i>
                         </button>
                     </div>
@@ -194,14 +215,15 @@
                     <!-- Scanner Window with Integrated Stats -->
                     <div class="relative w-full aspect-square bg-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden mb-6 flex items-center justify-center shadow-inner group">
                         <!-- Live Video Feed -->
-                        <video id="cameraFeed" autoplay playsinline class="absolute inset-0 w-full h-full object-cover hidden"></video>
+                        <video id="cameraFeed" playsinline class="absolute inset-0 w-full h-full object-cover hidden"></video>
+                        <canvas id="qrCanvas" class="hidden"></canvas>
                         
                         <!-- Animated Scanning Elements & Fallback Icon (Restricted to bracket area) -->
                         <div class="absolute top-24 bottom-8 left-8 right-8 pointer-events-none z-10 overflow-hidden flex items-center justify-center">
                             <!-- Camera mock icon -->
                             <i id="cameraFallbackIcon" data-lucide="qr-code" class="w-20 h-20 text-zinc-800 absolute z-0"></i>
                             <div class="absolute inset-0 bg-purple-900/20"></div>
-                            <div class="absolute left-0 w-full h-[2px] bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)] animate-[scan_3s_ease-in-out_infinite] z-20"></div>
+                            <div class="absolute left-0 w-full h-[2px] bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)] animate-[scan_3s_ease-in-out_infinite] z-20" id="scanLine"></div>
                         </div>
                         
                         <!-- Overlay Stats Bar (Improved Gap & Padding) -->
@@ -225,6 +247,15 @@
                         <div class="absolute top-24 right-8 w-10 h-10 border-t-4 border-r-4 border-purple-500/80 rounded-tr-lg z-20"></div>
                         <div class="absolute bottom-8 left-8 w-10 h-10 border-b-4 border-l-4 border-purple-500/80 rounded-bl-lg z-20"></div>
                         <div class="absolute bottom-8 right-8 w-10 h-10 border-b-4 border-r-4 border-purple-500/80 rounded-br-lg z-20"></div>
+                        
+                        <!-- Scan Success Overlay -->
+                        <div id="scanSuccessOverlay" class="absolute inset-0 bg-emerald-900/90 backdrop-blur-sm z-40 hidden flex flex-col items-center justify-center p-6 text-center transform scale-105 opacity-0 transition-all duration-300">
+                            <div class="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(16,185,129,0.5)]">
+                                <i data-lucide="check" class="w-8 h-8 text-white"></i>
+                            </div>
+                            <h4 class="text-xl font-bold text-white mb-1" id="successDuckName">Duck Found!</h4>
+                            <p class="text-emerald-300 font-black text-2xl" id="successPoints">+0 PTS</p>
+                        </div>
                     </div>
 
                     <!-- Scan History Section -->
@@ -297,10 +328,133 @@
                         </div>
                     </div>
 
-                    <button class="w-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold py-3.5 rounded-xl transition-all duration-300 flex justify-center items-center gap-2" onclick="switchView('loginView')">
+                    <button class="w-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold py-3.5 rounded-xl transition-all duration-300 flex justify-center items-center gap-2" onclick="logout()">
                         <i data-lucide="log-out" class="w-5 h-5"></i>
                         <span>Log Out</span>
                     </button>
+                </div>
+            </div>
+
+            <!-- ADMIN VIEW (Staff Only) -->
+            <div id="adminView" class="view mx-auto w-full pb-10" style="max-width: min(40rem, calc(100% - 2.5rem));">
+                <div class="glass-card primary-card rounded-3xl px-4 py-6 sm:p-8">
+                    <div class="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-purple-500/20 p-2 rounded-lg border border-purple-500/50">
+                                <i data-lucide="shield" class="w-6 h-6 text-purple-400"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-extrabold text-white">HQ Control</h3>
+                                <p class="text-[10px] text-zinc-400 uppercase tracking-widest">Admin Dashboard</p>
+                            </div>
+                        </div>
+                        <button class="text-zinc-400 hover:text-white transition-colors p-2" onclick="switchView('loginView')" title="Exit Admin">
+                            <i data-lucide="x" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <!-- Admin Tabs -->
+                    <div class="flex gap-2 mb-6 bg-zinc-900/50 p-1 rounded-xl border border-zinc-800 flex-wrap sm:flex-nowrap">
+                        <button class="admin-tab active flex-1 py-2 px-1 text-xs sm:text-sm font-bold rounded-lg text-zinc-400 hover:text-white transition-all" onclick="switchAdminTab('ducks')" id="tab-ducks">Manage Ducks</button>
+                        <button class="admin-tab flex-1 py-2 px-1 text-xs sm:text-sm font-bold rounded-lg border border-transparent text-zinc-400 hover:text-white transition-all" onclick="switchAdminTab('players')" id="tab-players">Players</button>
+                        <button class="admin-tab flex-1 py-2 px-1 text-xs sm:text-sm font-bold rounded-lg border border-transparent text-zinc-400 hover:text-white transition-all" onclick="switchAdminTab('feed')" id="tab-feed">Live Feed</button>
+                    </div>
+
+                    <!-- Manage Ducks Panel -->
+                    <div id="panel-ducks" class="block">
+                        <!-- NEW: Duck Stats -->
+                        <div class="grid grid-cols-3 gap-3 mb-6">
+                            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-center shadow-lg">
+                                <div class="text-[9px] sm:text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Total Deployed</div>
+                                <div class="text-xl font-black text-white" id="statAdminTotal">0</div>
+                            </div>
+                            <div class="bg-purple-900/20 border border-purple-500/30 rounded-xl p-3 text-center shadow-lg">
+                                <div class="text-[9px] sm:text-[10px] text-purple-400 font-bold uppercase tracking-widest mb-1">Claimed</div>
+                                <div class="text-xl font-black text-purple-400" id="statAdminClaimed">0</div>
+                            </div>
+                            <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-xl p-3 text-center shadow-lg">
+                                <div class="text-[9px] sm:text-[10px] text-emerald-400 font-bold uppercase tracking-widest mb-1">Unclaimed</div>
+                                <div class="text-xl font-black text-emerald-400" id="statAdminActive">0</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-6 shadow-lg">
+                            <h4 class="text-sm font-bold text-white mb-4 uppercase tracking-widest border-b border-zinc-800 pb-2">Bulk Deploy Ducks</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                                <div>
+                                    <label class="form-label !mb-1 !text-[10px]">Prefix / Name</label>
+                                    <input type="text" id="bulkDuckName" class="control-item !py-2" placeholder="e.g. Gold" />
+                                </div>
+                                <div>
+                                    <label class="form-label !mb-1 !text-[10px]">Initial Location</label>
+                                    <input type="text" id="bulkDuckLoc" class="control-item !py-2" placeholder="e.g. Campus Wide" />
+                                </div>
+                                <div>
+                                    <label class="form-label !mb-1 !text-[10px]">Points Per Duck</label>
+                                    <input type="number" id="bulkDuckPoints" class="control-item !py-2" placeholder="50" value="50" />
+                                </div>
+                                <div>
+                                    <label class="form-label !mb-1 !text-[10px]">Quantity</label>
+                                    <input type="number" id="bulkDuckCount" class="control-item !py-2" placeholder="10" value="10" />
+                                </div>
+                                <div class="sm:col-span-2 lg:col-span-4 flex justify-end">
+                                    <button id="bulkGenBtn" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-xl flex justify-center items-center gap-2 transition-all" onclick="generateBulkDucks()">
+                                        <i data-lucide="layers" class="w-4 h-4"></i> <span id="bulkGenText">Generate Batch</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filter Bar -->
+                        <div class="flex flex-col sm:flex-row gap-2 mb-4 bg-zinc-900/50 p-3 rounded-xl border border-zinc-800">
+                            <input type="text" id="filterDuckName" placeholder="Filter Name..." class="control-item !py-2 !text-xs flex-1" onkeyup="applyDuckFilters()">
+                            <input type="text" id="filterDuckLoc" placeholder="Filter Location..." class="control-item !py-2 !text-xs flex-1" onkeyup="applyDuckFilters()">
+                            <input type="number" id="filterDuckPts" placeholder="Points..." class="control-item !py-2 !text-xs w-24" onkeyup="applyDuckFilters()">
+                            <select id="sortDucks" class="control-item !py-2 !text-xs w-full sm:w-32 bg-zinc-900" onchange="applyDuckFilters()">
+                                <option value="newest">Newest First</option>
+                                <option value="ptsDesc">Highest Points</option>
+                                <option value="claimedDesc">Most Claimed</option>
+                            </select>
+                        </div>
+
+                        <div class="flex justify-between items-end mb-3">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h4 class="text-sm font-bold text-white uppercase tracking-widest">Deployed Codes</h4>
+                                <button id="bulkEditBtn" class="hidden text-[10px] bg-blue-500/20 border border-blue-500/50 text-blue-400 hover:bg-blue-500 hover:text-white px-2 py-1 rounded transition-all ml-2" onclick="openBulkEditModal()">Edit Selected (0)</button>
+                                <button id="bulkDeleteBtn" class="hidden text-[10px] bg-rose-500/20 border border-rose-500/50 text-rose-400 hover:bg-rose-500 hover:text-white px-2 py-1 rounded transition-all ml-1" onclick="bulkDeleteSelected()">Delete Selected (0)</button>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button class="text-[10px] text-zinc-400 hover:text-white whitespace-nowrap" onclick="toggleSelectAllFiltered()">Select All</button>
+                                <button class="text-xs text-purple-400 hover:underline flex items-center gap-1" onclick="loadAdminDucks()"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh</button>
+                            </div>
+                        </div>
+                        <div class="space-y-3 max-h-[400px] overflow-y-auto pr-2" id="adminDucksList">
+                            <div class="text-zinc-500 text-center py-4 text-sm">Loading ducks...</div>
+                        </div>
+                    </div>
+
+                    <!-- Manage Players Panel -->
+                    <div id="panel-players" class="hidden">
+                        <div class="flex justify-between items-end mb-3">
+                            <h4 class="text-sm font-bold text-white uppercase tracking-widest">Player Database</h4>
+                            <button class="text-xs text-purple-400 hover:underline flex items-center gap-1" onclick="loadAdminPlayers()"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh</button>
+                        </div>
+                        <div class="space-y-2 max-h-[400px] overflow-y-auto pr-2" id="adminPlayersList">
+                            <div class="text-zinc-500 text-center py-4 text-sm">Loading players...</div>
+                        </div>
+                    </div>
+
+                    <!-- Live Feed Panel -->
+                    <div id="panel-feed" class="hidden">
+                        <div class="flex justify-between items-end mb-3">
+                            <h4 class="text-sm font-bold text-white uppercase tracking-widest">Global Scan Feed</h4>
+                            <button class="text-xs text-purple-400 hover:underline flex items-center gap-1" onclick="loadAdminFeed()"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh</button>
+                        </div>
+                        <div class="space-y-2 max-h-[400px] overflow-y-auto pr-2" id="adminFeedList">
+                            <div class="text-zinc-500 text-center py-4 text-sm">Loading feed...</div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -331,7 +485,7 @@
     </nav>
 
     <!-- Staff Login Modal -->
-    <div id="gateModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4">
+    <div id="gateModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" onclick="hideGate()"></div>
         <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30">
             <div class="w-16 h-16 bg-zinc-900 rounded-2xl p-3 mb-4 flex items-center justify-center border border-zinc-800 transition-transform hover:rotate-12">
@@ -339,10 +493,90 @@
             </div>
             <h3 class="text-2xl font-bold mb-1 text-white">Staff Login</h3>
             <p class="text-zinc-400 text-sm mb-6">Enter admin password to access system settings.</p>
-            <input type="password" id="adminPass" class="control-item text-center mb-6 no-save-pass" placeholder="Password" />
-            <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]" id="gateBtn" onclick="alert('Staff features under development.')">
+            <input type="password" id="adminPass" class="control-item text-center mb-6 no-save-pass" placeholder="Password" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
+            <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]" onclick="verifyAdmin()">
                 <span>Authorize</span>
             </button>
+        </div>
+    </div>
+
+    <!-- QR Code Display Modal (Admin) -->
+    <div id="qrModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="hideQR()"></div>
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30">
+            <h3 class="text-xl font-bold mb-1 text-white" id="qrModalTitle">Duck QR Code</h3>
+            <p class="text-zinc-400 text-sm mb-6" id="qrModalLocation">Location</p>
+            
+            <div class="bg-white p-4 rounded-xl mb-6 shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                <div id="qrcodeDisplay"></div>
+            </div>
+            
+            <div class="w-full bg-zinc-900 border border-zinc-800 p-3 rounded-lg mb-4 text-xs font-mono text-purple-400 break-all select-all" id="qrModalUrl">
+                URL
+            </div>
+
+            <button class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl transition-all" onclick="hideQR()">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Edit Duck Modal (Admin) -->
+    <div id="editDuckModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="closeEditDuckModal()"></div>
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30">
+            <h3 class="text-xl font-bold mb-4 text-white">Edit Duck Config</h3>
+            
+            <input type="hidden" id="editDuckCode" />
+            
+            <div class="w-full space-y-4 mb-6 text-left">
+                <div>
+                    <label class="form-label !mb-1 !text-[10px]">Duck Name</label>
+                    <input type="text" id="editDuckName" class="control-item !py-2" />
+                </div>
+                <div>
+                    <label class="form-label !mb-1 !text-[10px]">Location</label>
+                    <input type="text" id="editDuckLocation" class="control-item !py-2" />
+                </div>
+                <div>
+                    <label class="form-label !mb-1 !text-[10px]">Point Value</label>
+                    <input type="number" id="editDuckPoints" class="control-item !py-2" />
+                </div>
+            </div>
+
+            <div class="flex gap-3 w-full">
+                <button class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl transition-all" onclick="closeEditDuckModal()">Cancel</button>
+                <button class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2" onclick="saveDuckEdit()" id="saveDuckBtn">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Edit Duck Modal (Admin) -->
+    <div id="bulkEditModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="closeBulkEditModal()"></div>
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30">
+            <h3 class="text-xl font-bold mb-2 text-white">Bulk Edit Ducks</h3>
+            <p class="text-xs text-zinc-400 mb-4">Editing <span id="bulkEditCount">0</span> ducks. Leave fields blank to keep existing values.</p>
+            
+            <div class="w-full space-y-4 mb-6 text-left">
+                <div>
+                    <label class="form-label !mb-1 !text-[10px]">New Location</label>
+                    <input type="text" id="bulkEditLocation" class="control-item !py-2" placeholder="Leave blank to skip" />
+                </div>
+                <div>
+                    <label class="form-label !mb-1 !text-[10px]">New Point Value</label>
+                    <input type="number" id="bulkEditPoints" class="control-item !py-2" placeholder="Leave blank to skip" />
+                </div>
+            </div>
+
+            <div class="flex gap-3 w-full">
+                <button class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl transition-all" onclick="closeBulkEditModal()">Cancel</button>
+                <button class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2" onclick="saveBulkEdit()" id="saveBulkEditBtn">
+                    Save Changes
+                </button>
+            </div>
         </div>
     </div>
 
@@ -352,9 +586,21 @@
     const SUPABASE_ANON_KEY = "sb_publishable_d0JzltkYdsqNWGhEe-clbw_oaRctt-0";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Global Player State
+    // Global State
     let currentPlayer = null;
     let currentStream = null;
+    let scanning = false;
+    let scanThrottle = false; // prevents multiple rapid triggers
+
+    // Check for Deep Link on Load (e.g. ?duck=xwu3rh49)
+    const urlParams = new URLSearchParams(window.location.search);
+    const pendingDuckCode = urlParams.get('duck');
+    if (pendingDuckCode) {
+        // Store in session storage so it survives a page refresh during login
+        sessionStorage.setItem('pendingDuckCode', pendingDuckCode);
+        // Clean URL to prevent confusion
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 
     // Initialize UI
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -405,7 +651,12 @@
         lucide.createIcons();
     }
 
-    // --- Camera Functions ---
+    function logout() {
+        currentPlayer = null;
+        switchView('loginView');
+    }
+
+    // --- Camera & QR Scanning Functions ---
     async function startCamera() {
         const video = document.getElementById('cameraFeed');
         const fallback = document.getElementById('cameraFallbackIcon');
@@ -417,17 +668,26 @@
             });
             currentStream = stream;
             video.srcObject = stream;
+            video.setAttribute("playsinline", true); // required for iOS Safari
+            video.play();
+            
             video.classList.remove('hidden');
             fallback.classList.add('hidden');
             error.classList.add('hidden');
+            
+            scanning = true;
+            requestAnimationFrame(tickScan);
         } catch (err) {
+            console.error(err);
             video.classList.add('hidden');
             fallback.classList.remove('hidden');
             error.classList.remove('hidden');
+            scanning = false;
         }
     }
 
     function stopCamera() {
+        scanning = false;
         if (currentStream) {
             currentStream.getTracks().forEach(track => track.stop());
             currentStream = null;
@@ -436,7 +696,212 @@
         if (video) video.srcObject = null;
     }
 
-    // --- Supabase Operations ---
+    function tickScan() {
+        if (!scanning) return;
+        
+        const video = document.getElementById('cameraFeed');
+        const canvasElement = document.getElementById('qrCanvas');
+        const canvas = canvasElement.getContext("2d", { willReadFrequently: true });
+
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvasElement.height = video.videoHeight;
+            canvasElement.width = video.videoWidth;
+            canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+            
+            // Only scan if we aren't currently processing a duck
+            if (!scanThrottle) {
+                const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert",
+                });
+                
+                if (code && code.data) {
+                    processQRData(code.data);
+                }
+            }
+        }
+        requestAnimationFrame(tickScan);
+    }
+
+    function processQRData(qrData) {
+        scanThrottle = true;
+        // Pause visual scan line
+        document.getElementById('scanLine').style.animationPlayState = 'paused';
+
+        // Extract duck code from URL if it's a URL, or just use the raw string
+        let codeToProcess = qrData;
+        try {
+            const url = new URL(qrData);
+            const duckParam = url.searchParams.get('duck');
+            if (duckParam) codeToProcess = duckParam;
+        } catch (e) {
+            // Not a URL, use raw string
+        }
+
+        claimDuck(codeToProcess);
+    }
+
+    // --- Core Gameplay Functions ---
+
+    async function claimDuck(duckCode) {
+        if (!currentPlayer) return;
+
+        try {
+            // 1. Check if duck code is valid in the database
+            const { data: duckInfo, error: duckErr } = await _supabase
+                .from('duck_codes')
+                .select('*')
+                .eq('code', duckCode)
+                .single();
+
+            if (duckErr || !duckInfo) {
+                alert("Invalid or inactive Duck Code.");
+                resumeScanning();
+                return;
+            }
+
+            // 2. Check if player already found this duck
+            const { data: existingScan } = await _supabase
+                .from('scans')
+                .select('id')
+                .eq('player_id', currentPlayer.student_id)
+                .eq('duck_code', duckCode) // Using exact code to verify
+                .single();
+
+            if (existingScan) {
+                alert("You have already found this duck!");
+                resumeScanning();
+                return;
+            }
+
+            // 3. Insert into scans
+            const { error: scanErr } = await _supabase
+                .from('scans')
+                .insert([{
+                    player_id: currentPlayer.student_id,
+                    duck_code: duckCode,
+                    duck_name: duckInfo.name,
+                    points_earned: duckInfo.points
+                }]);
+
+            if (scanErr) throw scanErr;
+
+            // 4. Update player totals (Using RPC is best, but for basic implementation we fetch/update)
+            const newPoints = (currentPlayer.points || 0) + duckInfo.points;
+            const newDucks = (currentPlayer.ducks || 0) + 1;
+
+            const { error: updateErr } = await _supabase
+                .from('players')
+                .update({ points: newPoints, ducks: newDucks })
+                .eq('student_id', currentPlayer.student_id);
+
+            if (updateErr) throw updateErr;
+
+            // Update local state
+            currentPlayer.points = newPoints;
+            currentPlayer.ducks = newDucks;
+
+            // Show Success Overlay
+            showSuccessAnim(duckInfo.name, duckInfo.points);
+
+        } catch (err) {
+            console.error("Claim Error:", err);
+            alert("Error claiming duck: " + err.message);
+            resumeScanning();
+        }
+    }
+
+    function showSuccessAnim(name, points) {
+        const overlay = document.getElementById('scanSuccessOverlay');
+        document.getElementById('successDuckName').textContent = name;
+        document.getElementById('successPoints').textContent = `+${points} PTS`;
+        
+        overlay.classList.remove('hidden');
+        // Force reflow
+        void overlay.offsetWidth;
+        overlay.classList.remove('opacity-0', 'scale-105');
+        overlay.classList.add('opacity-100', 'scale-100');
+
+        refreshPlayerStats();
+
+        // Visual Celebrations
+        spawnFlyingDucks();
+        if (name.toLowerCase().includes('gold')) {
+            spawnConfetti();
+        }
+
+        // Hide after 2.5 seconds and resume scanning
+        setTimeout(() => {
+            overlay.classList.remove('opacity-100', 'scale-100');
+            overlay.classList.add('opacity-0', 'scale-105');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                resumeScanning();
+            }, 300);
+        }, 2500);
+    }
+
+    function spawnFlyingDucks() {
+        const duckCount = 15 + Math.floor(Math.random() * 15); // 15 to 30 ducks
+        for(let i=0; i<duckCount; i++) {
+            setTimeout(() => {
+                const duck = document.createElement('div');
+                duck.textContent = '🦆';
+                duck.className = 'flying-duck';
+                duck.style.left = (Math.random() * 100) + 'vw';
+                duck.style.bottom = '-50px';
+                
+                const duration = 1.5 + Math.random() * 2; // 1.5s to 3.5s
+                duck.style.animation = `flyUp ${duration}s ease-in forwards`;
+
+                document.body.appendChild(duck);
+                
+                setTimeout(() => {
+                    duck.remove();
+                }, duration * 1000);
+            }, i * 100);
+        }
+    }
+
+    function spawnConfetti() {
+        var duration = 2.5 * 1000;
+        var animationEnd = Date.now() + duration;
+        var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10000, colors: ['#FFD700', '#FFA500', '#FF8C00'] };
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        var interval = setInterval(function() {
+            var timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            var particleCount = 50 * (timeLeft / duration);
+            confetti(Object.assign({}, defaults, { particleCount,
+                origin: { x: randomInRange(0.1, 0.9), y: Math.random() - 0.2 }
+            }));
+        }, 250);
+    }
+
+    function resumeScanning() {
+        scanThrottle = false;
+        document.getElementById('scanLine').style.animationPlayState = 'running';
+    }
+
+    function checkForPendingDuck() {
+        const pendingCode = sessionStorage.getItem('pendingDuckCode');
+        if (pendingCode && currentPlayer) {
+            sessionStorage.removeItem('pendingDuckCode');
+            // Slight delay so the UI can load before claiming
+            setTimeout(() => claimDuck(pendingCode), 1000);
+        }
+    }
+
+
+    // --- Supabase User Operations ---
 
     async function studentLogin() {
         const studentId = document.getElementById('loginStudentID').value;
@@ -454,14 +919,15 @@
                 .single();
 
             if (error || !data) {
-                // New User: Go to Registration
+                // New User
                 document.getElementById('regStudentID').value = studentId;
                 switchView('registerView');
             } else {
-                // Existing User: Go to Scanner
+                // Existing User
                 currentPlayer = data;
                 switchView('scannerView');
                 document.getElementById('loginStudentID').value = '';
+                checkForPendingDuck();
             }
         } catch (err) {
             console.error("Login Error:", err);
@@ -490,7 +956,9 @@
                     student_id: studentId, 
                     name: name, 
                     email: email, 
-                    pin: pin 
+                    pin: pin,
+                    points: 0,
+                    ducks: 0
                 }])
                 .select()
                 .single();
@@ -498,6 +966,7 @@
             if (error) throw error;
             currentPlayer = data;
             switchView('scannerView');
+            checkForPendingDuck();
         } catch (err) {
             console.error("Reg Error:", err);
             alert("Registration failed: " + err.message);
@@ -516,7 +985,7 @@
             .eq('student_id', currentPlayer.student_id)
             .single();
 
-        // Fetch Fresh Data (Ducks, Points)
+        // Fetch Fresh Data
         const { data: freshPlayer } = await _supabase
             .from('players')
             .select('ducks, points, name')
@@ -533,17 +1002,14 @@
 
         if (freshPlayer) currentPlayer = { ...currentPlayer, ...freshPlayer };
 
-        // Helper to get first name in title case
         let firstName = currentPlayer.name.split(' ')[0];
         firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
-        // Update Dashboard UI
         document.getElementById('playerNameDisplay').textContent = firstName;
         document.getElementById('statDucks').textContent = currentPlayer.ducks || 0;
         document.getElementById('statPoints').textContent = currentPlayer.points || 0;
         document.getElementById('statRank').textContent = rankData ? '#' + rankData.player_rank : '--';
 
-        // Update History List
         const historyList = document.getElementById('scanHistoryContainer');
         if (history && history.length > 0) {
             historyList.innerHTML = history.map(scan => `
@@ -578,7 +1044,6 @@
             container.innerHTML = data.map((player, index) => {
                 const isMe = currentPlayer && player.name === currentPlayer.name;
                 
-                // Format the name to First Name + Last Initial
                 let displayName = player.name;
                 if (displayName) {
                     const nameParts = displayName.trim().split(/\s+/);
@@ -604,9 +1069,519 @@
         }
     }
 
-    // --- Modal Logic ---
-    function showGate() { document.getElementById('gateModal').classList.remove('hidden'); }
-    function hideGate() { document.getElementById('gateModal').classList.add('hidden'); }
+    // --- ADMIN LOGIC ---
+
+    function showGate() { 
+        document.getElementById('gateModal').classList.remove('hidden'); 
+        document.getElementById('adminPass').value = '';
+        document.getElementById('adminPass').focus();
+    }
+    
+    function hideGate() { 
+        document.getElementById('gateModal').classList.add('hidden'); 
+    }
+
+    function verifyAdmin() {
+        const pass = document.getElementById('adminPass').value;
+        // Basic frontend gate - in production, use Supabase Auth/RLS
+        if (pass === 'cab2026') {
+            hideGate();
+            switchView('adminView');
+            loadAdminDucks();
+        } else {
+            alert('Access Denied. Incorrect password.');
+        }
+    }
+
+    function switchAdminTab(tab) {
+        document.getElementById('tab-ducks').classList.remove('active');
+        document.getElementById('tab-players').classList.remove('active');
+        document.getElementById('tab-feed').classList.remove('active');
+        
+        document.getElementById('panel-ducks').style.display = 'none';
+        document.getElementById('panel-players').style.display = 'none';
+        document.getElementById('panel-feed').style.display = 'none';
+
+        document.getElementById(`tab-${tab}`).classList.add('active');
+        document.getElementById(`panel-${tab}`).style.display = 'block';
+
+        if (tab === 'ducks') loadAdminDucks();
+        if (tab === 'players') loadAdminPlayers();
+        if (tab === 'feed') loadAdminFeed();
+    }
+
+    function generateCode() {
+        return Math.random().toString(36).substring(2, 10);
+    }
+
+    async function generateBulkDucks() {
+        const namePrefix = document.getElementById('bulkDuckName').value || "Duck";
+        const locationInput = document.getElementById('bulkDuckLoc').value || "Bulk Deployed";
+        const pts = parseInt(document.getElementById('bulkDuckPoints').value) || 10;
+        const count = parseInt(document.getElementById('bulkDuckCount').value) || 1;
+
+        if (count > 20000) return alert("Maximum 20,000 ducks per batch to prevent browser crash.");
+
+        const btn = document.getElementById('bulkGenBtn');
+        const btnText = document.getElementById('bulkGenText');
+        
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-wait');
+        btnText.textContent = `Generating ${count}...`;
+
+        try {
+            let codesToInsert = [];
+            for (let i = 0; i < count; i++) {
+                const uniqueCode = generateCode() + Math.random().toString(36).substring(2, 6); // Extra entropy for large batches
+                codesToInsert.push({ 
+                    code: uniqueCode, 
+                    name: `${namePrefix} (${uniqueCode.substring(0, 4).toUpperCase()})`, 
+                    location: locationInput, 
+                    points: pts 
+                });
+            }
+
+            // Chunk inserts (Supabase standard limit is usually large, but chunking by 1000 is safe)
+            const chunkSize = 1000;
+            for (let i = 0; i < codesToInsert.length; i += chunkSize) {
+                const chunk = codesToInsert.slice(i, i + chunkSize);
+                const { error } = await _supabase.from('duck_codes').insert(chunk);
+                if (error) throw error;
+                btnText.textContent = `Saving... ${Math.min(i + chunkSize, count)}/${count}`;
+            }
+            
+            document.getElementById('bulkDuckCount').value = '10'; // Reset to safe default
+            loadAdminDucks();
+            alert(`Successfully deployed ${count} ducks!`);
+        } catch (err) {
+            console.error(err);
+            alert("Error creating ducks: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-wait');
+            btnText.textContent = 'Generate Batch';
+        }
+    }
+
+    let allAdminDucks = []; // Store globally for rapid filtering
+
+    async function loadAdminDucks() {
+        const list = document.getElementById('adminDucksList');
+        list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm">Refreshing...</div>';
+
+        try {
+            // 1. Fetch ducks
+            const { data: ducks, error } = await _supabase
+                .from('duck_codes')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            // 2. Fetch scan counts
+            const { data: scanData } = await _supabase
+                .from('scans')
+                .select('duck_code');
+            
+            const scanCounts = {};
+            if (scanData) {
+                scanData.forEach(s => {
+                    scanCounts[s.duck_code] = (scanCounts[s.duck_code] || 0) + 1;
+                });
+            }
+
+            if (ducks && ducks.length > 0) {
+                allAdminDucks = ducks.map(d => ({
+                    ...d,
+                    claimCount: scanCounts[d.code] || 0
+                }));
+                
+                // Update Admin Stats
+                const totalDucks = allAdminDucks.length;
+                const claimedDucks = allAdminDucks.filter(d => d.claimCount > 0).length;
+                const activeDucks = totalDucks - claimedDucks;
+                
+                document.getElementById('statAdminTotal').textContent = totalDucks.toLocaleString();
+                document.getElementById('statAdminClaimed').textContent = claimedDucks.toLocaleString();
+                document.getElementById('statAdminActive').textContent = activeDucks.toLocaleString();
+
+                applyDuckFilters(); // Trigger render
+            } else {
+                list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm italic">No ducks deployed yet.</div>';
+                allAdminDucks = [];
+                document.getElementById('statAdminTotal').textContent = "0";
+                document.getElementById('statAdminClaimed').textContent = "0";
+                document.getElementById('statAdminActive').textContent = "0";
+            }
+        } catch (err) {
+            list.innerHTML = `<div class="text-rose-500 text-center py-4 text-sm">Error: ${err.message}</div>`;
+        }
+    }
+
+    function applyDuckFilters() {
+        const nameF = (document.getElementById('filterDuckName').value || '').toLowerCase();
+        const locF = (document.getElementById('filterDuckLoc').value || '').toLowerCase();
+        const ptsF = document.getElementById('filterDuckPts').value;
+        const sortVal = document.getElementById('sortDucks').value;
+
+        let filtered = allAdminDucks.filter(d => {
+            const matchName = d.name.toLowerCase().includes(nameF);
+            const matchLoc = d.location.toLowerCase().includes(locF);
+            const matchPts = ptsF ? d.points.toString() === ptsF : true;
+            return matchName && matchLoc && matchPts;
+        });
+
+        // Apply Sorting
+        if (sortVal === 'ptsDesc') {
+            filtered.sort((a, b) => b.points - a.points);
+        } else if (sortVal === 'claimedDesc') {
+            filtered.sort((a, b) => b.claimCount - a.claimCount);
+        } else {
+            // Default newest first
+            filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+
+        renderAdminDucks(filtered);
+    }
+
+    function renderAdminDucks(data) {
+        const list = document.getElementById('adminDucksList');
+        if (data.length > 0) {
+            list.innerHTML = data.map(d => `
+                <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex justify-between items-center group">
+                    <div class="flex-1 min-w-0 pr-2 flex items-start gap-3">
+                        <div class="pt-1">
+                            <input type="checkbox" class="duck-select-checkbox w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-purple-500 focus:ring-purple-500 focus:ring-offset-zinc-900 cursor-pointer" value="${d.code}" onchange="updateBulkActionBtns()">
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h5 class="text-white font-bold text-sm truncate">${d.name}</h5>
+                                <span class="text-purple-400 text-[10px] font-black bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 whitespace-nowrap">${d.points} PTS</span>
+                                <span class="text-emerald-400 text-[10px] font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 whitespace-nowrap">Claimed: ${d.claimCount}</span>
+                            </div>
+                            <p class="text-[10px] text-zinc-500 mb-1 mt-1 truncate"><i data-lucide="map-pin" class="w-3 h-3 inline"></i> ${d.location}</p>
+                            <code class="text-xs text-zinc-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800 inline-block">${d.code}</code>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity pl-2">
+                        <button class="bg-zinc-800 hover:bg-purple-600 border border-zinc-700 hover:border-purple-500 p-2 rounded-lg transition-colors" onclick="generateQR('${d.code}', '${d.name.replace(/'/g, "\\'")}', '${d.location.replace(/'/g, "\\'")}')" title="QR Code">
+                            <i data-lucide="qr-code" class="w-4 h-4 text-zinc-400 hover:text-white"></i>
+                        </button>
+                        <button class="bg-zinc-800 hover:bg-blue-600 border border-zinc-700 hover:border-blue-500 p-2 rounded-lg transition-colors" onclick="openEditDuckModal('${d.code}')" title="Edit Duck">
+                            <i data-lucide="edit-2" class="w-4 h-4 text-zinc-400 hover:text-white"></i>
+                        </button>
+                        <button class="bg-zinc-800 hover:bg-rose-600 border border-zinc-700 hover:border-rose-500 p-2 rounded-lg transition-colors" onclick="deleteDuck('${d.code}')" title="Delete">
+                            <i data-lucide="trash-2" class="w-4 h-4 text-zinc-400 hover:text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        } else {
+            list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm italic">No ducks match your filters.</div>';
+        }
+        updateBulkActionBtns(); // Reset button state on render
+    }
+
+    function updateBulkActionBtns() {
+        const checkboxes = document.querySelectorAll('.duck-select-checkbox:checked');
+        const delBtn = document.getElementById('bulkDeleteBtn');
+        const editBtn = document.getElementById('bulkEditBtn');
+        
+        if (checkboxes.length > 0) {
+            delBtn.textContent = `Delete Selected (${checkboxes.length})`;
+            delBtn.classList.remove('hidden');
+            editBtn.textContent = `Edit Selected (${checkboxes.length})`;
+            editBtn.classList.remove('hidden');
+        } else {
+            delBtn.classList.add('hidden');
+            editBtn.classList.add('hidden');
+        }
+    }
+
+    function toggleSelectAllFiltered() {
+        const checkboxes = document.querySelectorAll('.duck-select-checkbox');
+        if (checkboxes.length === 0) return;
+        
+        // If all are checked, uncheck all. Otherwise, check all.
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+        updateBulkActionBtns();
+    }
+
+    async function bulkDeleteSelected() {
+        const checkboxes = document.querySelectorAll('.duck-select-checkbox:checked');
+        if (checkboxes.length === 0) return;
+        
+        if (!confirm(`Are you sure you want to permanently delete ${checkboxes.length} ducks? This will erase their scan history too.`)) return;
+
+        const codesToDelete = Array.from(checkboxes).map(cb => cb.value);
+        const btn = document.getElementById('bulkDeleteBtn');
+        
+        btn.textContent = 'Deleting...';
+        btn.disabled = true;
+
+        try {
+            // Delete in chunks to avoid URL size limits in API requests - reduced to 100 for safety
+            const chunkSize = 100;
+            for (let i = 0; i < codesToDelete.length; i += chunkSize) {
+                const chunk = codesToDelete.slice(i, i + chunkSize);
+                const { error } = await _supabase
+                    .from('duck_codes')
+                    .delete()
+                    .in('code', chunk);
+                if (error) throw error;
+            }
+            
+            await loadAdminDucks(); // Refresh the list securely
+        } catch (err) {
+            alert("Error deleting ducks: " + err.message);
+        } finally {
+            btn.disabled = false;
+            updateBulkActionBtns(); // Restore button state if failed
+        }
+    }
+
+    function openBulkEditModal() {
+        const checkboxes = document.querySelectorAll('.duck-select-checkbox:checked');
+        if (checkboxes.length === 0) return;
+        
+        document.getElementById('bulkEditCount').textContent = checkboxes.length;
+        document.getElementById('bulkEditLocation').value = '';
+        document.getElementById('bulkEditPoints').value = '';
+        document.getElementById('bulkEditModal').classList.remove('hidden');
+    }
+
+    function closeBulkEditModal() {
+        document.getElementById('bulkEditModal').classList.add('hidden');
+    }
+
+    async function saveBulkEdit() {
+        const checkboxes = document.querySelectorAll('.duck-select-checkbox:checked');
+        const codesToEdit = Array.from(checkboxes).map(cb => cb.value);
+        
+        const loc = document.getElementById('bulkEditLocation').value.trim();
+        const ptsStr = document.getElementById('bulkEditPoints').value;
+        
+        let updatePayload = {};
+        if (loc) updatePayload.location = loc;
+        if (ptsStr) updatePayload.points = parseInt(ptsStr);
+
+        if (Object.keys(updatePayload).length === 0) {
+            alert("No changes specified.");
+            return;
+        }
+
+        const btn = document.getElementById('saveBulkEditBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loader" style="display:block;"></div> Saving...';
+
+        try {
+            // Chunked update
+            const chunkSize = 100;
+            for (let i = 0; i < codesToEdit.length; i += chunkSize) {
+                const chunk = codesToEdit.slice(i, i + chunkSize);
+                const { error } = await _supabase
+                    .from('duck_codes')
+                    .update(updatePayload)
+                    .in('code', chunk);
+                if (error) throw error;
+            }
+            
+            closeBulkEditModal();
+            await loadAdminDucks();
+        } catch (err) {
+            alert("Error bulk editing ducks: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Save Changes';
+            updateBulkActionBtns();
+        }
+    }
+
+    function openEditDuckModal(code) {
+        const duck = allAdminDucks.find(d => d.code === code);
+        if (!duck) return;
+
+        document.getElementById('editDuckCode').value = duck.code;
+        document.getElementById('editDuckName').value = duck.name;
+        document.getElementById('editDuckLocation').value = duck.location;
+        document.getElementById('editDuckPoints').value = duck.points;
+
+        document.getElementById('editDuckModal').classList.remove('hidden');
+    }
+
+    function closeEditDuckModal() {
+        document.getElementById('editDuckModal').classList.add('hidden');
+    }
+
+    async function saveDuckEdit() {
+        const code = document.getElementById('editDuckCode').value;
+        const name = document.getElementById('editDuckName').value.trim();
+        const loc = document.getElementById('editDuckLocation').value.trim();
+        const pts = parseInt(document.getElementById('editDuckPoints').value);
+
+        if (!name || !loc || isNaN(pts)) return alert("Please fill all fields with valid data.");
+
+        const btn = document.getElementById('saveDuckBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loader" style="display:block;"></div> Saving...';
+
+        try {
+            const { error } = await _supabase
+                .from('duck_codes')
+                .update({ name: name, location: loc, points: pts })
+                .eq('code', code);
+                
+            if (error) throw error;
+            
+            closeEditDuckModal();
+            loadAdminDucks(); // Refresh the list securely
+        } catch (err) {
+            alert("Error updating duck: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Save Changes';
+        }
+    }
+
+    async function deleteDuck(code) {
+        if (!confirm("Are you sure you want to delete this duck code? This will also delete any scans associated with it.")) return;
+
+        try {
+            const { error } = await _supabase.from('duck_codes').delete().eq('code', code);
+            if (error) throw error;
+            loadAdminDucks(); // Refresh the list
+        } catch (err) {
+            alert("Error deleting duck: " + err.message);
+        }
+    }
+
+    async function loadAdminPlayers() {
+        const list = document.getElementById('adminPlayersList');
+        list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm">Refreshing...</div>';
+
+        try {
+            const { data, error } = await _supabase
+                .from('players')
+                .select('*')
+                .order('points', { ascending: false });
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                list.innerHTML = data.map(p => `
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex justify-between items-center">
+                        <div>
+                            <h5 class="text-white font-bold text-sm">${p.name}</h5>
+                            <p class="text-[10px] text-zinc-500">${p.email} • ID: ${p.student_id}</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-purple-400 font-black text-sm">${p.points} PTS</div>
+                            <div class="text-[10px] text-zinc-500">${p.ducks} Ducks</div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm italic">No registered players.</div>';
+            }
+        } catch (err) {
+            list.innerHTML = `<div class="text-rose-500 text-center py-4 text-sm">Error: ${err.message}</div>`;
+        }
+    }
+
+    async function loadAdminFeed() {
+        const list = document.getElementById('adminFeedList');
+        list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm">Loading activity...</div>';
+
+        try {
+            // 1. Fetch recent scans
+            const { data: scans, error: scanErr } = await _supabase
+                .from('scans')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            if (scanErr) throw scanErr;
+
+            if (!scans || scans.length === 0) {
+                list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm italic">No ducks have been found yet.</div>';
+                return;
+            }
+
+            // 2. Fetch players to map student_id to names (Manual join for safety if FKs aren't set)
+            const studentIds = [...new Set(scans.map(s => s.player_id))];
+            const { data: players } = await _supabase
+                .from('players')
+                .select('student_id, name')
+                .in('student_id', studentIds);
+
+            const playerMap = {};
+            if (players) {
+                players.forEach(p => playerMap[p.student_id] = p.name);
+            }
+
+            // 3. Render Feed
+            list.innerHTML = scans.map(scan => {
+                const playerName = playerMap[scan.player_id] || `ID: ${scan.player_id}`;
+                const time = new Date(scan.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                
+                return `
+                    <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3 flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30">
+                                <i data-lucide="crosshair" class="w-5 h-5 text-emerald-400"></i>
+                            </div>
+                            <div>
+                                <h5 class="text-white font-bold text-sm">${playerName} <span class="text-zinc-400 font-normal">found</span></h5>
+                                <p class="text-purple-400 font-bold text-xs">${scan.duck_name} <span class="text-zinc-500 font-normal ml-1">• ${time}</span></p>
+                            </div>
+                        </div>
+                        <div class="bg-purple-900/30 text-purple-400 font-black text-xs px-2 py-1 rounded border border-purple-500/30">
+                            +${scan.points_earned}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+            
+        } catch (err) {
+            list.innerHTML = `<div class="text-rose-500 text-center py-4 text-sm">Error: ${err.message}</div>`;
+        }
+    }
+
+    // --- QR Code Generator ---
+    let qrcodeInstance = null;
+    
+    function generateQR(code, name, location) {
+        document.getElementById('qrModalTitle').textContent = name;
+        document.getElementById('qrModalLocation').textContent = location;
+        
+        // Construct the full deep link URL
+        const appUrl = window.location.origin + window.location.pathname;
+        const duckUrl = `${appUrl}?duck=${code}`;
+        
+        document.getElementById('qrModalUrl').textContent = duckUrl;
+
+        const qrContainer = document.getElementById('qrcodeDisplay');
+        qrContainer.innerHTML = ''; // clear previous
+        
+        qrcodeInstance = new QRCode(qrContainer, {
+            text: duckUrl,
+            width: 200,
+            height: 200,
+            colorDark : "#09090b", // zinc-950
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+
+        document.getElementById('qrModal').classList.remove('hidden');
+    }
+
+    function hideQR() {
+        document.getElementById('qrModal').classList.add('hidden');
+    }
+
 </script>
 </body>
 </html>
