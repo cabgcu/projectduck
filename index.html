@@ -149,19 +149,6 @@
             box-shadow: 0 0 12px rgba(168, 85, 247, 0.9);
             border: 2px solid #fff;
         }
-
-        /* On mobile, app card fills the viewport for native feel */
-        @media (max-width: 640px) {
-            main { padding: 0 !important; }
-            footer { display: none; }
-            .app-card {
-                max-width: 100% !important;
-                width: 100% !important;
-                min-height: 100dvh !important;
-                border-radius: 0 !important;
-                border-left: 0; border-right: 0;
-            }
-        }
     </style>
 </head>
 <body class="bg-slate-950 text-white min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans flex flex-col">
@@ -266,6 +253,11 @@
                         <div class="loader" id="loginLoader"></div>
                     </button>
                     <button type="button" onclick="goBack()" class="w-full mt-4 text-[10px] sm:text-xs text-white/40 hover:text-white transition-colors uppercase tracking-widest font-bold">← Change ID</button>
+                </div>
+                
+                <!-- Footer (Moved inside card) -->
+                <div class="mt-8 text-center text-white/30 text-[10px] sm:text-xs tracking-widest uppercase">
+                    © Canyon Activities Board
                 </div>
             </div>
 
@@ -421,11 +413,6 @@
         </div>
 
     </main>
-
-    <!-- Footer -->
-    <footer class="w-full py-6 text-center text-white/30 text-[10px] sm:text-xs tracking-widest uppercase z-10">
-        © Canyon Activities Board
-    </footer>
 
     <script>
         // Initialize Icons
