@@ -1131,6 +1131,26 @@
         }, 2000);
     }
 
+    function showBanAlert() {
+        if (document.getElementById('banAlertModal')) return; 
+
+        const modalHtml = `
+            <div id="banAlertModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md"></div>
+                <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-rose-500/30 transform transition-all">
+                    <div class="w-16 h-16 bg-rose-500/20 rounded-full flex items-center justify-center mb-4 border border-rose-500/50 shadow-[0_0_30px_rgba(244,63,94,0.3)]">
+                        <i data-lucide="shield-alert" class="w-8 h-8 text-rose-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-white">Account Restricted</h3>
+                    <p class="text-zinc-300 text-sm mb-6 font-medium leading-relaxed">Your account has been restricted. Please email <a href="mailto:Chris.Hinojosa@gcu.edu" class="text-purple-400 hover:text-purple-300 underline font-bold">Chris.Hinojosa@gcu.edu</a> for potential reinstatement.</p>
+                    <button class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg border border-zinc-700" onclick="document.getElementById('banAlertModal').remove()">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        lucide.createIcons();
+    }
+
     function spawnFlyingDucks() {
         const duckCount = 15 + Math.floor(Math.random() * 15);
         for(let i=0; i<duckCount; i++) {
@@ -1281,7 +1301,7 @@
                 document.getElementById('regStudentID').value = studentId;
                 switchView('registerView');
             } else if (data.is_banned) {
-                alert("Your account has been restricted by HQ.");
+                showBanAlert();
             } else {
                 currentPlayer = data;
                 switchView('scannerView');
@@ -1348,7 +1368,7 @@
         // Boot player if they were banned by an admin while playing
         if (freshPlayer && freshPlayer.is_banned) {
             logout();
-            alert("Your account has been restricted by HQ.");
+            showBanAlert();
             return;
         }
 
