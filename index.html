@@ -742,7 +742,9 @@
         try {
             await _supabase.from('players').update({ is_banned: true }).eq('student_id', currentPlayer.student_id);
             logout();
-            alert("SECURITY ALERT: System tampering detected. Your account has been suspended.");
+            // Wipe the DOM immediately so they can't manipulate anything else
+            document.body.innerHTML = '<div style="display:flex; flex-direction:column; height:100vh; width:100vw; background:black; color:red; align-items:center; justify-content:center; font-size:1.5rem; font-weight:900; text-transform:uppercase; text-align:center; padding:2rem;"><span>⚠️ SECURITY ALERT ⚠️</span><br/><span style="font-size:1rem; color:#a1a1aa; margin-top:1rem;">System tampering detected. Your account has been permanently suspended.</span></div>';
+            setTimeout(() => { window.location.reload(); }, 4000);
         } catch(e) {}
     }
 
@@ -770,17 +772,28 @@
         }
     });
 
-    // Advanced Background Console Detector (Traps users who open DevTools via browser menus)
-    const devtoolsDetector = new Image();
-    Object.defineProperty(devtoolsDetector, 'id', {
-        get: function() {
-            triggerAutoBan();
-        }
-    });
-    setInterval(() => {
-        console.dir(devtoolsDetector);
+    // Lethal DevTools Traps (Catches users opening console via browser menus)
+    setInterval(function() {
+        // Trap 1: Debugger Time-Delta
+        // If the console is open, the 'debugger' statement will intercept execution and freeze the app.
+        // When they attempt to unpause it, the time gap will instantly trigger the ban.
+        const start = performance.now();
+        debugger; 
+        const end = performance.now();
+        if (end - start > 100) triggerAutoBan();
+
+        // Trap 2: Forced Evaluation Object
+        // Modern browsers forcefully evaluate formatting markers instantly if the console panel is visible.
+        const formatTrap = Object.create(null);
+        Object.defineProperty(formatTrap, 'toString', {
+            value: function() {
+                triggerAutoBan();
+                return 'CAB';
+            }
+        });
+        console.log('%c', formatTrap);
         console.clear();
-    }, 2000);
+    }, 1500);
 
     // Supabase Configuration
     const SUPABASE_URL = "https://tnaqzfollfoobjaymxqy.supabase.co";
