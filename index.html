@@ -1192,13 +1192,17 @@
         toggleBtn.innerHTML = '<div class="loader" style="display:block; width:14px; height:14px; margin:0;"></div> ...';
         
         try {
-            await _supabase.from('system_settings').update({ hunt_active: newState }).eq('id', 1);
+            const { error } = await _supabase.from('system_settings').update({ hunt_active: newState }).eq('id', 1);
+            
+            if (error) throw error; // Force it to tell us if it failed
+            
             isHuntLive = newState;
             updateSystemUI();
             checkSystemStatus();
         } catch (e) {
-            alert('Failed to update system status.');
-            updateSystemUI();
+            console.error("Toggle Error:", e);
+            alert('Failed to update system status: ' + e.message);
+            updateSystemUI(); // Restore button visually if it failed
         }
     }
 
