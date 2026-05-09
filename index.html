@@ -62,8 +62,8 @@
         }
         
         .primary-card {
-            border: 1px solid rgba(168, 85, 247, 0.4);
-            box-shadow: 0 0 20px rgba(168, 85, 247, 0.05);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.05);
         }
 
         .view { display: none; opacity: 0; transform: translateY(15px); transition: 0.4s ease; width: 100%; }
@@ -86,16 +86,16 @@
         }
         @media (hover: hover) {
             .control-item:hover {
-                border-color: rgba(168, 85, 247, 0.4);
+                border-color: rgba(245, 158, 11, 0.4);
                 transform: translateY(-2px);
                 box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
             }
         }
         .control-item::placeholder { color: rgba(255, 255, 255, 0.5); }
         .control-item:focus {
-            border-color: #a855f7;
+            border-color: #f59e0b;
             background: #27272a;
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.15);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
         }
 
         .form-label { display: block; margin-bottom: 0.75rem; color: #ffffff; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.4; }
@@ -118,10 +118,10 @@
         }
         
         /* Admin specific styles */
-        .admin-tab.active { background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.5); color: #c084fc; }
+        .admin-tab.active { background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.5); color: #fbbf24; }
     </style>
 </head>
-<body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-purple-500/30 font-sans" style="background-image: url('https://i.imgur.com/23ZFgoY.jpeg'); background-size: cover; background-position: center top; background-attachment: scroll;">
+<body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-amber-500/30 font-sans" style="background-image: url('https://i.imgur.com/23ZFgoY.jpeg'); background-size: cover; background-position: center top; background-attachment: scroll;">
 
     <!-- Dark Overlay -->
     <div class="fixed inset-0 bg-zinc-950/70 z-[-1]"></div>
@@ -134,7 +134,7 @@
             <div id="loginView" class="view active mx-auto w-full" style="max-width: min(22rem, calc(100% - 2.5rem));">
                 <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
                     <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-12 sm:h-16 w-auto mx-auto mb-5 sm:mb-6 object-contain" />
-                    <h3 class="text-2xl sm:text-3xl font-extrabold mb-2 sm:mb-3 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Duck Hunt 2026</h3>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold mb-2 sm:mb-3 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Duck Hunt 2026</h3>
                     <p class="text-zinc-400 mb-6 sm:mb-8 font-medium text-sm leading-relaxed">Enter Your Student ID</p>
 
                     <div class="mb-3 text-center">
@@ -143,10 +143,10 @@
                     </div>
                     
                     <div class="mb-6 text-center">
-                        <a href="#" class="text-sm text-zinc-400 hover:text-purple-400 underline underline-offset-4 transition-colors">What is Duck Hunt?</a>
+                        <a href="#" class="text-sm text-zinc-400 hover:text-amber-400 underline underline-offset-4 transition-colors">What is Duck Hunt?</a>
                     </div>
 
-                    <button class="w-full max-w-[240px] mx-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3 sm:py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-base border border-purple-500/50" id="loginBtn" onclick="studentLogin()">
+                    <button class="w-full max-w-[240px] mx-auto bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-3 sm:py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.6)] text-base border border-amber-500/50" id="loginBtn" onclick="studentLogin()">
                         <span>Begin</span>
                         <div class="loader" id="loginLoader"></div>
                     </button>
@@ -163,7 +163,7 @@
                 <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8">
                     <div class="text-center mb-6">
                         <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-10 sm:h-12 w-auto mx-auto mb-4 object-contain" />
-                        <h3 class="text-2xl sm:text-3xl font-extrabold mb-2 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Welcome To The Hunt!</h3>
+                        <h3 class="text-2xl sm:text-3xl font-extrabold mb-2 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Welcome To The Hunt!</h3>
                         <p class="text-zinc-400 text-sm font-medium">Create your player profile</p>
                     </div>
 
@@ -187,7 +187,7 @@
                         </div>
                     </div>
 
-                    <button class="w-full max-w-[240px] mx-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-3 sm:py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] text-base border border-purple-500/50" id="regBtn" onclick="registerPlayer()">
+                    <button class="w-full max-w-[240px] mx-auto bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-3 sm:py-3.5 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.6)] text-base border border-amber-500/50" id="regBtn" onclick="registerPlayer()">
                         <span>Join The Hunt</span>
                         <div class="loader" id="regLoader"></div>
                     </button>
@@ -198,14 +198,25 @@
                 </div>
             </div>
 
-            <!-- SCANNER VIEW (Home Card) -->
+            <!-- OFFLINE VIEW -->
+            <div id="offlineView" class="view mx-auto w-full" style="max-width: min(22rem, calc(100% - 2.5rem));">
+                <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center border-amber-500/40 shadow-[0_0_30px_rgba(245,158,11,0.05)]">
+                    <div class="w-32 h-32 mx-auto mb-6 rounded-2xl overflow-hidden border-2 border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.2)] bg-zinc-900">
+                        <img src="https://i.imgur.com/01ZosHG.gif" alt="Pardon Our Ducks" class="w-full h-full object-cover" />
+                    </div>
+                    <h3 class="text-2xl font-extrabold mb-3 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500">Pardon Our Ducks!</h3>
+                    <p class="text-zinc-400 mb-6 font-medium text-sm leading-relaxed">The Duck Hunt engine is currently paused by CAB staff. Please check back later!</p>
+                    <button class="opacity-50 hover:opacity-100 transition-opacity uppercase tracking-widest bg-transparent border-none text-[10px] cursor-pointer text-zinc-500 p-1 mt-1" onclick="showGate()">Staff Access</button>
+                </div>
+            </div>
+
             <div id="scannerView" class="view mx-auto w-full pb-24" style="max-width: min(24rem, calc(100% - 2.5rem));">
                 <div class="glass-card primary-card rounded-3xl px-4 py-6 sm:p-8 text-center">
                     <!-- Personalized Welcome -->
                     <div class="flex justify-between items-start mb-6 border-b border-zinc-800 pb-4">
                         <div class="text-left">
-                            <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white leading-tight">Welcome <span id="playerNameDisplay" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 capitalize">Player</span></h3>
-                            <p class="text-purple-400 text-[10px] font-bold uppercase tracking-widest mt-1">Status: Active Hunter</p>
+                            <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight text-white leading-tight">Welcome <span id="playerNameDisplay" class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 capitalize">Player</span></h3>
+                            <p class="text-amber-400 text-[10px] font-bold uppercase tracking-widest mt-1">Status: Active Hunter</p>
                         </div>
                         <button class="text-zinc-400 hover:text-rose-400 bg-zinc-800/80 hover:bg-zinc-700 p-2.5 rounded-xl transition-colors" onclick="logout()" title="Log Out">
                             <i data-lucide="log-out" class="w-5 h-5"></i>
@@ -222,8 +233,8 @@
                         <div class="absolute top-24 bottom-8 left-8 right-8 pointer-events-none z-10 overflow-hidden flex items-center justify-center">
                             <!-- Camera mock icon -->
                             <i id="cameraFallbackIcon" data-lucide="qr-code" class="w-20 h-20 text-zinc-800 absolute z-0"></i>
-                            <div class="absolute inset-0 bg-purple-900/20"></div>
-                            <div class="absolute left-0 w-full h-[2px] bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.8)] animate-[scan_3s_ease-in-out_infinite] z-20" id="scanLine"></div>
+                            <div class="absolute inset-0 bg-amber-900/20"></div>
+                            <div class="absolute left-0 w-full h-[2px] bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.8)] animate-[scan_3s_ease-in-out_infinite] z-20" id="scanLine"></div>
                         </div>
                         
                         <!-- Overlay Stats Bar (Improved Gap & Padding) -->
@@ -238,15 +249,15 @@
                             </div>
                             <div class="flex flex-col items-center">
                                 <span class="text-[8px] text-zinc-500 font-black uppercase tracking-[0.1em] leading-none mb-1">Rank</span>
-                                <span class="text-sm font-black text-purple-400" id="statRank">--</span>
+                                <span class="text-sm font-black text-amber-400" id="statRank">--</span>
                             </div>
                         </div>
 
                         <!-- Target Brackets (Shifted down for better gap) -->
-                        <div class="absolute top-24 left-8 w-10 h-10 border-t-4 border-l-4 border-purple-500/80 rounded-tl-lg z-20"></div>
-                        <div class="absolute top-24 right-8 w-10 h-10 border-t-4 border-r-4 border-purple-500/80 rounded-tr-lg z-20"></div>
-                        <div class="absolute bottom-8 left-8 w-10 h-10 border-b-4 border-l-4 border-purple-500/80 rounded-bl-lg z-20"></div>
-                        <div class="absolute bottom-8 right-8 w-10 h-10 border-b-4 border-r-4 border-purple-500/80 rounded-br-lg z-20"></div>
+                        <div class="absolute top-24 left-8 w-10 h-10 border-t-4 border-l-4 border-amber-500/80 rounded-tl-lg z-20"></div>
+                        <div class="absolute top-24 right-8 w-10 h-10 border-t-4 border-r-4 border-amber-500/80 rounded-tr-lg z-20"></div>
+                        <div class="absolute bottom-8 left-8 w-10 h-10 border-b-4 border-l-4 border-amber-500/80 rounded-bl-lg z-20"></div>
+                        <div class="absolute bottom-8 right-8 w-10 h-10 border-b-4 border-r-4 border-amber-500/80 rounded-br-lg z-20"></div>
                         
                         <!-- Scan Success Overlay -->
                         <div id="scanSuccessOverlay" class="absolute inset-0 bg-emerald-900/90 backdrop-blur-sm z-40 hidden flex flex-col items-center justify-center p-6 text-center transform scale-105 opacity-0 transition-all duration-300">
@@ -256,13 +267,22 @@
                             <h4 class="text-xl font-bold text-white mb-1" id="successDuckName">Duck Found!</h4>
                             <p class="text-emerald-300 font-black text-2xl" id="successPoints">+0 PTS</p>
                         </div>
+
+                        <!-- Scan Error Overlay -->
+                        <div id="scanErrorOverlay" class="absolute inset-0 bg-rose-900/90 backdrop-blur-sm z-40 hidden flex flex-col items-center justify-center p-6 text-center transform scale-105 opacity-0 transition-all duration-300">
+                            <div class="w-16 h-16 bg-rose-500 rounded-full flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(244,63,94,0.5)]">
+                                <i data-lucide="x" class="w-8 h-8 text-white"></i>
+                            </div>
+                            <h4 class="text-xl font-bold text-white mb-1">Scan Failed</h4>
+                            <p class="text-rose-200 text-sm font-medium" id="errorDuckMsg">You already found this duck.</p>
+                        </div>
                     </div>
 
                     <!-- Scan History Section -->
                     <div class="text-left">
                         <div class="flex justify-between items-center mb-3 px-1">
                             <span class="text-xs font-bold text-zinc-500 uppercase tracking-widest">Recent Scans</span>
-                            <span class="text-[10px] text-purple-400 font-bold uppercase cursor-pointer hover:underline">View All</span>
+                            <span class="text-[10px] text-amber-400 font-bold uppercase cursor-pointer hover:underline">View All</span>
                         </div>
                         <div class="space-y-2 overflow-y-auto max-h-[160px] pr-1" id="scanHistoryContainer">
                             <div class="text-zinc-600 text-xs text-center py-4 italic">No scans found yet. Go find some ducks!</div>
@@ -276,8 +296,8 @@
             <!-- LEADERBOARD VIEW -->
             <div id="leaderboardView" class="view mx-auto w-full pb-24" style="max-width: min(24rem, calc(100% - 2.5rem));">
                 <div class="glass-card primary-card rounded-3xl px-6 py-8 sm:p-8 text-center">
-                    <div class="w-16 h-16 bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
-                        <i data-lucide="trophy" class="w-8 h-8 text-purple-400"></i>
+                    <div class="w-16 h-16 bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.4)]">
+                        <i data-lucide="trophy" class="w-8 h-8 text-amber-400"></i>
                     </div>
                     <h3 class="text-2xl font-extrabold tracking-tight text-white mb-2">Leaderboard</h3>
                     <p class="text-zinc-400 text-sm mb-6 leading-relaxed">See who is dominating the hunt.</p>
@@ -313,6 +333,17 @@
                     <h3 class="text-2xl font-extrabold tracking-tight text-white mb-2">Information</h3>
                     <p class="text-zinc-400 text-sm mb-6 leading-relaxed">Rules, FAQs, and Account details.</p>
                     
+                    <!-- Persistent Broadcast Box -->
+                    <div class="bg-zinc-900/80 border border-amber-500/30 rounded-xl p-5 mb-6 text-left relative overflow-hidden shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+                        <div class="absolute top-0 right-0 p-3 opacity-10">
+                            <i data-lucide="radio" class="w-16 h-16 text-amber-500"></i>
+                        </div>
+                        <h4 class="text-xs font-bold text-amber-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <i data-lucide="bell" class="w-4 h-4"></i> @CABGCU Updates
+                        </h4>
+                        <p id="infoBroadcastDisplay" class="text-sm text-white italic relative z-10 leading-relaxed">No active hints or announcements.</p>
+                    </div>
+
                     <div class="space-y-3 mb-8 text-left">
                         <div class="bg-zinc-900/50 rounded-xl border border-zinc-800 p-4 flex items-center gap-3">
                             <i data-lucide="book-open" class="w-5 h-5 text-zinc-400"></i>
@@ -338,19 +369,24 @@
             <!-- ADMIN VIEW (Staff Only) -->
             <div id="adminView" class="view mx-auto w-full pb-10" style="max-width: min(40rem, calc(100% - 2.5rem));">
                 <div class="glass-card primary-card rounded-3xl px-4 py-6 sm:p-8">
-                    <div class="flex justify-between items-center mb-6 border-b border-zinc-800 pb-4">
+                    <div class="flex justify-between items-start mb-6 border-b border-zinc-800 pb-4">
                         <div class="flex items-center gap-3">
-                            <div class="bg-purple-500/20 p-2 rounded-lg border border-purple-500/50">
-                                <i data-lucide="shield" class="w-6 h-6 text-purple-400"></i>
+                            <div class="bg-amber-500/20 p-2 sm:p-3 rounded-lg border border-amber-500/50">
+                                <i data-lucide="shield" class="w-6 sm:w-8 h-6 sm:h-8 text-amber-400"></i>
                             </div>
                             <div>
-                                <h3 class="text-xl font-extrabold text-white">HQ Control</h3>
+                                <h3 class="text-xl sm:text-2xl font-extrabold text-white leading-none mb-1">HQ Control</h3>
                                 <p class="text-[10px] text-zinc-400 uppercase tracking-widest">Admin Dashboard</p>
                             </div>
                         </div>
-                        <button class="text-zinc-400 hover:text-white transition-colors p-2" onclick="switchView('loginView')" title="Exit Admin">
-                            <i data-lucide="x" class="w-6 h-6"></i>
-                        </button>
+                        <div class="flex flex-col items-end gap-3">
+                            <button class="text-zinc-400 hover:text-white transition-colors p-1 bg-zinc-900 rounded-lg border border-zinc-800" onclick="switchView('loginView')" title="Exit Admin">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                            <button id="adminHuntToggle" class="bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/50 px-4 py-2 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] flex items-center gap-2" onclick="toggleHuntStatus()">
+                                <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div> DISABLE DUCK HUNT
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Admin Tabs -->
@@ -362,15 +398,15 @@
 
                     <!-- Manage Ducks Panel -->
                     <div id="panel-ducks" class="block">
-                        <!-- NEW: Duck Stats -->
+                        <!-- Duck Stats -->
                         <div class="grid grid-cols-3 gap-3 mb-6">
                             <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-center shadow-lg">
                                 <div class="text-[9px] sm:text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Total Deployed</div>
                                 <div class="text-xl font-black text-white" id="statAdminTotal">0</div>
                             </div>
-                            <div class="bg-purple-900/20 border border-purple-500/30 rounded-xl p-3 text-center shadow-lg">
-                                <div class="text-[9px] sm:text-[10px] text-purple-400 font-bold uppercase tracking-widest mb-1">Claimed</div>
-                                <div class="text-xl font-black text-purple-400" id="statAdminClaimed">0</div>
+                            <div class="bg-amber-900/20 border border-amber-500/30 rounded-xl p-3 text-center shadow-lg">
+                                <div class="text-[9px] sm:text-[10px] text-amber-400 font-bold uppercase tracking-widest mb-1">Claimed</div>
+                                <div class="text-xl font-black text-amber-400" id="statAdminClaimed">0</div>
                             </div>
                             <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-xl p-3 text-center shadow-lg">
                                 <div class="text-[9px] sm:text-[10px] text-emerald-400 font-bold uppercase tracking-widest mb-1">Unclaimed</div>
@@ -382,7 +418,7 @@
                             <h4 class="text-sm font-bold text-white mb-4 uppercase tracking-widest border-b border-zinc-800 pb-2">Bulk Deploy Ducks</h4>
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                                 <div>
-                                    <label class="form-label !mb-1 !text-[10px]">Prefix / Name</label>
+                                    <label class="form-label !mb-1 !text-[10px]">Duck Name</label>
                                     <input type="text" id="bulkDuckName" class="control-item !py-2" placeholder="e.g. Gold" />
                                 </div>
                                 <div>
@@ -398,7 +434,7 @@
                                     <input type="number" id="bulkDuckCount" class="control-item !py-2" placeholder="10" value="10" />
                                 </div>
                                 <div class="sm:col-span-2 lg:col-span-4 flex justify-end">
-                                    <button id="bulkGenBtn" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-xl flex justify-center items-center gap-2 transition-all" onclick="generateBulkDucks()">
+                                    <button id="bulkGenBtn" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 px-6 rounded-xl flex justify-center items-center gap-2 transition-all" onclick="generateBulkDucks()">
                                         <i data-lucide="layers" class="w-4 h-4"></i> <span id="bulkGenText">Generate Batch</span>
                                     </button>
                                 </div>
@@ -425,30 +461,96 @@
                             </div>
                             <div class="flex items-center gap-3">
                                 <button class="text-[10px] text-zinc-400 hover:text-white whitespace-nowrap" onclick="toggleSelectAllFiltered()">Select All</button>
-                                <button class="text-xs text-purple-400 hover:underline flex items-center gap-1" onclick="loadAdminDucks()"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh</button>
+                                <button class="text-xs text-amber-400 hover:underline flex items-center gap-1" onclick="loadAdminDucks()"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh</button>
                             </div>
                         </div>
-                        <div class="space-y-3 max-h-[400px] overflow-y-auto pr-2" id="adminDucksList">
-                            <div class="text-zinc-500 text-center py-4 text-sm">Loading ducks...</div>
+                        
+                        <!-- Table Wrapper -->
+                        <div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
+                            <div class="overflow-x-auto max-h-[500px]">
+                                <table class="w-full text-left border-collapse min-w-[600px]">
+                                    <thead class="bg-zinc-950/50 sticky top-0 z-10">
+                                        <tr>
+                                            <th class="p-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800 w-10 text-center"><i data-lucide="check-square" class="w-3 h-3 mx-auto"></i></th>
+                                            <th class="p-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800">Duck Details</th>
+                                            <th class="p-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800 text-center">Points</th>
+                                            <th class="p-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800 text-center">Status</th>
+                                            <th class="p-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminDucksList" class="divide-y divide-zinc-800/50">
+                                        <tr><td colspan="5" class="text-zinc-500 text-center py-8 text-sm">Loading ducks...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Manage Players Panel -->
                     <div id="panel-players" class="hidden">
+                        <!-- Player Stats -->
+                        <div class="grid grid-cols-2 gap-3 mb-6">
+                            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-center shadow-lg">
+                                <div class="text-[9px] sm:text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Total Hunters</div>
+                                <div class="text-xl font-black text-white" id="statAdminPlayers">0</div>
+                            </div>
+                            <div class="bg-emerald-900/20 border border-emerald-500/30 rounded-xl p-3 text-center shadow-lg">
+                                <div class="text-[9px] sm:text-[10px] text-emerald-400 font-bold uppercase tracking-widest mb-1">Online Now (5m)</div>
+                                <div class="text-xl font-black text-emerald-400" id="statAdminOnline">0</div>
+                            </div>
+                        </div>
+
                         <div class="flex justify-between items-end mb-3">
                             <h4 class="text-sm font-bold text-white uppercase tracking-widest">Player Database</h4>
-                            <button class="text-xs text-purple-400 hover:underline flex items-center gap-1" onclick="loadAdminPlayers()"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh</button>
+                            <button class="text-xs text-amber-400 hover:underline flex items-center gap-1" onclick="loadAdminPlayers()"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh</button>
                         </div>
-                        <div class="space-y-2 max-h-[400px] overflow-y-auto pr-2" id="adminPlayersList">
-                            <div class="text-zinc-500 text-center py-4 text-sm">Loading players...</div>
+                        
+                        <!-- Table Wrapper -->
+                        <div class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
+                            <div class="overflow-x-auto max-h-[500px]">
+                                <table class="w-full text-left border-collapse min-w-[600px]">
+                                    <thead class="bg-zinc-950/50 sticky top-0 z-10">
+                                        <tr>
+                                            <th class="p-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800 w-12 text-center">Rank</th>
+                                            <th class="p-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800">Hunter</th>
+                                            <th class="p-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800 text-center">Score</th>
+                                            <th class="p-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800 text-center">Status</th>
+                                            <th class="p-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-800 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminPlayersList" class="divide-y divide-zinc-800/50">
+                                        <tr><td colspan="5" class="text-zinc-500 text-center py-8 text-sm">Loading players...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Live Feed Panel -->
                     <div id="panel-feed" class="hidden">
+                        <!-- Broadcast Card -->
+                        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-6 shadow-lg">
+                            <h4 class="text-sm font-bold text-white mb-4 uppercase tracking-widest border-b border-zinc-800 pb-2 flex items-center gap-2">
+                                <i data-lucide="radio" class="w-4 h-4 text-amber-400"></i> Global Broadcast
+                            </h4>
+                            <div class="mb-4 p-3 bg-zinc-950 rounded-lg border border-zinc-800">
+                                <span class="text-[10px] text-zinc-500 uppercase font-bold block mb-1">Current Active Broadcast</span>
+                                <span id="currentBroadcastDisplay" class="text-sm text-white italic">Loading...</span>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <input type="text" id="broadcastMsg" class="control-item flex-1" placeholder="Type hint or announcement..." onkeyup="if(event.key==='Enter') sendBroadcast()"/>
+                                <button class="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 px-6 rounded-xl flex items-center justify-center gap-2 transition-all" onclick="sendBroadcast()" id="broadcastBtn">
+                                    <i data-lucide="send" class="w-4 h-4"></i> Publish
+                                </button>
+                                <button class="w-full sm:w-auto bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2 px-4 rounded-xl flex items-center justify-center gap-2 transition-all" onclick="clearBroadcast()" id="clearBroadcastBtn">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="flex justify-between items-end mb-3">
                             <h4 class="text-sm font-bold text-white uppercase tracking-widest">Global Scan Feed</h4>
-                            <button class="text-xs text-purple-400 hover:underline flex items-center gap-1" onclick="loadAdminFeed()"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh</button>
+                            <button class="text-xs text-amber-400 hover:underline flex items-center gap-1" onclick="loadAdminFeed()"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh</button>
                         </div>
                         <div class="space-y-2 max-h-[400px] overflow-y-auto pr-2" id="adminFeedList">
                             <div class="text-zinc-500 text-center py-4 text-sm">Loading feed...</div>
@@ -463,9 +565,9 @@
     </main>
 
     <!-- BOTTOM NAVIGATION -->
-    <nav id="mainNav" class="fixed bottom-0 left-0 w-full z-40 bg-zinc-950/80 backdrop-blur-xl border-t border-purple-500/20 hidden" style="padding-bottom: max(0px, env(safe-area-inset-bottom));">
+    <nav id="mainNav" class="fixed bottom-0 left-0 w-full z-40 bg-zinc-950/80 backdrop-blur-xl border-t border-amber-500/20 hidden" style="padding-bottom: max(0px, env(safe-area-inset-bottom));">
         <div class="max-w-md mx-auto flex justify-between items-center px-6 py-3">
-            <button onclick="switchView('scannerView')" id="nav-scannerView" class="nav-btn flex flex-col items-center gap-1.5 text-purple-400 transition-colors w-16">
+            <button onclick="switchView('scannerView')" id="nav-scannerView" class="nav-btn flex flex-col items-center gap-1.5 text-amber-400 transition-colors w-16">
                 <i data-lucide="scan" class="w-6 h-6"></i>
                 <span class="text-[10px] font-bold uppercase tracking-wider">Scanner</span>
             </button>
@@ -487,14 +589,14 @@
     <!-- Staff Login Modal -->
     <div id="gateModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-zinc-950/80 backdrop-blur-md" onclick="hideGate()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30">
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-amber-500/30">
             <div class="w-16 h-16 bg-zinc-900 rounded-2xl p-3 mb-4 flex items-center justify-center border border-zinc-800 transition-transform hover:rotate-12">
                 <i data-lucide="lock" class="w-8 h-8 text-zinc-400"></i>
             </div>
             <h3 class="text-2xl font-bold mb-1 text-white">Staff Login</h3>
             <p class="text-zinc-400 text-sm mb-6">Enter admin password to access system settings.</p>
             <input type="password" id="adminPass" class="control-item text-center mb-6 no-save-pass" placeholder="Password" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
-            <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 border border-purple-500/50 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]" onclick="verifyAdmin()">
+            <button class="w-full bg-gradient-to-r from-amber-600 to-orange-600 border border-amber-500/50 text-white font-bold py-3 rounded-xl flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]" onclick="verifyAdmin()">
                 <span>Authorize</span>
             </button>
         </div>
@@ -503,7 +605,7 @@
     <!-- QR Code Display Modal (Admin) -->
     <div id="qrModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="hideQR()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30">
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-amber-500/30">
             <h3 class="text-xl font-bold mb-1 text-white" id="qrModalTitle">Duck QR Code</h3>
             <p class="text-zinc-400 text-sm mb-6" id="qrModalLocation">Location</p>
             
@@ -511,7 +613,7 @@
                 <div id="qrcodeDisplay"></div>
             </div>
             
-            <div class="w-full bg-zinc-900 border border-zinc-800 p-3 rounded-lg mb-4 text-xs font-mono text-purple-400 break-all select-all" id="qrModalUrl">
+            <div class="w-full bg-zinc-900 border border-zinc-800 p-3 rounded-lg mb-4 text-xs font-mono text-amber-400 break-all select-all" id="qrModalUrl">
                 URL
             </div>
 
@@ -524,7 +626,7 @@
     <!-- Edit Duck Modal (Admin) -->
     <div id="editDuckModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="closeEditDuckModal()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30">
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-amber-500/30">
             <h3 class="text-xl font-bold mb-4 text-white">Edit Duck Config</h3>
             
             <input type="hidden" id="editDuckCode" />
@@ -546,7 +648,7 @@
 
             <div class="flex gap-3 w-full">
                 <button class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl transition-all" onclick="closeEditDuckModal()">Cancel</button>
-                <button class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2" onclick="saveDuckEdit()" id="saveDuckBtn">
+                <button class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2" onclick="saveDuckEdit()" id="saveDuckBtn">
                     Save Changes
                 </button>
             </div>
@@ -556,7 +658,7 @@
     <!-- Bulk Edit Duck Modal (Admin) -->
     <div id="bulkEditModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="closeBulkEditModal()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30">
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-amber-500/30">
             <h3 class="text-xl font-bold mb-2 text-white">Bulk Edit Ducks</h3>
             <p class="text-xs text-zinc-400 mb-4">Editing <span id="bulkEditCount">0</span> ducks. Leave fields blank to keep existing values.</p>
             
@@ -573,8 +675,42 @@
 
             <div class="flex gap-3 w-full">
                 <button class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl transition-all" onclick="closeBulkEditModal()">Cancel</button>
-                <button class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2" onclick="saveBulkEdit()" id="saveBulkEditBtn">
+                <button class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2" onclick="saveBulkEdit()" id="saveBulkEditBtn">
                     Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Player Modal (Admin) -->
+    <div id="editPlayerModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="closeEditPlayerModal()"></div>
+        <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-amber-500/30">
+            <h3 class="text-xl font-bold mb-4 text-white">Edit Hunter Profile</h3>
+            
+            <input type="hidden" id="editPlayerId" />
+            
+            <div class="w-full space-y-4 mb-6 text-left">
+                <div>
+                    <label class="form-label !mb-1 !text-[10px]">Hunter Name</label>
+                    <input type="text" id="editPlayerName" class="control-item !py-2" readonly class="opacity-50 cursor-not-allowed" />
+                </div>
+                <div>
+                    <label class="form-label !mb-1 !text-[10px]">Total Points</label>
+                    <input type="number" id="editPlayerPoints" class="control-item !py-2" />
+                    <p class="text-[10px] text-zinc-500 mt-1">Adjusting this overrides their natural score.</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 w-full mb-4">
+                <button class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2" onclick="savePlayerEdit()" id="savePlayerBtn">
+                    Save Points
+                </button>
+            </div>
+            
+            <div class="border-t border-zinc-800 pt-4 w-full">
+                <button class="w-full bg-rose-900/30 border border-rose-500/50 text-rose-400 hover:bg-rose-600 hover:text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2" onclick="togglePlayerBan()" id="banPlayerBtn">
+                    Ban Player
                 </button>
             </div>
         </div>
@@ -591,6 +727,17 @@
     let currentStream = null;
     let scanning = false;
     let scanThrottle = false; // prevents multiple rapid triggers
+    let lastScannedCode = null;
+    let lastScanTime = 0;
+
+    // System State
+    let isHuntLive = true;
+    let systemStatusInterval = null;
+
+    // Announcement State
+    let lastAnnouncementAt = new Date().toISOString();
+    let heartbeatInterval = null;
+    let announcementInterval = null;
 
     // Check for Deep Link on Load (e.g. ?duck=xwu3rh49)
     const urlParams = new URLSearchParams(window.location.search);
@@ -605,9 +752,15 @@
     // Initialize UI
     document.getElementById('year').textContent = new Date().getFullYear();
     lucide.createIcons();
+    startSystemTracker(); // Start engine checker immediately
 
     // --- View Handling ---
     function switchView(viewId) {
+        // Enforce Offline Lockout (except for admins)
+        if (!isHuntLive && viewId !== 'adminView' && viewId !== 'offlineView') {
+            viewId = 'offlineView';
+        }
+
         document.querySelectorAll('.view').forEach(v => {
             v.classList.remove('active');
             v.style.display = 'none'; 
@@ -636,13 +789,13 @@
         if (navViews.includes(viewId)) {
             nav.style.display = 'block';
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('text-purple-400');
+                btn.classList.remove('text-amber-400');
                 btn.classList.add('text-zinc-500');
             });
             const activeBtn = document.getElementById('nav-' + viewId);
             if (activeBtn) {
                 activeBtn.classList.remove('text-zinc-500');
-                activeBtn.classList.add('text-purple-400');
+                activeBtn.classList.add('text-amber-400');
             }
         } else {
             nav.style.display = 'none';
@@ -653,6 +806,8 @@
 
     function logout() {
         currentPlayer = null;
+        if (announcementInterval) clearInterval(announcementInterval);
+        if (heartbeatInterval) clearInterval(heartbeatInterval);
         switchView('loginView');
     }
 
@@ -724,10 +879,6 @@
     }
 
     function processQRData(qrData) {
-        scanThrottle = true;
-        // Pause visual scan line
-        document.getElementById('scanLine').style.animationPlayState = 'paused';
-
         // Extract duck code from URL if it's a URL, or just use the raw string
         let codeToProcess = qrData;
         try {
@@ -737,6 +888,19 @@
         } catch (e) {
             // Not a URL, use raw string
         }
+
+        // Anti-spam: Ignore the EXACT same code if scanned within the last 5 seconds
+        const now = Date.now();
+        if (codeToProcess === lastScannedCode && (now - lastScanTime) < 5000) {
+            return; // Silently ignore to prevent spam
+        }
+
+        scanThrottle = true;
+        lastScannedCode = codeToProcess;
+        lastScanTime = now;
+
+        // Pause visual scan line
+        document.getElementById('scanLine').style.animationPlayState = 'paused';
 
         claimDuck(codeToProcess);
     }
@@ -755,8 +919,7 @@
                 .single();
 
             if (duckErr || !duckInfo) {
-                alert("Invalid or inactive Duck Code.");
-                resumeScanning();
+                showErrorAnim("Invalid or inactive Duck Code.");
                 return;
             }
 
@@ -765,12 +928,11 @@
                 .from('scans')
                 .select('id')
                 .eq('player_id', currentPlayer.student_id)
-                .eq('duck_code', duckCode) // Using exact code to verify
+                .eq('duck_code', duckCode) 
                 .single();
 
             if (existingScan) {
-                alert("You have already found this duck!");
-                resumeScanning();
+                showErrorAnim("You already found this duck.");
                 return;
             }
 
@@ -786,7 +948,7 @@
 
             if (scanErr) throw scanErr;
 
-            // 4. Update player totals (Using RPC is best, but for basic implementation we fetch/update)
+            // 4. Update player totals
             const newPoints = (currentPlayer.points || 0) + duckInfo.points;
             const newDucks = (currentPlayer.ducks || 0) + 1;
 
@@ -801,13 +963,12 @@
             currentPlayer.points = newPoints;
             currentPlayer.ducks = newDucks;
 
-            // Show Success Overlay
+            // Show Success Overlay & Animations
             showSuccessAnim(duckInfo.name, duckInfo.points);
 
         } catch (err) {
             console.error("Claim Error:", err);
-            alert("Error claiming duck: " + err.message);
-            resumeScanning();
+            showErrorAnim("Server Error. Try again.");
         }
     }
 
@@ -817,8 +978,7 @@
         document.getElementById('successPoints').textContent = `+${points} PTS`;
         
         overlay.classList.remove('hidden');
-        // Force reflow
-        void overlay.offsetWidth;
+        void overlay.offsetWidth; // Force reflow
         overlay.classList.remove('opacity-0', 'scale-105');
         overlay.classList.add('opacity-100', 'scale-100');
 
@@ -830,7 +990,7 @@
             spawnConfetti();
         }
 
-        // Hide after 2.5 seconds and resume scanning
+        // Auto-dismiss after 2.5 seconds
         setTimeout(() => {
             overlay.classList.remove('opacity-100', 'scale-100');
             overlay.classList.add('opacity-0', 'scale-105');
@@ -839,6 +999,26 @@
                 resumeScanning();
             }, 300);
         }, 2500);
+    }
+
+    function showErrorAnim(msg) {
+        const overlay = document.getElementById('scanErrorOverlay');
+        document.getElementById('errorDuckMsg').textContent = msg;
+        
+        overlay.classList.remove('hidden');
+        void overlay.offsetWidth;
+        overlay.classList.remove('opacity-0', 'scale-105');
+        overlay.classList.add('opacity-100', 'scale-100');
+
+        // Auto-dismiss after 2 seconds
+        setTimeout(() => {
+            overlay.classList.remove('opacity-100', 'scale-100');
+            overlay.classList.add('opacity-0', 'scale-105');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                resumeScanning();
+            }, 300);
+        }, 2000);
     }
 
     function spawnFlyingDucks() {
@@ -868,16 +1048,11 @@
         var animationEnd = Date.now() + duration;
         var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10000, colors: ['#FFD700', '#FFA500', '#FF8C00'] };
 
-        function randomInRange(min, max) {
-            return Math.random() * (max - min) + min;
-        }
+        function randomInRange(min, max) { return Math.random() * (max - min) + min; }
 
         var interval = setInterval(function() {
             var timeLeft = animationEnd - Date.now();
-
-            if (timeLeft <= 0) {
-                return clearInterval(interval);
-            }
+            if (timeLeft <= 0) return clearInterval(interval);
 
             var particleCount = 50 * (timeLeft / duration);
             confetti(Object.assign({}, defaults, { particleCount,
@@ -895,13 +1070,89 @@
         const pendingCode = sessionStorage.getItem('pendingDuckCode');
         if (pendingCode && currentPlayer) {
             sessionStorage.removeItem('pendingDuckCode');
-            // Slight delay so the UI can load before claiming
             setTimeout(() => claimDuck(pendingCode), 1000);
         }
     }
 
-
     // --- Supabase User Operations ---
+
+    function startHeartbeat() {
+        if (heartbeatInterval) clearInterval(heartbeatInterval);
+        updateHeartbeat(); // run immediately
+        heartbeatInterval = setInterval(updateHeartbeat, 60000); // Update every 1 minute
+    }
+
+    async function updateHeartbeat() {
+        if (!currentPlayer) return;
+        try {
+            await _supabase.from('players').update({ last_active: new Date().toISOString() }).eq('student_id', currentPlayer.student_id);
+        } catch (e) { /* ignore heartbeat failure */ }
+    }
+
+    // --- System Status Tracker ---
+    function startSystemTracker() {
+        if(systemStatusInterval) clearInterval(systemStatusInterval);
+        checkSystemStatus();
+        systemStatusInterval = setInterval(checkSystemStatus, 10000); // Sync status every 10s
+    }
+
+    async function checkSystemStatus() {
+        try {
+            const { data } = await _supabase.from('system_settings').select('hunt_active').eq('id', 1).single();
+            if (data) {
+                isHuntLive = data.hunt_active;
+                updateSystemUI();
+
+                const currentView = document.querySelector('.view.active');
+                if (!currentView) return;
+
+                // AGGRESSIVE KICKOUT: If offline, and not in Admin or Offline view
+                if (!isHuntLive && currentView.id !== 'adminView' && currentView.id !== 'offlineView') {
+                    console.log("Engine Offline: Kicking active user to offline screen");
+                    switchView('offlineView');
+                }
+                
+                // RECOVERY: If live, and stuck on Offline view
+                if (isHuntLive && currentView.id === 'offlineView') {
+                    console.log("Engine Live: Restoring access");
+                    switchView('loginView');
+                }
+            }
+        } catch(e) {
+            console.error("System Check Error:", e);
+        }
+    }
+
+    function updateSystemUI() {
+        const toggleBtn = document.getElementById('adminHuntToggle');
+        if (toggleBtn) {
+            if (isHuntLive) {
+                toggleBtn.innerHTML = '<div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div> DISABLE DUCK HUNT';
+                toggleBtn.className = 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/50 px-4 py-2 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] flex items-center gap-2';
+            } else {
+                toggleBtn.innerHTML = '<div class="w-2.5 h-2.5 rounded-full bg-rose-500"></div> ENABLE DUCK HUNT';
+                toggleBtn.className = 'bg-rose-500/20 text-rose-400 hover:bg-rose-600 hover:text-white border border-rose-500/50 px-4 py-2 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(244,63,94,0.2)] flex items-center gap-2';
+            }
+        }
+    }
+
+    async function toggleHuntStatus() {
+        const newState = !isHuntLive;
+        const toggleBtn = document.getElementById('adminHuntToggle');
+        toggleBtn.innerHTML = '<div class="loader" style="display:block; width:14px; height:14px; margin:0;"></div> ...';
+        
+        try {
+            await _supabase.from('system_settings').update({ hunt_active: newState }).eq('id', 1);
+            isHuntLive = newState;
+            updateSystemUI();
+            checkSystemStatus(); // Trigger immediate local execution 
+        } catch (e) {
+            alert('Failed to update system status.');
+            updateSystemUI();
+        }
+    }
+
+    // --- Player Management ---
 
     async function studentLogin() {
         const studentId = document.getElementById('loginStudentID').value;
@@ -922,11 +1173,15 @@
                 // New User
                 document.getElementById('regStudentID').value = studentId;
                 switchView('registerView');
+            } else if (data.is_banned) {
+                alert("Your account has been restricted by HQ.");
             } else {
                 // Existing User
                 currentPlayer = data;
                 switchView('scannerView');
                 document.getElementById('loginStudentID').value = '';
+                startHeartbeat();
+                startAnnouncementTracker();
                 checkForPendingDuck();
             }
         } catch (err) {
@@ -958,7 +1213,8 @@
                     email: email, 
                     pin: pin,
                     points: 0,
-                    ducks: 0
+                    ducks: 0,
+                    is_banned: false
                 }])
                 .select()
                 .single();
@@ -966,6 +1222,8 @@
             if (error) throw error;
             currentPlayer = data;
             switchView('scannerView');
+            startHeartbeat();
+            startAnnouncementTracker();
             checkForPendingDuck();
         } catch (err) {
             console.error("Reg Error:", err);
@@ -978,27 +1236,16 @@
     async function refreshPlayerStats() {
         if (!currentPlayer) return;
 
-        // Fetch Player Rank from View
-        const { data: rankData } = await _supabase
-            .from('player_rankings')
-            .select('player_rank')
-            .eq('student_id', currentPlayer.student_id)
-            .single();
+        const { data: rankData } = await _supabase.from('player_rankings').select('player_rank').eq('student_id', currentPlayer.student_id).single();
+        const { data: freshPlayer } = await _supabase.from('players').select('ducks, points, name, is_banned').eq('student_id', currentPlayer.student_id).single();
 
-        // Fetch Fresh Data
-        const { data: freshPlayer } = await _supabase
-            .from('players')
-            .select('ducks, points, name')
-            .eq('student_id', currentPlayer.student_id)
-            .single();
+        if (freshPlayer && freshPlayer.is_banned) {
+            logout();
+            alert("Your account has been restricted by HQ.");
+            return;
+        }
 
-        // Fetch Recent Scans
-        const { data: history } = await _supabase
-            .from('scans')
-            .select('*')
-            .eq('player_id', currentPlayer.student_id)
-            .order('created_at', { ascending: false })
-            .limit(10);
+        const { data: history } = await _supabase.from('scans').select('*').eq('player_id', currentPlayer.student_id).order('created_at', { ascending: false }).limit(10);
 
         if (freshPlayer) currentPlayer = { ...currentPlayer, ...freshPlayer };
 
@@ -1033,17 +1280,12 @@
     }
 
     async function loadLeaderboard() {
-        const { data, error } = await _supabase
-            .from('players')
-            .select('name, points')
-            .order('points', { ascending: false })
-            .limit(20);
+        const { data, error } = await _supabase.from('players').select('name, points, is_banned').eq('is_banned', false).order('points', { ascending: false }).limit(20);
 
         const container = document.getElementById('leaderboardContainer');
         if (data && data.length > 0) {
             container.innerHTML = data.map((player, index) => {
                 const isMe = currentPlayer && player.name === currentPlayer.name;
-                
                 let displayName = player.name;
                 if (displayName) {
                     const nameParts = displayName.trim().split(/\s+/);
@@ -1053,14 +1295,13 @@
                         displayName = `${firstName} ${lastInitial}.`;
                     }
                 }
-
                 return `
-                    <div class="flex items-center justify-between p-3 ${isMe ? 'bg-purple-900/20 border-purple-500/40' : 'bg-zinc-900/50 border-zinc-800'} rounded-xl border mb-2">
+                    <div class="flex items-center justify-between p-3 ${isMe ? 'bg-amber-900/20 border-amber-500/40' : 'bg-zinc-900/50 border-zinc-800'} rounded-xl border mb-2">
                         <div class="flex items-center gap-3">
                             <span class="text-zinc-500 font-bold w-4">#${index + 1}</span>
-                            <span class="${isMe ? 'text-purple-400' : 'text-white'} text-sm font-medium">${displayName}</span>
+                            <span class="${isMe ? 'text-amber-400' : 'text-white'} text-sm font-medium">${displayName}</span>
                         </div>
-                        <span class="text-purple-400 font-bold text-sm">${player.points} PTS</span>
+                        <span class="text-amber-400 font-bold text-sm">${player.points} PTS</span>
                     </div>
                 `;
             }).join('');
@@ -1077,13 +1318,10 @@
         document.getElementById('adminPass').focus();
     }
     
-    function hideGate() { 
-        document.getElementById('gateModal').classList.add('hidden'); 
-    }
+    function hideGate() { document.getElementById('gateModal').classList.add('hidden'); }
 
     function verifyAdmin() {
         const pass = document.getElementById('adminPass').value;
-        // Basic frontend gate - in production, use Supabase Auth/RLS
         if (pass === 'cab2026') {
             hideGate();
             switchView('adminView');
@@ -1094,13 +1332,10 @@
     }
 
     function switchAdminTab(tab) {
-        document.getElementById('tab-ducks').classList.remove('active');
-        document.getElementById('tab-players').classList.remove('active');
-        document.getElementById('tab-feed').classList.remove('active');
-        
-        document.getElementById('panel-ducks').style.display = 'none';
-        document.getElementById('panel-players').style.display = 'none';
-        document.getElementById('panel-feed').style.display = 'none';
+        ['ducks', 'players', 'feed'].forEach(t => {
+            document.getElementById(`tab-${t}`).classList.remove('active');
+            document.getElementById(`panel-${t}`).style.display = 'none';
+        });
 
         document.getElementById(`tab-${tab}`).classList.add('active');
         document.getElementById(`panel-${tab}`).style.display = 'block';
@@ -1110,17 +1345,17 @@
         if (tab === 'feed') loadAdminFeed();
     }
 
-    function generateCode() {
-        return Math.random().toString(36).substring(2, 10);
-    }
+    // -- Admin Ducks --
+
+    function generateCode() { return Math.random().toString(36).substring(2, 10); }
 
     async function generateBulkDucks() {
-        const namePrefix = document.getElementById('bulkDuckName').value || "Duck";
+        const literalName = document.getElementById('bulkDuckName').value || "Duck";
         const locationInput = document.getElementById('bulkDuckLoc').value || "Bulk Deployed";
         const pts = parseInt(document.getElementById('bulkDuckPoints').value) || 10;
         const count = parseInt(document.getElementById('bulkDuckCount').value) || 1;
 
-        if (count > 20000) return alert("Maximum 20,000 ducks per batch to prevent browser crash.");
+        if (count > 20000) return alert("Maximum 20,000 ducks per batch.");
 
         const btn = document.getElementById('bulkGenBtn');
         const btnText = document.getElementById('bulkGenText');
@@ -1132,16 +1367,16 @@
         try {
             let codesToInsert = [];
             for (let i = 0; i < count; i++) {
-                const uniqueCode = generateCode() + Math.random().toString(36).substring(2, 6); // Extra entropy for large batches
+                // Generates random code, but keeps the exact literal name provided
+                const uniqueCode = generateCode() + Math.random().toString(36).substring(2, 6);
                 codesToInsert.push({ 
                     code: uniqueCode, 
-                    name: `${namePrefix} (${uniqueCode.substring(0, 4).toUpperCase()})`, 
+                    name: literalName, 
                     location: locationInput, 
                     points: pts 
                 });
             }
 
-            // Chunk inserts (Supabase standard limit is usually large, but chunking by 1000 is safe)
             const chunkSize = 1000;
             for (let i = 0; i < codesToInsert.length; i += chunkSize) {
                 const chunk = codesToInsert.slice(i, i + chunkSize);
@@ -1150,11 +1385,9 @@
                 btnText.textContent = `Saving... ${Math.min(i + chunkSize, count)}/${count}`;
             }
             
-            document.getElementById('bulkDuckCount').value = '10'; // Reset to safe default
+            document.getElementById('bulkDuckCount').value = '10';
             loadAdminDucks();
-            alert(`Successfully deployed ${count} ducks!`);
         } catch (err) {
-            console.error(err);
             alert("Error creating ducks: " + err.message);
         } finally {
             btn.disabled = false;
@@ -1163,58 +1396,37 @@
         }
     }
 
-    let allAdminDucks = []; // Store globally for rapid filtering
+    let allAdminDucks = [];
 
     async function loadAdminDucks() {
         const list = document.getElementById('adminDucksList');
-        list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm">Refreshing...</div>';
+        list.innerHTML = '<tr><td colspan="5" class="text-zinc-500 text-center py-8 text-sm">Refreshing data...</td></tr>';
 
         try {
-            // 1. Fetch ducks
-            const { data: ducks, error } = await _supabase
-                .from('duck_codes')
-                .select('*')
-                .order('created_at', { ascending: false });
-
+            const { data: ducks, error } = await _supabase.from('duck_codes').select('*').order('created_at', { ascending: false });
             if (error) throw error;
 
-            // 2. Fetch scan counts
-            const { data: scanData } = await _supabase
-                .from('scans')
-                .select('duck_code');
-            
+            const { data: scanData } = await _supabase.from('scans').select('duck_code');
             const scanCounts = {};
-            if (scanData) {
-                scanData.forEach(s => {
-                    scanCounts[s.duck_code] = (scanCounts[s.duck_code] || 0) + 1;
-                });
-            }
+            if (scanData) scanData.forEach(s => { scanCounts[s.duck_code] = (scanCounts[s.duck_code] || 0) + 1; });
 
             if (ducks && ducks.length > 0) {
-                allAdminDucks = ducks.map(d => ({
-                    ...d,
-                    claimCount: scanCounts[d.code] || 0
-                }));
+                allAdminDucks = ducks.map(d => ({ ...d, claimCount: scanCounts[d.code] || 0 }));
                 
-                // Update Admin Stats
                 const totalDucks = allAdminDucks.length;
                 const claimedDucks = allAdminDucks.filter(d => d.claimCount > 0).length;
-                const activeDucks = totalDucks - claimedDucks;
                 
                 document.getElementById('statAdminTotal').textContent = totalDucks.toLocaleString();
                 document.getElementById('statAdminClaimed').textContent = claimedDucks.toLocaleString();
-                document.getElementById('statAdminActive').textContent = activeDucks.toLocaleString();
+                document.getElementById('statAdminActive').textContent = (totalDucks - claimedDucks).toLocaleString();
 
-                applyDuckFilters(); // Trigger render
+                applyDuckFilters();
             } else {
-                list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm italic">No ducks deployed yet.</div>';
+                list.innerHTML = '<tr><td colspan="5" class="text-zinc-500 text-center py-8 text-sm italic">No ducks deployed yet.</td></tr>';
                 allAdminDucks = [];
-                document.getElementById('statAdminTotal').textContent = "0";
-                document.getElementById('statAdminClaimed').textContent = "0";
-                document.getElementById('statAdminActive').textContent = "0";
             }
         } catch (err) {
-            list.innerHTML = `<div class="text-rose-500 text-center py-4 text-sm">Error: ${err.message}</div>`;
+            list.innerHTML = `<tr><td colspan="5" class="text-rose-500 text-center py-8 text-sm">Error: ${err.message}</td></tr>`;
         }
     }
 
@@ -1225,21 +1437,14 @@
         const sortVal = document.getElementById('sortDucks').value;
 
         let filtered = allAdminDucks.filter(d => {
-            const matchName = d.name.toLowerCase().includes(nameF);
-            const matchLoc = d.location.toLowerCase().includes(locF);
-            const matchPts = ptsF ? d.points.toString() === ptsF : true;
-            return matchName && matchLoc && matchPts;
+            return d.name.toLowerCase().includes(nameF) && 
+                   d.location.toLowerCase().includes(locF) && 
+                   (ptsF ? d.points.toString() === ptsF : true);
         });
 
-        // Apply Sorting
-        if (sortVal === 'ptsDesc') {
-            filtered.sort((a, b) => b.points - a.points);
-        } else if (sortVal === 'claimedDesc') {
-            filtered.sort((a, b) => b.claimCount - a.claimCount);
-        } else {
-            // Default newest first
-            filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        }
+        if (sortVal === 'ptsDesc') filtered.sort((a, b) => b.points - a.points);
+        else if (sortVal === 'claimedDesc') filtered.sort((a, b) => b.claimCount - a.claimCount);
+        else filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         renderAdminDucks(filtered);
     }
@@ -1248,46 +1453,41 @@
         const list = document.getElementById('adminDucksList');
         if (data.length > 0) {
             list.innerHTML = data.map(d => `
-                <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex justify-between items-center group">
-                    <div class="flex-1 min-w-0 pr-2 flex items-start gap-3">
-                        <div class="pt-1">
-                            <input type="checkbox" class="duck-select-checkbox w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-purple-500 focus:ring-purple-500 focus:ring-offset-zinc-900 cursor-pointer" value="${d.code}" onchange="updateBulkActionBtns()">
+                <tr class="hover:bg-zinc-900/50 transition-colors group">
+                    <td class="p-3 border-b border-zinc-800/50 text-center">
+                        <input type="checkbox" class="duck-select-checkbox w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-amber-500 focus:ring-amber-500 cursor-pointer" value="${d.code}" onchange="updateBulkActionBtns()">
+                    </td>
+                    <td class="p-3 border-b border-zinc-800/50">
+                        <div class="font-bold text-sm text-white truncate max-w-[200px]">${d.name}</div>
+                        <div class="text-[10px] text-zinc-500 truncate max-w-[200px]">${d.location}</div>
+                        <code class="text-[10px] text-zinc-400 bg-zinc-950 px-1 py-0.5 rounded border border-zinc-800 mt-1 inline-block">${d.code}</code>
+                    </td>
+                    <td class="p-3 border-b border-zinc-800/50 text-center">
+                        <span class="text-amber-400 text-xs font-black bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">${d.points}</span>
+                    </td>
+                    <td class="p-3 border-b border-zinc-800/50 text-center">
+                        <span class="${d.claimCount > 0 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-zinc-400 bg-zinc-800/50 border-zinc-700'} text-[10px] font-bold px-2 py-1 rounded border">Claims: ${d.claimCount}</span>
+                    </td>
+                    <td class="p-3 border-b border-zinc-800/50 text-right">
+                        <div class="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                            <button class="bg-zinc-800 hover:bg-amber-600 p-2 rounded-lg transition-colors" onclick="generateQR('${d.code}', '${d.name.replace(/'/g, "\\'")}', '${d.location.replace(/'/g, "\\'")}')" title="QR Code"><i data-lucide="qr-code" class="w-4 h-4 text-white"></i></button>
+                            <button class="bg-zinc-800 hover:bg-blue-600 p-2 rounded-lg transition-colors" onclick="openEditDuckModal('${d.code}')" title="Edit"><i data-lucide="edit-2" class="w-4 h-4 text-white"></i></button>
+                            <button class="bg-zinc-800 hover:bg-rose-600 p-2 rounded-lg transition-colors" onclick="deleteDuck('${d.code}')" title="Delete"><i data-lucide="trash-2" class="w-4 h-4 text-white"></i></button>
                         </div>
-                        <div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h5 class="text-white font-bold text-sm truncate">${d.name}</h5>
-                                <span class="text-purple-400 text-[10px] font-black bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 whitespace-nowrap">${d.points} PTS</span>
-                                <span class="text-emerald-400 text-[10px] font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 whitespace-nowrap">Claimed: ${d.claimCount}</span>
-                            </div>
-                            <p class="text-[10px] text-zinc-500 mb-1 mt-1 truncate"><i data-lucide="map-pin" class="w-3 h-3 inline"></i> ${d.location}</p>
-                            <code class="text-xs text-zinc-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800 inline-block">${d.code}</code>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity pl-2">
-                        <button class="bg-zinc-800 hover:bg-purple-600 border border-zinc-700 hover:border-purple-500 p-2 rounded-lg transition-colors" onclick="generateQR('${d.code}', '${d.name.replace(/'/g, "\\'")}', '${d.location.replace(/'/g, "\\'")}')" title="QR Code">
-                            <i data-lucide="qr-code" class="w-4 h-4 text-zinc-400 hover:text-white"></i>
-                        </button>
-                        <button class="bg-zinc-800 hover:bg-blue-600 border border-zinc-700 hover:border-blue-500 p-2 rounded-lg transition-colors" onclick="openEditDuckModal('${d.code}')" title="Edit Duck">
-                            <i data-lucide="edit-2" class="w-4 h-4 text-zinc-400 hover:text-white"></i>
-                        </button>
-                        <button class="bg-zinc-800 hover:bg-rose-600 border border-zinc-700 hover:border-rose-500 p-2 rounded-lg transition-colors" onclick="deleteDuck('${d.code}')" title="Delete">
-                            <i data-lucide="trash-2" class="w-4 h-4 text-zinc-400 hover:text-white"></i>
-                        </button>
-                    </div>
-                </div>
+                    </td>
+                </tr>
             `).join('');
             lucide.createIcons();
         } else {
-            list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm italic">No ducks match your filters.</div>';
+            list.innerHTML = '<tr><td colspan="5" class="text-zinc-500 text-center py-8 text-sm italic">No ducks found.</td></tr>';
         }
-        updateBulkActionBtns(); // Reset button state on render
+        updateBulkActionBtns();
     }
 
     function updateBulkActionBtns() {
         const checkboxes = document.querySelectorAll('.duck-select-checkbox:checked');
         const delBtn = document.getElementById('bulkDeleteBtn');
         const editBtn = document.getElementById('bulkEditBtn');
-        
         if (checkboxes.length > 0) {
             delBtn.textContent = `Delete Selected (${checkboxes.length})`;
             delBtn.classList.remove('hidden');
@@ -1302,8 +1502,6 @@
     function toggleSelectAllFiltered() {
         const checkboxes = document.querySelectorAll('.duck-select-checkbox');
         if (checkboxes.length === 0) return;
-        
-        // If all are checked, uncheck all. Otherwise, check all.
         const allChecked = Array.from(checkboxes).every(cb => cb.checked);
         checkboxes.forEach(cb => cb.checked = !allChecked);
         updateBulkActionBtns();
@@ -1312,185 +1510,196 @@
     async function bulkDeleteSelected() {
         const checkboxes = document.querySelectorAll('.duck-select-checkbox:checked');
         if (checkboxes.length === 0) return;
-        
-        if (!confirm(`Are you sure you want to permanently delete ${checkboxes.length} ducks? This will erase their scan history too.`)) return;
+        if (!confirm(`Permanently delete ${checkboxes.length} ducks and their history?`)) return;
 
-        const codesToDelete = Array.from(checkboxes).map(cb => cb.value);
-        const btn = document.getElementById('bulkDeleteBtn');
-        
-        btn.textContent = 'Deleting...';
-        btn.disabled = true;
+        const codes = Array.from(checkboxes).map(cb => cb.value);
+        document.getElementById('bulkDeleteBtn').disabled = true;
 
         try {
-            // Delete in chunks to avoid URL size limits in API requests - reduced to 100 for safety
-            const chunkSize = 100;
-            for (let i = 0; i < codesToDelete.length; i += chunkSize) {
-                const chunk = codesToDelete.slice(i, i + chunkSize);
-                const { error } = await _supabase
-                    .from('duck_codes')
-                    .delete()
-                    .in('code', chunk);
-                if (error) throw error;
+            for (let i = 0; i < codes.length; i += 100) {
+                await _supabase.from('duck_codes').delete().in('code', codes.slice(i, i + 100));
             }
-            
-            await loadAdminDucks(); // Refresh the list securely
-        } catch (err) {
-            alert("Error deleting ducks: " + err.message);
-        } finally {
-            btn.disabled = false;
-            updateBulkActionBtns(); // Restore button state if failed
-        }
+            await loadAdminDucks();
+        } catch (err) { alert(err.message); }
     }
 
     function openBulkEditModal() {
-        const checkboxes = document.querySelectorAll('.duck-select-checkbox:checked');
-        if (checkboxes.length === 0) return;
-        
-        document.getElementById('bulkEditCount').textContent = checkboxes.length;
-        document.getElementById('bulkEditLocation').value = '';
-        document.getElementById('bulkEditPoints').value = '';
+        const cbs = document.querySelectorAll('.duck-select-checkbox:checked');
+        if (cbs.length === 0) return;
+        document.getElementById('bulkEditCount').textContent = cbs.length;
         document.getElementById('bulkEditModal').classList.remove('hidden');
     }
-
-    function closeBulkEditModal() {
-        document.getElementById('bulkEditModal').classList.add('hidden');
-    }
+    function closeBulkEditModal() { document.getElementById('bulkEditModal').classList.add('hidden'); }
 
     async function saveBulkEdit() {
-        const checkboxes = document.querySelectorAll('.duck-select-checkbox:checked');
-        const codesToEdit = Array.from(checkboxes).map(cb => cb.value);
-        
+        const codes = Array.from(document.querySelectorAll('.duck-select-checkbox:checked')).map(cb => cb.value);
         const loc = document.getElementById('bulkEditLocation').value.trim();
-        const ptsStr = document.getElementById('bulkEditPoints').value;
+        const pts = document.getElementById('bulkEditPoints').value;
         
-        let updatePayload = {};
-        if (loc) updatePayload.location = loc;
-        if (ptsStr) updatePayload.points = parseInt(ptsStr);
+        let payload = {};
+        if (loc) payload.location = loc;
+        if (pts) payload.points = parseInt(pts);
 
-        if (Object.keys(updatePayload).length === 0) {
-            alert("No changes specified.");
-            return;
-        }
+        if (Object.keys(payload).length === 0) return alert("No changes specified.");
 
-        const btn = document.getElementById('saveBulkEditBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<div class="loader" style="display:block;"></div> Saving...';
+        document.getElementById('saveBulkEditBtn').disabled = true;
 
         try {
-            // Chunked update
-            const chunkSize = 100;
-            for (let i = 0; i < codesToEdit.length; i += chunkSize) {
-                const chunk = codesToEdit.slice(i, i + chunkSize);
-                const { error } = await _supabase
-                    .from('duck_codes')
-                    .update(updatePayload)
-                    .in('code', chunk);
-                if (error) throw error;
+            for (let i = 0; i < codes.length; i += 100) {
+                await _supabase.from('duck_codes').update(payload).in('code', codes.slice(i, i + 100));
             }
-            
             closeBulkEditModal();
             await loadAdminDucks();
-        } catch (err) {
-            alert("Error bulk editing ducks: " + err.message);
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = 'Save Changes';
-            updateBulkActionBtns();
-        }
+        } catch (err) { alert(err.message); } 
+        finally { document.getElementById('saveBulkEditBtn').disabled = false; }
     }
 
     function openEditDuckModal(code) {
         const duck = allAdminDucks.find(d => d.code === code);
         if (!duck) return;
-
         document.getElementById('editDuckCode').value = duck.code;
         document.getElementById('editDuckName').value = duck.name;
         document.getElementById('editDuckLocation').value = duck.location;
         document.getElementById('editDuckPoints').value = duck.points;
-
         document.getElementById('editDuckModal').classList.remove('hidden');
     }
-
-    function closeEditDuckModal() {
-        document.getElementById('editDuckModal').classList.add('hidden');
-    }
+    function closeEditDuckModal() { document.getElementById('editDuckModal').classList.add('hidden'); }
 
     async function saveDuckEdit() {
         const code = document.getElementById('editDuckCode').value;
-        const name = document.getElementById('editDuckName').value.trim();
-        const loc = document.getElementById('editDuckLocation').value.trim();
         const pts = parseInt(document.getElementById('editDuckPoints').value);
-
-        if (!name || !loc || isNaN(pts)) return alert("Please fill all fields with valid data.");
-
-        const btn = document.getElementById('saveDuckBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<div class="loader" style="display:block;"></div> Saving...';
-
         try {
-            const { error } = await _supabase
-                .from('duck_codes')
-                .update({ name: name, location: loc, points: pts })
-                .eq('code', code);
-                
-            if (error) throw error;
-            
+            await _supabase.from('duck_codes').update({ 
+                name: document.getElementById('editDuckName').value, 
+                location: document.getElementById('editDuckLocation').value, 
+                points: pts 
+            }).eq('code', code);
             closeEditDuckModal();
-            loadAdminDucks(); // Refresh the list securely
-        } catch (err) {
-            alert("Error updating duck: " + err.message);
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = 'Save Changes';
-        }
+            loadAdminDucks();
+        } catch (err) { alert(err.message); }
     }
 
     async function deleteDuck(code) {
-        if (!confirm("Are you sure you want to delete this duck code? This will also delete any scans associated with it.")) return;
-
+        if (!confirm("Delete this duck?")) return;
         try {
-            const { error } = await _supabase.from('duck_codes').delete().eq('code', code);
-            if (error) throw error;
-            loadAdminDucks(); // Refresh the list
-        } catch (err) {
-            alert("Error deleting duck: " + err.message);
-        }
+            await _supabase.from('duck_codes').delete().eq('code', code);
+            loadAdminDucks();
+        } catch (err) { alert(err.message); }
     }
+
+    // -- Admin Players --
+
+    let allAdminPlayers = [];
 
     async function loadAdminPlayers() {
         const list = document.getElementById('adminPlayersList');
-        list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm">Refreshing...</div>';
+        list.innerHTML = '<tr><td colspan="5" class="text-zinc-500 text-center py-8 text-sm">Refreshing data...</td></tr>';
 
         try {
-            const { data, error } = await _supabase
-                .from('players')
-                .select('*')
-                .order('points', { ascending: false });
-
+            const { data: rankData } = await _supabase.from('player_rankings').select('*');
+            const { data: players, error } = await _supabase.from('players').select('*');
             if (error) throw error;
 
-            if (data && data.length > 0) {
-                list.innerHTML = data.map(p => `
-                    <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex justify-between items-center">
-                        <div>
-                            <h5 class="text-white font-bold text-sm">${p.name}</h5>
-                            <p class="text-[10px] text-zinc-500">${p.email} • ID: ${p.student_id}</p>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-purple-400 font-black text-sm">${p.points} PTS</div>
-                            <div class="text-[10px] text-zinc-500">${p.ducks} Ducks</div>
-                        </div>
-                    </div>
-                `).join('');
+            if (players && players.length > 0) {
+                // Map ranks
+                const rankMap = {};
+                if(rankData) rankData.forEach(r => rankMap[r.student_id] = r.player_rank);
+
+                const now = new Date();
+                let onlineCount = 0;
+
+                allAdminPlayers = players.map(p => {
+                    const isOnline = p.last_active && ((now - new Date(p.last_active)) / 1000 / 60 < 5); // 5 mins
+                    if (isOnline) onlineCount++;
+                    return { ...p, rank: rankMap[p.student_id] || 999, isOnline };
+                });
+
+                allAdminPlayers.sort((a, b) => a.rank - b.rank);
+
+                document.getElementById('statAdminPlayers').textContent = allAdminPlayers.length;
+                document.getElementById('statAdminOnline').textContent = onlineCount;
+
+                renderAdminPlayers(allAdminPlayers);
             } else {
-                list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm italic">No registered players.</div>';
+                list.innerHTML = '<tr><td colspan="5" class="text-zinc-500 text-center py-8 text-sm italic">No registered players.</td></tr>';
             }
         } catch (err) {
-            list.innerHTML = `<div class="text-rose-500 text-center py-4 text-sm">Error: ${err.message}</div>`;
+            list.innerHTML = `<tr><td colspan="5" class="text-rose-500 text-center py-8 text-sm">Error: ${err.message}</td></tr>`;
         }
     }
 
+    function renderAdminPlayers(data) {
+        const list = document.getElementById('adminPlayersList');
+        list.innerHTML = data.map(p => `
+            <tr class="hover:bg-zinc-900/50 transition-colors group ${p.is_banned ? 'opacity-50' : ''}">
+                <td class="p-3 border-b border-zinc-800/50 text-center">
+                    <span class="text-zinc-500 font-bold">#${p.rank}</span>
+                </td>
+                <td class="p-3 border-b border-zinc-800/50">
+                    <div class="font-bold text-sm text-white flex items-center gap-2">
+                        ${p.name}
+                        ${p.is_banned ? '<span class="bg-rose-500/20 text-rose-400 text-[8px] px-1 py-0.5 rounded uppercase">Banned</span>' : ''}
+                    </div>
+                    <div class="text-[10px] text-zinc-500">${p.student_id} • ${p.email}</div>
+                </td>
+                <td class="p-3 border-b border-zinc-800/50 text-center">
+                    <div class="text-amber-400 text-sm font-black">${p.points} PTS</div>
+                    <div class="text-[10px] text-zinc-500">${p.ducks} Ducks</div>
+                </td>
+                <td class="p-3 border-b border-zinc-800/50 text-center">
+                    ${p.isOnline ? '<div class="w-2 h-2 rounded-full bg-emerald-500 mx-auto shadow-[0_0_8px_#10b981]" title="Online"></div>' : '<div class="w-2 h-2 rounded-full bg-zinc-700 mx-auto" title="Offline"></div>'}
+                </td>
+                <td class="p-3 border-b border-zinc-800/50 text-right">
+                    <button class="bg-zinc-800 hover:bg-blue-600 p-2 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100" onclick="openEditPlayerModal('${p.student_id}')" title="Edit Profile"><i data-lucide="user-cog" class="w-4 h-4 text-white"></i></button>
+                </td>
+            </tr>
+        `).join('');
+        lucide.createIcons();
+    }
+
+    function openEditPlayerModal(id) {
+        const p = allAdminPlayers.find(p => p.student_id === id);
+        if (!p) return;
+        document.getElementById('editPlayerId').value = p.student_id;
+        document.getElementById('editPlayerName').value = p.name;
+        document.getElementById('editPlayerPoints').value = p.points;
+        
+        const banBtn = document.getElementById('banPlayerBtn');
+        if (p.is_banned) {
+            banBtn.innerHTML = 'Unban Player';
+            banBtn.className = "w-full bg-emerald-900/30 border border-emerald-500/50 text-emerald-400 hover:bg-emerald-600 hover:text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2";
+        } else {
+            banBtn.innerHTML = 'Ban Player';
+            banBtn.className = "w-full bg-rose-900/30 border border-rose-500/50 text-rose-400 hover:bg-rose-600 hover:text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2";
+        }
+        document.getElementById('editPlayerModal').classList.remove('hidden');
+    }
+    function closeEditPlayerModal() { document.getElementById('editPlayerModal').classList.add('hidden'); }
+
+    async function savePlayerEdit() {
+        const id = document.getElementById('editPlayerId').value;
+        const pts = parseInt(document.getElementById('editPlayerPoints').value);
+        try {
+            await _supabase.from('players').update({ points: pts }).eq('student_id', id);
+            closeEditPlayerModal();
+            loadAdminPlayers();
+        } catch (err) { alert(err.message); }
+    }
+
+    async function togglePlayerBan() {
+        const id = document.getElementById('editPlayerId').value;
+        const p = allAdminPlayers.find(p => p.student_id === id);
+        try {
+            await _supabase.from('players').update({ is_banned: !p.is_banned }).eq('student_id', id);
+            closeEditPlayerModal();
+            loadAdminPlayers();
+        } catch (err) { alert(err.message); }
+    }
+
+    // -- Admin Feed & Broadcast --
+
     async function loadAdminFeed() {
+        loadCurrentAdminBroadcast();
         const list = document.getElementById('adminFeedList');
         list.innerHTML = '<div class="text-zinc-500 text-center py-4 text-sm">Loading activity...</div>';
 
@@ -1509,7 +1718,7 @@
                 return;
             }
 
-            // 2. Fetch players to map student_id to names (Manual join for safety if FKs aren't set)
+            // 2. Fetch players to map student_id to names
             const studentIds = [...new Set(scans.map(s => s.player_id))];
             const { data: players } = await _supabase
                 .from('players')
@@ -1534,10 +1743,10 @@
                             </div>
                             <div>
                                 <h5 class="text-white font-bold text-sm">${playerName} <span class="text-zinc-400 font-normal">found</span></h5>
-                                <p class="text-purple-400 font-bold text-xs">${scan.duck_name} <span class="text-zinc-500 font-normal ml-1">• ${time}</span></p>
+                                <p class="text-amber-400 font-bold text-xs">${scan.duck_name} <span class="text-zinc-500 font-normal ml-1">• ${time}</span></p>
                             </div>
                         </div>
-                        <div class="bg-purple-900/30 text-purple-400 font-black text-xs px-2 py-1 rounded border border-purple-500/30">
+                        <div class="bg-amber-900/30 text-amber-400 font-black text-xs px-2 py-1 rounded border border-amber-500/30">
                             +${scan.points_earned}
                         </div>
                     </div>
@@ -1550,37 +1759,138 @@
         }
     }
 
+    // --- Broadcast & Announcement System ---
+
+    function startAnnouncementTracker() {
+        if (announcementInterval) clearInterval(announcementInterval);
+        checkAnnouncements(); // Check immediately on login
+        announcementInterval = setInterval(checkAnnouncements, 15000); // Check every 15s
+    }
+
+    async function checkAnnouncements() {
+        if (!currentPlayer) return;
+        try {
+            const { data } = await _supabase
+                .from('announcements')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (data && data.length > 0) {
+                const latest = data[0];
+                
+                // "[CLEAR]" is our secret trigger to take the message down
+                if (latest.message === "[CLEAR]") {
+                    document.getElementById('infoBroadcastDisplay').textContent = "No active hints or announcements.";
+                    return;
+                }
+
+                // Keep the Info tab updated
+                document.getElementById('infoBroadcastDisplay').textContent = `"${latest.message}"`;
+
+                // If the player hasn't seen this specific message yet, pop it up!
+                const seenId = localStorage.getItem('seenBroadcastId');
+                if (seenId !== latest.id) {
+                    showAppAlert("@CABGCU", latest.message, latest.id);
+                }
+            } else {
+                document.getElementById('infoBroadcastDisplay').textContent = "No active hints or announcements.";
+            }
+        } catch (e) {}
+    }
+
+    function showAppAlert(title, message, id) {
+        if (document.getElementById('sysAlertModal')) return; // Don't stack modals
+
+        const modalHtml = `
+            <div id="sysAlertModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="dismissAppAlert('${id}')"></div>
+                <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-amber-500/30 transform transition-all">
+                    <div class="w-16 h-16 bg-amber-500/20 rounded-full flex items-center justify-center mb-4 border border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.3)]">
+                        <i data-lucide="radio" class="w-8 h-8 text-amber-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-white">${title}</h3>
+                    <p class="text-zinc-300 text-sm mb-6 font-medium leading-relaxed">"${message}"</p>
+                    <button class="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg" onclick="dismissAppAlert('${id}')">Acknowledge</button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        lucide.createIcons();
+    }
+
+    function dismissAppAlert(id) {
+        localStorage.setItem('seenBroadcastId', id);
+        const modal = document.getElementById('sysAlertModal');
+        if (modal) modal.remove();
+    }
+
+    // --- Admin Broadcast Functions ---
+
+    async function loadCurrentAdminBroadcast() {
+        try {
+            const { data } = await _supabase
+                .from('announcements')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(1);
+                
+            if (data && data.length > 0 && data[0].message !== "[CLEAR]") {
+                document.getElementById('currentBroadcastDisplay').textContent = `"${data[0].message}"`;
+            } else {
+                document.getElementById('currentBroadcastDisplay').textContent = "None";
+            }
+        } catch(e) {}
+    }
+
+    async function sendBroadcast() {
+        const msg = document.getElementById('broadcastMsg').value.trim();
+        if (!msg) return;
+        
+        const btn = document.getElementById('broadcastBtn');
+        btn.disabled = true;
+        
+        try {
+            await _supabase.from('announcements').insert([{ message: msg }]);
+            document.getElementById('broadcastMsg').value = '';
+            loadCurrentAdminBroadcast();
+            alert("Broadcast published! All active players will see this.");
+        } catch (err) { 
+            alert("Error sending: " + err.message); 
+        } finally { 
+            btn.disabled = false; 
+        }
+    }
+
+    async function clearBroadcast() {
+        const btn = document.getElementById('clearBroadcastBtn');
+        btn.disabled = true;
+        
+        try {
+            // We use [CLEAR] to wipe the state on all devices
+            await _supabase.from('announcements').insert([{ message: "[CLEAR]" }]);
+            loadCurrentAdminBroadcast();
+            alert("Broadcast cleared from all devices.");
+        } catch (err) { 
+            alert("Error clearing: " + err.message); 
+        } finally { 
+            btn.disabled = false; 
+        }
+    }
+
     // --- QR Code Generator ---
     let qrcodeInstance = null;
-    
     function generateQR(code, name, location) {
         document.getElementById('qrModalTitle').textContent = name;
         document.getElementById('qrModalLocation').textContent = location;
-        
-        // Construct the full deep link URL
-        const appUrl = window.location.origin + window.location.pathname;
-        const duckUrl = `${appUrl}?duck=${code}`;
-        
+        const duckUrl = `${window.location.origin}${window.location.pathname}?duck=${code}`;
         document.getElementById('qrModalUrl').textContent = duckUrl;
-
         const qrContainer = document.getElementById('qrcodeDisplay');
-        qrContainer.innerHTML = ''; // clear previous
-        
-        qrcodeInstance = new QRCode(qrContainer, {
-            text: duckUrl,
-            width: 200,
-            height: 200,
-            colorDark : "#09090b", // zinc-950
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-        });
-
+        qrContainer.innerHTML = ''; 
+        qrcodeInstance = new QRCode(qrContainer, { text: duckUrl, width: 200, height: 200, colorDark : "#09090b", colorLight : "#ffffff" });
         document.getElementById('qrModal').classList.remove('hidden');
     }
-
-    function hideQR() {
-        document.getElementById('qrModal').classList.add('hidden');
-    }
+    function hideQR() { document.getElementById('qrModal').classList.add('hidden'); }
 
 </script>
 </body>
