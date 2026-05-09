@@ -739,14 +739,16 @@
     document.addEventListener('keydown', function(event) {
         // Block F12
         if (event.key === 'F12' || event.keyCode === 123) event.preventDefault();
-        // Block Ctrl+Shift+I / Cmd+Option+I (Inspect)
-        if ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'I' || event.key === 'i')) event.preventDefault();
-        // Block Ctrl+Shift+J / Cmd+Option+J (Console)
-        if ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'J' || event.key === 'j')) event.preventDefault();
-        // Block Ctrl+Shift+C / Cmd+Option+C (Inspect Element)
-        if ((event.ctrlKey || event.metaKey) && event.shiftKey && (event.key === 'C' || event.key === 'c')) event.preventDefault();
-        // Block Ctrl+U / Cmd+Option+U (View Source)
-        if ((event.ctrlKey || event.metaKey) && (event.key === 'U' || event.key === 'u')) event.preventDefault();
+        
+        // Block Windows/Linux (Ctrl + Shift + I / J / C)
+        if (event.ctrlKey && event.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(event.key)) event.preventDefault();
+        
+        // Block Mac (Cmd + Option + I / J / C)
+        if (event.metaKey && event.altKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(event.key)) event.preventDefault();
+        
+        // Block View Source (Ctrl + U or Cmd + Option + U)
+        if ((event.ctrlKey || event.metaKey) && ['U', 'u'].includes(event.key)) event.preventDefault();
+        if (event.metaKey && event.altKey && ['U', 'u'].includes(event.key)) event.preventDefault();
     });
 
     // Supabase Configuration
