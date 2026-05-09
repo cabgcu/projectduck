@@ -736,16 +736,20 @@
 <script>
     // --- Security Deterrents (Blocks Right-Click & DevTools Shortcuts) ---
     async function triggerAutoBan() {
-        if (!currentPlayer || currentPlayer.is_banned) return;
-        currentPlayer.is_banned = true; // Lock immediately to prevent spam
+        // 1. Instantly nuke the screen to block all interaction
+        document.body.innerHTML = '<div style="display:flex; flex-direction:column; height:100vh; width:100vw; background:black; color:red; align-items:center; justify-content:center; font-size:1.5rem; font-weight:900; text-transform:uppercase; text-align:center; padding:2rem;"><span>⚠️ SECURITY ALERT ⚠️</span><br/><span style="font-size:1rem; color:#a1a1aa; margin-top:1rem;">System tampering detected. Your account has been suspended.</span><br/><span style="font-size:0.875rem; color:#fff; margin-top:2rem; text-transform:none; font-weight:500;">Please email <a href="mailto:Chris.Hinojosa@gcu.edu" style="color:#a855f7; text-decoration:underline;">Chris.Hinojosa@gcu.edu</a> to potentially have your account reinstated.</span></div>';
         
-        try {
-            await _supabase.from('players').update({ is_banned: true }).eq('student_id', currentPlayer.student_id);
-            logout();
-            // Wipe the DOM immediately so they can't manipulate anything else
-            document.body.innerHTML = '<div style="display:flex; flex-direction:column; height:100vh; width:100vw; background:black; color:red; align-items:center; justify-content:center; font-size:1.5rem; font-weight:900; text-transform:uppercase; text-align:center; padding:2rem;"><span>⚠️ SECURITY ALERT ⚠️</span><br/><span style="font-size:1rem; color:#a1a1aa; margin-top:1rem;">System tampering detected. Your account has been permanently suspended.</span></div>';
-            setTimeout(() => { window.location.reload(); }, 4000);
-        } catch(e) {}
+        // 2. Ban the account if logged in
+        if (currentPlayer && !currentPlayer.is_banned) {
+            currentPlayer.is_banned = true; // Lock locally
+            try {
+                // Fire the ban quietly in the background
+                await _supabase.from('players').update({ is_banned: true }).eq('student_id', currentPlayer.student_id);
+            } catch(e) {}
+        }
+        
+        // 3. Clear session and reload after giving them time to read the email address
+        setTimeout(() => { window.location.reload(); }, 8000);
     }
 
     document.addEventListener('contextmenu', event => event.preventDefault()); // Block right-click
