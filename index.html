@@ -1640,6 +1640,8 @@
     function toggleSelectAllFiltered() {
         const checkboxes = document.querySelectorAll('.duck-select-checkbox');
         if (checkboxes.length === 0) return;
+        
+        // If all are checked, uncheck all. Otherwise, check all.
         const allChecked = Array.from(checkboxes).every(cb => cb.checked);
         checkboxes.forEach(cb => cb.checked = !allChecked);
         updateBulkActionBtns();
@@ -1648,17 +1650,56 @@
     async function bulkDeleteSelected() {
         const checkboxes = document.querySelectorAll('.duck-select-checkbox:checked');
         if (checkboxes.length === 0) return;
-        if (!confirm(`Permanently delete ${checkboxes.length} ducks and their history?`)) return;
+        
+        if (!confirm(`Are you sure you want to permanently delete ${checkboxes.length} ducks? This will also DEDUCT the points from anyone who claimed them!`)) return;
 
-        const codes = Array.from(checkboxes).map(cb => cb.value);
-        document.getElementById('bulkDeleteBtn').disabled = true;
+        const codesToDelete = Array.from(checkboxes).map(cb => cb.value);
+        const btn = document.getElementById('bulkDeleteBtn');
+        
+        btn.textContent = 'Deleting...';
+        btn.disabled = true;
 
         try {
-            for (let i = 0; i < codes.length; i += 100) {
-                await _supabase.from('duck_codes').delete().in('code', codes.slice(i, i + 100));
+            // 1. Pre-fetch all scans for these ducks to calculate point deductions
+            const { data: scans } = await _supabase.from('scans').select('player_id, points_earned').in('duck_code', codesToDelete);
+            
+            const pointDeductions = {};
+            const duckDeductions = {};
+            if (scans) {
+                scans.forEach(scan => {
+                    pointDeductions[scan.player_id] = (pointDeductions[scan.player_id] || 0) + scan.points_earned;
+                    duckDeductions[scan.player_id] = (duckDeductions[scan.player_id] || 0) + 1;
+                });
             }
-            await loadAdminDucks();
-        } catch (err) { alert(err.message); }
+
+            // 2. Delete in chunks to avoid URL size limits in API requests
+            const chunkSize = 100;
+            for (let i = 0; i < codesToDelete.length; i += chunkSize) {
+                const chunk = codesToDelete.slice(i, i + chunkSize);
+                const { error } = await _supabase
+                    .from('duck_codes')
+                    .delete()
+                    .in('code', chunk);
+                if (error) throw error;
+            }
+
+            // 3. Apply all point/duck deductions to the affected players
+            for (const playerId in pointDeductions) {
+                const { data: player } = await _supabase.from('players').select('points, ducks').eq('student_id', playerId).single();
+                if (player) {
+                    const newPts = Math.max(0, player.points - pointDeductions[playerId]);
+                    const newDucks = Math.max(0, player.ducks - duckDeductions[playerId]);
+                    await _supabase.from('players').update({ points: newPts, ducks: newDucks }).eq('student_id', playerId);
+                }
+            }
+            
+            await loadAdminDucks(); // Refresh the list securely
+        } catch (err) {
+            alert("Error deleting ducks: " + err.message);
+        } finally {
+            btn.disabled = false;
+            updateBulkActionBtns(); // Restore button state if failed
+        }
     }
 
     function openBulkEditModal() {
@@ -1705,29 +1746,62 @@
 
     async function saveDuckEdit() {
         const code = document.getElementById('editDuckCode').value;
+        const name = document.getElementById('editDuckName').value.trim();
+        const loc = document.getElementById('editDuckLocation').value.trim();
         const pts = parseInt(document.getElementById('editDuckPoints').value);
+
+        if (!name || !loc || isNaN(pts)) return alert("Please fill all fields with valid data.");
+
+        const btn = document.getElementById('saveDuckBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loader" style="display:block;"></div> Saving...';
+
         try {
-            await _supabase.from('duck_codes').update({ 
-                name: document.getElementById('editDuckName').value, 
-                location: document.getElementById('editDuckLocation').value, 
-                points: pts 
-            }).eq('code', code);
+            const { error } = await _supabase
+                .from('duck_codes')
+                .update({ name: name, location: loc, points: pts })
+                .eq('code', code);
+                
+            if (error) throw error;
+            
             closeEditDuckModal();
-            loadAdminDucks();
-        } catch (err) { alert(err.message); }
+            loadAdminDucks(); // Refresh the list securely
+        } catch (err) {
+            alert("Error updating duck: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Save Changes';
+        }
     }
 
     async function deleteDuck(code) {
-        if (!confirm("Delete this duck?")) return;
+        if (!confirm("Are you sure you want to delete this duck code? This will also DEDUCT the points from anyone who claimed it!")) return;
+
         try {
-            await _supabase.from('duck_codes').delete().eq('code', code);
-            loadAdminDucks();
-        } catch (err) { alert(err.message); }
+            // 1. Fetch who scanned this duck
+            const { data: scans } = await _supabase.from('scans').select('player_id, points_earned').eq('duck_code', code);
+
+            // 2. Delete the duck (Scans are auto-deleted via CASCADE constraint in db)
+            const { error } = await _supabase.from('duck_codes').delete().eq('code', code);
+            if (error) throw error;
+
+            // 3. Deduct points & duck count from those players
+            if (scans && scans.length > 0) {
+                for (const scan of scans) {
+                    const { data: player } = await _supabase.from('players').select('points, ducks').eq('student_id', scan.player_id).single();
+                    if (player) {
+                        const newPts = Math.max(0, player.points - scan.points_earned);
+                        const newDucks = Math.max(0, player.ducks - 1);
+                        await _supabase.from('players').update({ points: newPts, ducks: newDucks }).eq('student_id', scan.player_id);
+                    }
+                }
+            }
+
+            loadAdminDucks(); // Refresh the list
+        } catch (err) {
+            alert("Error deleting duck: " + err.message);
+        }
     }
-
-    // -- Admin Players --
-
-    let allAdminPlayers = [];
 
     async function loadAdminPlayers() {
         const list = document.getElementById('adminPlayersList');
@@ -1787,11 +1861,28 @@
                     ${p.isOnline ? '<div class="w-2 h-2 rounded-full bg-emerald-500 mx-auto shadow-[0_0_8px_#10b981]" title="Online"></div>' : '<div class="w-2 h-2 rounded-full bg-zinc-700 mx-auto" title="Offline"></div>'}
                 </td>
                 <td class="p-3 border-b border-zinc-800/50 text-right">
-                    <button class="bg-zinc-800 hover:bg-blue-600 hover:text-white p-2 rounded-lg transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100" onclick="openEditPlayerModal('${p.student_id}')" title="Edit Profile"><i data-lucide="user-cog" class="w-4 h-4"></i></button>
+                    <div class="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <button class="bg-zinc-800 hover:bg-blue-600 hover:text-white p-2 rounded-lg transition-colors" onclick="openEditPlayerModal('${p.student_id}')" title="Edit Profile"><i data-lucide="user-cog" class="w-4 h-4"></i></button>
+                        <button class="bg-zinc-800 hover:bg-rose-600 hover:text-white p-2 rounded-lg transition-colors" onclick="deletePlayer('${p.student_id}')" title="Delete Player"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
                 </td>
             </tr>
         `).join('');
         lucide.createIcons();
+    }
+
+    async function deletePlayer(studentId) {
+        if (!confirm("Are you sure you want to permanently delete this player? All their scan history will be erased!")) return;
+        
+        try {
+            // Deleting the player automatically cascades and deletes their history in the 'scans' table
+            const { error } = await _supabase.from('players').delete().eq('student_id', studentId);
+            if (error) throw error;
+            
+            loadAdminPlayers(); // Refresh the list
+        } catch (err) {
+            alert("Error deleting player: " + err.message);
+        }
     }
 
     function openEditPlayerModal(id) {
