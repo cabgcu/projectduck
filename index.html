@@ -707,7 +707,7 @@
     </div>
 
     <!-- Bulk Edit Duck Modal (Admin) -->
-    <div id="bulkEditModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
+    <div id="bulkEditModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="closeBulkEditModal()"></div>
         <div class="relative w-full max-w-sm glass-card rounded-3xl p-8 flex flex-col items-center text-center shadow-2xl border-purple-500/30">
             <h3 class="text-xl font-bold mb-2 text-white">Bulk Edit Ducks</h3>
@@ -735,21 +735,52 @@
 
 <script>
     // --- Security Deterrents (Blocks Right-Click & DevTools Shortcuts) ---
+    async function triggerAutoBan() {
+        if (!currentPlayer || currentPlayer.is_banned) return;
+        currentPlayer.is_banned = true; // Lock immediately to prevent spam
+        
+        try {
+            await _supabase.from('players').update({ is_banned: true }).eq('student_id', currentPlayer.student_id);
+            logout();
+            alert("SECURITY ALERT: System tampering detected. Your account has been suspended.");
+        } catch(e) {}
+    }
+
     document.addEventListener('contextmenu', event => event.preventDefault()); // Block right-click
+    
     document.addEventListener('keydown', function(event) {
+        let tampering = false;
+        
         // Block F12
-        if (event.key === 'F12' || event.keyCode === 123) event.preventDefault();
+        if (event.key === 'F12' || event.keyCode === 123) tampering = true;
         
         // Block Windows/Linux (Ctrl + Shift + I / J / C)
-        if (event.ctrlKey && event.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(event.key)) event.preventDefault();
+        if (event.ctrlKey && event.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(event.key)) tampering = true;
         
         // Block Mac (Cmd + Option + I / J / C)
-        if (event.metaKey && event.altKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(event.key)) event.preventDefault();
+        if (event.metaKey && event.altKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(event.key)) tampering = true;
         
         // Block View Source (Ctrl + U or Cmd + Option + U)
-        if ((event.ctrlKey || event.metaKey) && ['U', 'u'].includes(event.key)) event.preventDefault();
-        if (event.metaKey && event.altKey && ['U', 'u'].includes(event.key)) event.preventDefault();
+        if ((event.ctrlKey || event.metaKey) && ['U', 'u'].includes(event.key)) tampering = true;
+        if (event.metaKey && event.altKey && ['U', 'u'].includes(event.key)) tampering = true;
+
+        if (tampering) {
+            event.preventDefault();
+            triggerAutoBan();
+        }
     });
+
+    // Advanced Background Console Detector (Traps users who open DevTools via browser menus)
+    const devtoolsDetector = new Image();
+    Object.defineProperty(devtoolsDetector, 'id', {
+        get: function() {
+            triggerAutoBan();
+        }
+    });
+    setInterval(() => {
+        console.dir(devtoolsDetector);
+        console.clear();
+    }, 2000);
 
     // Supabase Configuration
     const SUPABASE_URL = "https://tnaqzfollfoobjaymxqy.supabase.co";
@@ -1272,6 +1303,7 @@
         const { data: rankData } = await _supabase.from('player_rankings').select('player_rank').eq('student_id', currentPlayer.student_id).single();
         const { data: freshPlayer } = await _supabase.from('players').select('ducks, points, name, is_banned').eq('student_id', currentPlayer.student_id).single();
 
+        // Boot player if they were banned by an admin while playing
         if (freshPlayer && freshPlayer.is_banned) {
             logout();
             alert("Your account has been restricted by HQ.");
