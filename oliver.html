@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Oliver AI</title>
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔮</text></svg>">
+
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+
+  body {
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background:#050508; color:#fff;
+    height:100vh; height:100dvh;
+    display:flex; flex-direction:column;
+    overflow:hidden; position:relative;
+    padding-top:env(safe-area-inset-top);
+    padding-bottom:env(safe-area-inset-bottom);
+    padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);
+  }
+
+  #star-canvas { position:fixed; inset:0; pointer-events:none; z-index:0; }
+
+  .orb-scene {
+    position:fixed; top:45%; left:50%;
+    transform:translate(-50%,-50%);
+    width:280px; height:280px;
+    pointer-events:none; z-index:1;
+    opacity:0; animation:orb-enter 2s ease forwards;
+  }
+  @media(max-width:390px){ .orb-scene{ width:240px; height:240px; } }
+  @keyframes orb-enter { to{ opacity:1; } }
+
+  .orb-glow {
+    position:absolute; inset:0; border-radius:50%;
+    background:radial-gradient(ellipse at 40% 35%,
+      rgba(160,120,255,0.18) 0%, rgba(80,120,255,0.12) 40%, transparent 70%);
+    animation:glow-breathe 4s ease-in-out infinite;
+  }
+  @keyframes glow-breathe {
+    0%,100%{ opacity:.6; transform:scale(1); }
+    50%    { opacity:1;  transform:scale(1.08); }
+  }
+  .orb-ring-outer {
+    position:absolute; inset:0; border-radius:50%;
+    border:1px solid rgba(255,255,255,0.28);
+    box-shadow:0 0 40px rgba(255,255,255,0.08),
+               0 0 80px rgba(160,120,255,0.14),
+               0 0 160px rgba(80,120,255,0.10),
+               inset 0 0 50px rgba(255,255,255,0.04);
+    animation:spin-cw 14s linear infinite;
+  }
+  .orb-ring-outer::before { content:''; position:absolute; inset:-12px; border-radius:50%; border:1px solid rgba(255,255,255,0.09); }
+  .orb-ring-outer::after  { content:''; position:absolute; inset:24px;  border-radius:50%; border:1px solid rgba(255,255,255,0.07); }
+  .orb-ring-inner {
+    position:absolute; inset:48px; border-radius:50%;
+    border:1px solid transparent;
+    border-top-color:rgba(140,100,255,0.55);
+    border-right-color:rgba(80,130,255,0.35);
+    border-bottom-color:rgba(140,100,255,0.15);
+    animation:spin-ccw 8s linear infinite;
+  }
+  .orb-core { position:absolute; inset:120px; border-radius:50%; background:radial-gradient(circle,rgba(200,180,255,0.25) 0%,transparent 70%); }
+
+  .orb-scene.thinking .orb-ring-outer { animation:spin-cw 14s linear infinite,think-pulse 0.75s ease-in-out infinite alternate; }
+  @keyframes think-pulse {
+    0%   { border-color:rgba(255,255,255,0.28); box-shadow:0 0 40px rgba(255,255,255,0.08),0 0 80px rgba(160,120,255,0.14),0 0 160px rgba(80,120,255,0.10),inset 0 0 50px rgba(255,255,255,0.04); }
+    100% { border-color:rgba(255,255,255,0.70); box-shadow:0 0 80px rgba(255,255,255,0.65),0 0 160px rgba(160,120,255,0.50),0 0 260px rgba(80,120,255,0.30),inset 0 0 70px rgba(255,255,255,0.15); }
+  }
+  .orb-scene.speaking .orb-ring-outer { animation:spin-cw 14s linear infinite,speak-pulse 0.5s ease-in-out infinite alternate; }
+  .orb-scene.speaking .orb-glow       { animation:speak-glow 0.5s ease-in-out infinite alternate; }
+  @keyframes speak-pulse {
+    0%   { border-color:rgba(120,180,255,0.45); box-shadow:0 0 50px rgba(100,160,255,0.25),0 0 100px rgba(120,100,255,0.30),0 0 180px rgba(80,120,255,0.18),inset 0 0 40px rgba(100,160,255,0.08); }
+    100% { border-color:rgba(180,140,255,0.80); box-shadow:0 0 100px rgba(100,160,255,0.60),0 0 180px rgba(140,100,255,0.55),0 0 280px rgba(80,120,255,0.35),inset 0 0 80px rgba(140,100,255,0.18); }
+  }
+  @keyframes speak-glow { 0%{ opacity:.7; transform:scale(1.0); } 100%{ opacity:1; transform:scale(1.18); } }
+  .orb-scene.listening .orb-ring-outer { animation:spin-cw 14s linear infinite,listen-pulse 1.2s ease-in-out infinite alternate; }
+  @keyframes listen-pulse {
+    0%   { border-color:rgba(255,255,255,0.28); box-shadow:0 0 40px rgba(255,255,255,0.08),0 0 90px rgba(200,120,255,0.20); }
+    100% { border-color:rgba(220,180,255,0.55); box-shadow:0 0 70px rgba(200,160,255,0.40),0 0 160px rgba(160,100,255,0.35); }
+  }
+  @keyframes spin-cw  { to{ transform:rotate(360deg);  } }
+  @keyframes spin-ccw { to{ transform:rotate(-360deg); } }
+
+  header {
+    position:relative; z-index:10;
+    display:flex; justify-content:center; align-items:center;
+    padding:16px 20px 12px; flex-shrink:0;
+  }
+  .header-center { display:flex; align-items:center; gap:8px; }
+  .status-pip {
+    width:7px; height:7px; border-radius:50%;
+    background:white; box-shadow:0 0 8px rgba(255,255,255,0.9);
+    animation:pip 2.5s ease-in-out infinite; transition: background 0.3s;
+  }
+  @keyframes pip { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.4; transform:scale(.7); } }
+  .header-title { font-size:0.85em; color:rgba(255,255,255,0.42); font-weight:500; letter-spacing:0.05em; }
+
+  #chat-container {
+    position:relative; z-index:10;
+    flex:1; min-height:0;
+    padding:12px 16px;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    display:flex; flex-direction:column; gap:14px;
+    scroll-behavior: smooth;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 2%, black 98%, transparent 100%);
+  }
+  #chat-container::-webkit-scrollbar { display:none; }
+
+  @keyframes msg-in { from{ opacity:0; transform:translateY(12px); } to{ opacity:1; transform:translateY(0); } }
+
+  .hidden-voice { display: none !important; }
+
+  .message { display: flex; flex-direction: column; max-width: 90%; animation:msg-in 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+  .message.user { align-self:flex-end; align-items: flex-end; }
+  .message.oliver { align-self:flex-start; align-items: flex-start; }
+
+  .user-card {
+    padding:11px 16px; border-radius:20px 20px 5px 20px;
+    font-size:0.93em; line-height:1.55; color:rgba(255,255,255,0.9);
+    background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  }
+
+  .sender-row { display:flex; align-items:center; gap:6px; margin-bottom:5px; margin-left: 4px; }
+  .sender-dot { width:5px; height:5px; border-radius:50%; background:rgba(160,120,255,0.7); box-shadow:0 0 6px rgba(140,100,255,0.6); }
+  .sender-name { font-size:10px; color:rgba(255,255,255,0.4); font-weight:600; letter-spacing:0.12em; text-transform:uppercase; }
+  .oliver-card {
+    padding:14px 18px; border-radius:5px 20px 20px 20px;
+    background:rgba(20, 15, 35, 0.65); border:1px solid rgba(160,120,255,0.25);
+    backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    box-shadow:0 8px 32px rgba(0,0,0,0.3);
+  }
+  .msg-text { font-size:1.02em; color:rgba(255,255,255,0.95); font-weight:300; line-height:1.65; }
+  .msg-text strong { font-weight:600; color:#fff; }
+  .msg-para { margin-bottom:12px; }
+  .msg-para:last-child { margin-bottom:0; }
+
+  .msg-image {
+    display:block; max-width:240px; max-height:240px;
+    border-radius:14px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.15);
+    object-fit: cover; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+
+  .drive-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    margin-top:8px; padding:4px 12px; border-radius:12px; font-size:0.75em;
+    background:rgba(30,180,90,0.15); border:1px solid rgba(30,180,90,0.3); color:rgba(120,240,150,0.9);
+  }
+  .drive-badge svg { width:12px; height:12px; fill:currentColor; }
+
+  .pill-btn {
+    display:inline-flex; align-items:center; gap:12px;
+    margin-top:10px; padding:10px 14px 10px 10px; border-radius:99px;
+    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15);
+    cursor:pointer; transition:all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .pill-btn:active { transform:scale(0.96); background:rgba(255,255,255,0.1); }
+  .pill-icon {
+    width:32px; height:32px; border-radius:50%; background:rgba(140,100,255,0.2);
+    display:flex; align-items:center; justify-content:center; color:rgba(200,170,255,1);
+  }
+  .pill-icon svg { width:16px; height:16px; fill:currentColor; }
+  .pill-info { display:flex; flex-direction:column; gap:2px; padding-right:8px; }
+  .pill-title { font-size:0.9em; font-weight:500; color:white; }
+  .pill-type { font-size:0.75em; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:0.05em; }
+  .pill-action { font-size:0.85em; font-weight:600; color:rgba(160,120,255,0.9); padding-left:8px; border-left:1px solid rgba(255,255,255,0.1); }
+
+  /* SMART CARDS (SPOTIFY, TIMER, CALENDAR) */
+  .smart-card {
+    margin-top: 10px; padding: 10px 14px; border-radius: 16px;
+    background: rgba(10, 10, 15, 0.5); border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    display: flex; align-items: center; gap: 12px; width: fit-content; min-width: 240px; max-width: 320px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+
+  /* COMPACT Spotify Pill — small, tight, mobile-friendly */
+  .smart-card.spotify {
+    border-color: rgba(30, 215, 96, 0.25);
+    background: rgba(12, 20, 16, 0.92);
+    padding: 6px 10px 6px 6px;
+    border-radius: 99px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    margin: 6px 0;
+    min-width: 0;
+    max-width: 230px;
+    gap: 8px;
+  }
+  .smart-card.spotify .sc-art {
+    width: 32px; height: 32px; border-radius: 50%;
+    object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.5); flex-shrink: 0;
+  }
+  .smart-card.spotify .sc-info { padding: 0 2px; flex: 1; overflow: hidden; }
+  .smart-card.spotify .sc-title { font-size: 0.83em; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; margin-bottom: 1px; }
+  .smart-card.spotify .sc-subtitle { font-size: 0.72em; color: rgba(255,255,255,0.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .smart-card.spotify .sc-controls { flex-shrink: 0; }
+  .smart-card.spotify .sc-btn.play {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: transparent; color: #1DB954;
+    border: 1.5px solid rgba(29,185,84,0.6);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: 0.2s; -webkit-tap-highlight-color: transparent;
+  }
+  .smart-card.spotify .sc-btn.play svg { width: 13px; height: 13px; fill: currentColor; }
+  .smart-card.spotify .sc-btn.play:active { background: rgba(30,215,96,0.15); transform: scale(0.9); }
+
+  .sc-art { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.5); flex-shrink: 0; }
+  .sc-art.spinning { animation: spin-record 6s linear infinite; }
+  @keyframes spin-record { 100% { transform: rotate(360deg); } }
+  .sc-info { flex: 1; display: flex; flex-direction: column; overflow: hidden; text-align: left; padding: 0 8px; justify-content: center; }
+  .sc-title { font-size: 1.05em; font-weight: 700; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; margin-bottom: 2px; letter-spacing: -0.01em; }
+  .sc-subtitle { font-size: 0.85em; color: rgba(255,255,255,0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sc-controls { flex-shrink: 0; display: flex; align-items: center; }
+  .sc-btn {
+    width: 36px; height: 36px; border-radius: 50%; background: transparent;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    border: none; color: white; transition: 0.2s; -webkit-tap-highlight-color: transparent;
+  }
+  .sc-btn.play {
+    width: 44px; height: 44px; background: transparent;
+    color: #1DB954; border: 2px solid rgba(29, 185, 84, 0.6);
+  }
+  .sc-btn.play:active { background: rgba(30, 215, 96, 0.15); transform: scale(0.92); border-color: #1DB954; }
+  .sc-btn svg { width: 16px; height: 16px; fill: currentColor; }
+  .sc-btn.play svg { width: 18px; height: 18px; }
+
+  /* Timer Variant */
+  .smart-card.timer { border-color: rgba(255, 170, 50, 0.3); background: rgba(40, 25, 10, 0.6); justify-content: space-between; max-width: 320px; }
+  .timer-left { display: flex; align-items: center; gap: 14px; }
+  .timer-ring-wrap { position: relative; width: 44px; height: 44px; }
+  .timer-ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .timer-ring-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 4; }
+  .timer-ring-fg { fill: none; stroke: #ffaa32; stroke-width: 4; stroke-dasharray: 113; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear; stroke-linecap: round; }
+  .timer-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .timer-icon svg { width: 18px; height: 18px; fill: #ffaa32; }
+  .timer-digits { font-size: 1.4em; font-weight: 600; color: white; font-variant-numeric: tabular-nums; }
+  .timer-label { font-size: 0.75em; color: #ffaa32; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
+
+  /* Calendar Variant */
+  .smart-card.calendar { border-color: rgba(140, 100, 255, 0.25); background: rgba(20, 15, 35, 0.5); flex-direction: column; align-items: stretch; gap: 8px; padding: 14px; width: 100%; max-width: 360px; }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; }
+  .cal-title { font-weight: 600; font-size: 0.9em; color: white; display: flex; align-items: center; gap: 6px; }
+  .cal-title svg { width: 14px; height: 14px; fill: #8c64ff; }
+  .cal-events { display: flex; flex-direction: column; gap: 4px; }
+  .cal-event { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.02); transition: 0.2s; }
+  .cal-event:hover { background: rgba(255,255,255,0.06); }
+  .cal-time { font-size: 0.75em; font-weight: 600; color: rgba(200, 170, 255, 0.9); width: 75px; flex-shrink: 0; text-align: right; line-height: 1.3; }
+  .cal-divider { width: 2px; height: 24px; border-radius: 2px; flex-shrink: 0; }
+  .cal-details { display: flex; flex-direction: column; flex: 1; overflow: hidden; justify-content: center; }
+  .cal-event-title { font-size: 0.9em; font-weight: 500; color: white; line-height: 1.2; }
+  .cal-event-loc { font-size: 0.75em; color: rgba(255,255,255,0.5); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  #img-preview-bar {
+    position:relative; z-index:10; flex-shrink:0;
+    display:none; align-items:center; gap:10px;
+    padding:8px 16px 4px;
+  }
+  #img-preview-bar.visible { display:flex; }
+  #img-preview-wrap { position:relative; display:inline-block; }
+  #img-preview {
+    width:60px; height:60px; border-radius:12px; object-fit:cover;
+    border:1px solid rgba(160,120,255,0.4); box-shadow:0 4px 15px rgba(0,0,0,0.3);
+  }
+  #img-preview-remove {
+    position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:50%;
+    background:rgba(20,15,30,0.95); border:1px solid rgba(255,255,255,0.3);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  #img-preview-remove svg { width:12px; height:12px; fill:rgba(255,255,255,0.8); }
+  #img-preview-info { font-size:0.78em; color:rgba(255,255,255,0.38); line-height:1.4; }
+  #img-preview-name { color:rgba(200,170,255,0.75); font-weight:500; }
+
+  #waveform {
+    position:relative; z-index:10;
+    height:28px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    gap:3px; padding:0 20px;
+    opacity:0; transition:opacity 0.35s; pointer-events:none;
+  }
+  #waveform.visible { opacity:1; }
+  .wave-bar { width:3px; border-radius:2px; background:rgba(200,160,255,0.55); height:4px; }
+  #waveform.thinking .wave-bar { background:rgba(255,255,255,0.35); }
+
+  .controls {
+    position:relative; z-index:10; flex-shrink:0;
+    display:flex; align-items:center; gap:9px;
+    padding:8px 14px 16px;
+    background:linear-gradient(to top,rgba(5,5,8,0.95) 60%,transparent);
+  }
+  #text-input {
+    flex:1; min-width:0;
+    background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
+    color:white; padding:14px 18px; border-radius:26px;
+    font-size:16px; outline:none; transition:all 0.2s;
+    -webkit-appearance:none; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  }
+  #text-input:focus { border-color:rgba(160,120,255,0.5); background:rgba(255,255,255,0.12); box-shadow:0 0 15px rgba(140,100,255,0.15); }
+  #text-input::placeholder { color:rgba(255,255,255,0.3); }
+
+  .ctrl-btn {
+    width:48px; height:48px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0; touch-action:manipulation;
+    transition:all 0.2s; border:1px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.08);
+  }
+  .ctrl-btn:active { transform:scale(0.92); }
+  .ctrl-btn svg { width:22px; height:22px; fill:rgba(255,255,255,0.8); transition:fill 0.2s; }
+
+  #send-btn { background:rgba(120,90,220,0.25); border-color:rgba(160,120,255,0.4); }
+  #send-btn:active { background:rgba(140,100,255,0.45); }
+  #send-btn svg { fill:white; }
+
+  #img-btn.has-image { background:rgba(140,100,255,0.25); border-color:rgba(160,120,255,0.6); box-shadow:0 0 15px rgba(140,100,255,0.3); }
+  #img-btn.has-image svg { fill:#fff; }
+  #img-btn.uploading { opacity:0.5; pointer-events:none; }
+
+  #convo-btn.active, #convo-btn.recording { background:rgba(100,180,255,0.18); border-color:rgba(120,180,255,0.50); box-shadow:0 0 14px rgba(100,160,255,0.28); }
+  #convo-btn.active svg { fill:rgba(160,210,255,1); }
+  #convo-btn.recording svg { animation: mic-pulse 1s infinite alternate; }
+  @keyframes mic-pulse { 0% { fill: rgba(160,210,255,1); transform:scale(1); } 100% { fill: white; transform:scale(1.15); } }
+
+  #file-input { display:none; }
+
+  #oliver-canvas {
+    position:fixed; inset:0; z-index:100; display:flex; align-items:flex-end; justify-content:center;
+    background:rgba(0,0,0,0.5); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    opacity:0; pointer-events:none; transition:opacity 0.3s cubic-bezier(0.25,0.8,0.25,1);
+  }
+  #oliver-canvas.open { opacity:1; pointer-events:all; }
+
+  #canvas-panel {
+    width:100%; height:85vh; max-width:900px;
+    background:rgba(15,15,22,0.95); border:1px solid rgba(255,255,255,0.1);
+    border-radius:24px 24px 0 0; box-shadow:0 -10px 50px rgba(0,0,0,0.5);
+    display:flex; flex-direction:column; transform:translateY(100%);
+    transition:all 0.4s cubic-bezier(0.25,0.8,0.25,1);
+  }
+  #oliver-canvas.open #canvas-panel { transform:translateY(0); }
+
+  #canvas-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.08); flex-shrink:0; }
+  #canvas-title { font-size:0.95em; font-weight:600; color:white; display:flex; align-items:center; gap:10px; }
+  #canvas-type-badge { font-size:0.7em; padding:3px 8px; border-radius:8px; background:rgba(140,100,255,0.2); color:rgba(200,160,255,1); text-transform:uppercase; font-weight:600; letter-spacing:0.05em; }
+
+  .canvas-controls { display:flex; gap:8px; }
+  .canvas-header-btn {
+    width:36px; height:36px; border-radius:50%; border:1px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.05); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; touch-action:manipulation; transition:0.2s; color:white;
+  }
+  .canvas-header-btn:active { background:rgba(255,255,255,0.15); transform:scale(0.9); }
+  .canvas-header-btn svg { width:16px; height:16px; fill:currentColor; }
+
+  #canvas-body-wrap { flex:1; position:relative; overflow:hidden; display:flex; flex-direction:column; }
+  #canvas-body { flex:1; overflow:auto; -webkit-overflow-scrolling:touch; padding:20px; }
+  #canvas-body::-webkit-scrollbar { display:none; }
+
+  #canvas-body.type-code { background:#0d1117; padding:0; display:flex; flex-direction:column; position:relative; }
+  #canvas-code-wrap { flex:1; overflow:auto; -webkit-overflow-scrolling:touch; padding:16px 0; }
+  #canvas-code {
+    font-family:"JetBrains Mono", ui-monospace, monospace;
+    font-size:14px; line-height:1.6; color:#c9d1d9; white-space:pre; margin:0; tab-size:4; min-width:min-content;
+    counter-reset: line-counter;
+  }
+  .line-row { display:flex; padding:0 20px; }
+  .line-row:hover { background:rgba(255,255,255,0.05); }
+  .line-num {
+    flex-shrink:0; width:40px; color:#484f58; user-select:none; text-align:right;
+    margin-right:16px; border-right:1px solid #30363d; padding-right:12px; font-size:12px; line-height:1.8;
+  }
+  .line-num::before { counter-increment: line-counter; content: counter(line-counter); }
+  .line-content { white-space:pre; }
+
+  .tok-kw  { color:#ff7b72; }
+  .tok-str { color:#a5d6ff; }
+  .tok-num { color:#79c0ff; }
+  .tok-cmt { color:#8b949e; font-style:italic; }
+  .tok-fn  { color:#d2a8ff; }
+
+  #canvas-body.type-image { display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.30); }
+  #canvas-img { max-width:100%; max-height:100%; border-radius:12px; box-shadow:0 8px 40px rgba(0,0,0,0.5); object-fit:contain; }
+  #canvas-body.type-pdf { padding:0; background:#333; }
+  #canvas-body.type-video { display:flex; align-items:center; justify-content:center; background:#000; padding:0; }
+  #canvas-iframe { width:100%; height:100%; border:none; border-radius:0; background:white; }
+  video.canvas-vid { width:100%; max-height:100%; outline:none; }
+
+  /* Calendar canvas body */
+  #canvas-body.type-calendar {
+    display: flex; align-items: flex-start; justify-content: center;
+    background: rgba(10, 8, 20, 0.6);
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  .canvas-calendar-wrap {
+    width: 100%; max-width: 520px; padding: 20px;
+  }
+  .canvas-calendar-wrap .smart-card.calendar {
+    max-width: 100%; width: 100%; min-width: 0;
+    background: rgba(20, 15, 35, 0.7);
+    border-color: rgba(140, 100, 255, 0.3);
+  }
+  .canvas-calendar-wrap .cal-event { padding: 12px 14px; }
+  .canvas-calendar-wrap .cal-event-title { font-size: 1em; }
+  .canvas-calendar-wrap .cal-time { font-size: 0.82em; width: 80px; }
+
+  /* Compact Spotify canvas UI */
+  #canvas-body.type-spotify {
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at top, rgba(30,215,96,0.12), transparent 60%);
+  }
+  .spotify-wrap {
+    background: rgba(20, 20, 25, 0.65);
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-radius: 28px; padding: 32px 24px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px; width: 100%; max-width: 340px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    text-align: center; margin: auto;
+  }
+  .sp-hero { width: 160px; height: 160px; border-radius: 16px; object-fit: cover; box-shadow: 0 10px 30px rgba(0,0,0,0.4); margin-bottom: 8px; }
+  .sp-info { display: flex; flex-direction: column; gap: 4px; }
+  .sp-title { font-size: 1.35em; font-weight: 700; color: white; letter-spacing: -0.01em; line-height: 1.2; }
+  .sp-sub { font-size: 0.95em; color: rgba(255,255,255,0.6); }
+  .sp-ctrl-row { display: flex; align-items: center; justify-content: center; gap: 24px; width: 100%; margin-top: 12px; }
+  .sp-ctrl-btn { width: 48px; height: 48px; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; border: none; color: rgba(255,255,255,0.7); cursor: pointer; transition: 0.2s; touch-action: manipulation; }
+  .sp-ctrl-btn:active { transform: scale(0.85); color: white; }
+  .sp-play-btn { width: 68px; height: 68px; border-radius: 50%; background: #1DB954; color: black; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: 0.2s; box-shadow: 0 8px 20px rgba(29, 185, 84, 0.3); touch-action: manipulation; }
+  .sp-play-btn:active { transform: scale(0.92); background: #1ed760; }
+  .sp-play-btn svg { width: 32px; height: 32px; fill: currentColor; }
+  .sp-ctrl-btn svg { width: 24px; height: 24px; fill: currentColor; }
+
+  #canvas-body.type-markdown { font-size:1em; line-height:1.7; color:rgba(255,255,255,0.9); }
+  #canvas-body.type-markdown h1,#canvas-body.type-markdown h2,#canvas-body.type-markdown h3 { color:white; margin:1em 0 0.5em; }
+  #canvas-body.type-markdown code { font-family:monospace; font-size:0.9em; background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; }
+  #canvas-body.type-markdown pre { background:#0d1117; padding:16px; border-radius:12px; overflow-x:auto; border:1px solid rgba(255,255,255,0.1); margin:1em 0; }
+  #canvas-body.type-markdown pre code { background:transparent; padding:0; }
+  #canvas-body.type-markdown ul,#canvas-body.type-markdown ol { padding-left:20px; margin:0.5em 0; }
+  #canvas-body.type-markdown a { color:#a5d6ff; }
+
+  #canvas-copy {
+    position:absolute; bottom:20px; right:20px; padding:10px 20px; border-radius:99px;
+    background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; font-size:0.9em;
+    font-weight:600; cursor:pointer; touch-action:manipulation; transition:0.2s; z-index:10; backdrop-filter:blur(10px); box-shadow:0 4px 15px rgba(0,0,0,0.3);
+  }
+  #canvas-copy:active { transform:scale(0.95); background:rgba(255,255,255,0.25); }
+</style>
+</head>
+<body>
+
+<canvas id="star-canvas"></canvas>
+
+<div id="ai-orb" class="orb-scene">
+  <div class="orb-glow"></div>
+  <div class="orb-ring-outer"></div>
+  <div class="orb-ring-inner"></div>
+  <div class="orb-core"></div>
+</div>
+
+<div id="oliver-canvas" onclick="if(event.target===this) closeCanvas()">
+  <div id="canvas-panel">
+    <div id="canvas-header">
+      <div id="canvas-title">
+        <span id="canvas-title-text">Canvas</span>
+        <span id="canvas-type-badge">code</span>
+      </div>
+      <div class="canvas-controls">
+        <button class="canvas-header-btn" onclick="toggleMaximize()" aria-label="Maximize">
+          <svg viewBox="0 0 24 24" id="max-icon"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        </button>
+        <button class="canvas-header-btn" onclick="closeCanvas()" aria-label="Close">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="canvas-body-wrap">
+      <div id="canvas-body"></div>
+      <button id="canvas-copy" onclick="copyCanvas()" style="display:none">Copy</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="header-center">
+    <div class="status-pip" id="main-pip"></div>
+    <span class="header-title">Oliver AI</span>
+  </div>
+</header>
+
+<div id="chat-container">
+  <div class="message oliver">
+    <div class="sender-row"><div class="sender-dot"></div><span class="sender-name">Oliver</span></div>
+    <div class="oliver-card"><div class="msg-text"><div class="msg-para">I'm listening, Chris. The visual interface is active.</div></div></div>
+  </div>
+</div>
+
+<div id="img-preview-bar">
+  <div id="img-preview-wrap">
+    <img id="img-preview" src="" alt="preview">
+    <div id="img-preview-remove" onclick="clearImage()">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </div>
+  </div>
+  <div id="img-preview-info">
+    <div id="img-preview-name"></div>
+    <div>tap send to share with Oliver</div>
+  </div>
+</div>
+
+<div id="waveform"></div>
+
+<div class="controls">
+  <input type="text" id="text-input" placeholder="Message Oliver…" onkeydown="checkEnter(event)" autocomplete="off" autocorrect="off" spellcheck="false">
+  <input type="file" id="file-input" accept="image/*" onchange="onImageSelected(event)">
+  <button class="ctrl-btn" id="img-btn" onclick="document.getElementById('file-input').click()" aria-label="Upload image">
+    <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+  </button>
+
+  <button class="ctrl-btn" id="send-btn" onclick="sendMessage()" aria-label="Send">
+    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+  </button>
+  <button class="ctrl-btn" id="convo-btn" onclick="toggleContinuous()" aria-label="Conversation mode">
+    <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm-3 11H7v-2h10v2zm0-3H7V8h10v2z"/></svg>
+  </button>
+</div>
+
+<script>
+// FRONTEND STATE
+let spotifyIsPlaying = false;
+let spotifyPollInterval = null;
+let oliverSleepMode = false;
+
+window.addEventListener('load', () => {
+    fetch('https://einfitykkorutgnbxwly.supabase.co/functions/v1/oliver-brain', { method: 'OPTIONS' }).catch(() => {});
+    fetch('https://einfitykkorutgnbxwly.supabase.co/functions/v1/oliver-tts', { method: 'OPTIONS' }).catch(() => {});
+    console.log("Oliver's engines are warming up...");
+
+    const widgetState = localStorage.getItem('oliver_spotify_visible');
+    if (widgetState === 'true') {
+        pollSpotifyStatus();
+    }
+});
+
+function pollSpotifyStatus() {
+    if (spotifyPollInterval) clearInterval(spotifyPollInterval);
+    silentSpotifyCommand('status');
+    spotifyPollInterval = setInterval(() => {
+        silentSpotifyCommand('status');
+    }, 10000);
+}
+
+(function(){
+  const cv=document.getElementById('star-canvas'),cx=cv.getContext('2d');
+  let W,H;
+  const resize=()=>{ W=cv.width=innerWidth; H=cv.height=innerHeight; };
+  resize(); window.addEventListener('resize',resize);
+  const STARS=Array.from({length:160},()=>({
+    x:Math.random(),y:Math.random(),
+    r:Math.random()*0.9+0.2,a:Math.random()*0.5+0.1,
+    ts:Math.random()*0.015+0.005,to:Math.random()*Math.PI*2,
+  }));
+  const SHOTS=[];
+  const spawn=()=>{
+    const ang=(Math.random()*35+15)*Math.PI/180,spd=Math.random()*5+4;
+    SHOTS.push({x:Math.random()*W,y:Math.random()*H*0.6,
+      vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,
+      len:Math.random()*120+60,life:1,decay:Math.random()*0.012+0.010});
+  };
+  const schedule=()=>{ spawn(); setTimeout(schedule,Math.random()*1600+1200); };
+  schedule();
+  let t=0;
+  (function draw(){
+    cx.clearRect(0,0,W,H); t+=0.016;
+    for(const s of STARS){
+      const a=s.a*(0.6+0.4*Math.sin(t*s.ts*60+s.to));
+      cx.beginPath(); cx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);
+      cx.fillStyle=`rgba(255,255,255,${a})`; cx.fill();
+    }
+    for(let i=SHOTS.length-1;i>=0;i--){
+      const s=SHOTS[i],mag=Math.hypot(s.vx,s.vy);
+      const tx=s.x-s.vx*(s.len/mag),ty=s.y-s.vy*(s.len/mag);
+      const g=cx.createLinearGradient(tx,ty,s.x,s.y);
+      g.addColorStop(0,'rgba(255,255,255,0)');
+      g.addColorStop(0.6,`rgba(200,170,255,${s.life*0.5})`);
+      g.addColorStop(1,`rgba(255,255,255,${s.life})`);
+      cx.beginPath(); cx.moveTo(tx,ty); cx.lineTo(s.x,s.y);
+      cx.strokeStyle=g; cx.lineWidth=1.5; cx.stroke();
+      const grd=cx.createRadialGradient(s.x,s.y,0,s.x,s.y,3);
+      grd.addColorStop(0,`rgba(255,255,255,${s.life})`); grd.addColorStop(1,'rgba(255,255,255,0)');
+      cx.beginPath(); cx.arc(s.x,s.y,3,0,Math.PI*2); cx.fillStyle=grd; cx.fill();
+      s.x+=s.vx; s.y+=s.vy; s.life-=s.decay;
+      if(s.life<=0) SHOTS.splice(i,1);
+    }
+    requestAnimationFrame(draw);
+  })();
+})();
+
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpbmZpdHlra29ydXRnbmJ4d2x5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDU2NTMsImV4cCI6MjA5MzkyMTY1M30.io5d1OWHrtCqsAeLjqsQm7D5tBEsDLNZ_gMZ_geGcLU';
+const EDGE_FUNCTION_URL = 'https://einfitykkorutgnbxwly.supabase.co/functions/v1/oliver-brain';
+const XI_URL            = 'https://einfitykkorutgnbxwly.supabase.co/functions/v1/oliver-tts';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzViOSD9mUk1p6A1w3SnYlRaPhXGHAXTV3BuqgFmNbGc2-EH04Zr0qYUyexv7XeNZl7/exec';
+const GOOGLE_SECRET     = 'x7Kp2mQnR9vLwYjT4aBcDeFgHiJkNoPq';
+
+const orb       = document.getElementById('ai-orb');
+const convoBtn  = document.getElementById('convo-btn');
+const imgBtn    = document.getElementById('img-btn');
+const waveform  = document.getElementById('waveform');
+const interimEl = { textContent:'' };
+
+let isRecording   = false;
+let isSpeaking    = false;
+let isContinuous  = false;
+let isThinking    = false;
+let recognition   = null;
+let currentAudio  = null;
+let audioCtx      = null;
+let audioUnlocked = false;
+let audioQueue    = [];
+let isPlayingQueue= false;
+let currentPlayingRunId = null;
+
+let pendingImageBase64 = null;
+let pendingImageMime   = null;
+let pendingImageName   = null;
+
+let canvasStore = {};
+let canvasIdCounter = 0;
+
+window.hasInterrupted = false;
+let isMicStarting = false;
+let sentenceTimeout;
+
+// ANTI-ECHO ENGINE
+const oliverMemoryHistory = [];
+function addOliverMemory(text) {
+    const clean = text.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    if(clean) oliverMemoryHistory.push(clean);
+    if(oliverMemoryHistory.length > 3) oliverMemoryHistory.shift();
+}
+function isEcho(text) {
+    const cleanInput = text.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    if(!cleanInput || cleanInput.length < 5) return false;
+    for(const mem of oliverMemoryHistory) {
+        if(mem.includes(cleanInput) || cleanInput.includes(mem)) return true;
+    }
+    return false;
+}
+
+const sessionStart = Date.now();
+const getSessionId = () => {
+  let sid=sessionStorage.getItem('oliver_sid');
+  if(!sid){ sid=crypto.randomUUID(); sessionStorage.setItem('oliver_sid',sid); }
+  return sid;
+};
+
+function getUIHistory() {
+    const messages = document.querySelectorAll('.message');
+    const history = [];
+    messages.forEach(msgEl => {
+        const isUser = msgEl.classList.contains('user');
+        const textEl = msgEl.querySelector('.msg-text') || msgEl.querySelector('.user-card') || msgEl;
+        const text = textEl.textContent.trim();
+        if(text && text !== "I'm listening, Chris. The visual interface is active.") {
+            history.push({
+                role: isUser ? 'user' : 'assistant',
+                content: text.substring(0, 1000)
+            });
+        }
+    });
+    return history.slice(-20);
+}
+
+function getAudioCtx(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+function unlockAudio(){
+  if(audioUnlocked) return;
+  const ctx=getAudioCtx();
+  if(ctx.state==='suspended') ctx.resume();
+  const buf=ctx.createBuffer(1,1,22050),src=ctx.createBufferSource();
+  src.buffer=buf; src.connect(ctx.destination); src.start(0);
+  audioUnlocked=true;
+}
+
+function setOrb(state){
+  orb.classList.remove('thinking','speaking','listening');
+  if(state) orb.classList.add(state);
+}
+
+function updateOrbState() {
+    if (oliverSleepMode) {
+        setOrb(null); stopWave();
+        const pip = document.getElementById('main-pip');
+        if(pip) pip.style.background = '#555';
+    } else if (isSpeaking || isPlayingQueue) {
+        setOrb('speaking'); startWave('speaking');
+    } else if (isRecording) {
+        setOrb('listening'); startWave('listening');
+        const pip = document.getElementById('main-pip');
+        if(pip && !spotifyIsPlaying) pip.style.background = 'white';
+    } else if (isThinking || audioQueue.length > 0) {
+        setOrb('thinking'); startWave('thinking');
+    } else {
+        setOrb(null); stopWave();
+    }
+}
+
+const BAR_COUNT=18;
+let waveRAF=null;
+for(let i=0;i<BAR_COUNT;i++){
+  const b=document.createElement('div');
+  b.className='wave-bar'; waveform.appendChild(b);
+}
+const bars=waveform.querySelectorAll('.wave-bar');
+
+function startWave(mode){
+  waveform.className='visible'+(mode==='thinking'?' thinking':'');
+  if(waveRAF) cancelAnimationFrame(waveRAF);
+  let t=0;
+  const animate=()=>{
+    t+=0.06;
+    bars.forEach((b,i)=>{
+      let h;
+      if(mode==='listening')     h=4+14*Math.abs(Math.sin(t*1.8+i*0.55+Math.sin(t*0.7+i)*0.4));
+      else if(mode==='thinking') h=3+8*Math.abs(Math.sin(t*0.8+i*0.18));
+      else if(mode==='speaking') h=4+18*Math.abs(Math.sin(t*2.5+i*0.42));
+      else h=4;
+      b.style.height=h+'px';
+    });
+    waveRAF=requestAnimationFrame(animate);
+  };
+  animate();
+}
+function stopWave(){
+  waveform.className='';
+  if(waveRAF){ cancelAnimationFrame(waveRAF); waveRAF=null; }
+  bars.forEach(b=>b.style.height='4px');
+}
+
+// INLINE SMART CARDS LOGIC
+
+const activeTimers = {};
+function injectTimerCard(seconds) {
+  const tId = 'timer_'+Date.now();
+  let remaining = seconds;
+  const format = (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+
+  const html = `
+    <div class="smart-card timer" id="${tId}">
+      <div class="timer-left">
+        <div class="timer-ring-wrap">
+          <svg class="timer-ring-svg" viewBox="0 0 100 100">
+            <circle class="timer-ring-bg" cx="50" cy="50" r="45"></circle>
+            <circle class="timer-ring-fg" cx="50" cy="50" r="45" stroke-dasharray="283" stroke-dashoffset="0" id="${tId}-ring"></circle>
+          </svg>
+          <div class="timer-icon"><svg viewBox="0 0 24 24"><path d="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42A8.962 8.962 0 0 0 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9a8.994 8.994 0 0 0 7.03-14.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg></div>
+        </div>
+        <div>
+          <div class="timer-label">Timer Active</div>
+          <div class="timer-digits" id="${tId}-txt">${format(remaining)}</div>
+        </div>
+      </div>
+      <button class="sc-btn" onclick="stopTimer('${tId}')"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+    </div>
+  `;
+  addMessage(html, 'oliver', null, null, null, false);
+
+  activeTimers[tId] = setInterval(() => {
+    remaining--;
+    const txt = document.getElementById(`${tId}-txt`);
+    const ring = document.getElementById(`${tId}-ring`);
+    if(txt && ring) {
+      txt.textContent = format(remaining);
+      ring.style.strokeDashoffset = 283 - (283 * (remaining/seconds));
+      if(remaining <= 0) { stopTimer(tId); txt.textContent = "00:00"; txt.style.color="#ffaa32"; }
+    } else { clearInterval(activeTimers[tId]); }
+  }, 1000);
+}
+window.stopTimer = function(tId) { clearInterval(activeTimers[tId]); const c = document.getElementById(tId); if(c) c.style.opacity="0.5"; }
+
+let activeSpotifyCardId = null;
+let currentSpotifyTrack = null;
+
+function updateOrInjectSpotifyCard(spData) {
+  if(!activeSpotifyCardId || currentSpotifyTrack !== spData.trackName) {
+    activeSpotifyCardId = 'sp_'+Date.now();
+    currentSpotifyTrack = spData.trackName;
+
+    const fallbackArt = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%231DB954' d='M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.5 17.3c-.2.4-.7.5-1 .2-2.8-1.7-6.4-2.1-10.6-1.1-.4.1-.8-.2-.9-.5-.1-.4.2-.8.5-.9 4.6-1 8.5-.6 11.6 1.3.4.2.5.7.4 1zm1.4-3.3c-.3.4-.8.6-1.3.3-3.2-2-8.2-2.6-11.9-1.4-.5.1-1-.1-1.1-.6-.1-.5.1-1 .6-1.1 4.3-1.3 9.6-.6 13.3 1.6.4.2.5.8.2 1.2zm.1-3.4C15.2 8.4 8.8 8.2 5.2 9.3c-.6.2-1.2-.2-1.4-.8-.2-.6.2-1.2.8-1.4 4.3-1.3 11.3-1 15.7 1.6.5.3.7 1 .4 1.5-.2.6-1 .8-1.6.4z'/%3E%3C/svg%3E";
+
+    const html = `
+      <div class="smart-card spotify" id="${activeSpotifyCardId}">
+        <img class="sc-art ${spData.isPlaying?'spinning':''}" id="${activeSpotifyCardId}-art" src="${spData.albumArt || fallbackArt}" alt="Art">
+        <div class="sc-info">
+          <div class="sc-title" id="${activeSpotifyCardId}-title">${spData.trackName||'Spotify'}</div>
+          <div class="sc-subtitle" id="${activeSpotifyCardId}-artist">${spData.artistName||'Connecting...'}</div>
+        </div>
+        <div class="sc-controls">
+          <button class="sc-btn play" id="${activeSpotifyCardId}-btn" onclick="silentSpotifyCommand('toggle')">
+            ${spData.isPlaying ? '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>' : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'}
+          </button>
+        </div>
+      </div>
+    `;
+    addMessage(html, 'oliver', null, null, null, false);
+  } else {
+    const card = document.getElementById(activeSpotifyCardId);
+    if(card) {
+      const art = document.getElementById(`${activeSpotifyCardId}-art`);
+      const btn = document.getElementById(`${activeSpotifyCardId}-btn`);
+      if(spData.isPlaying) { art.classList.add('spinning'); btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>'; }
+      else { art.classList.remove('spinning'); btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'; }
+    }
+  }
+}
+
+async function silentSpotifyCommand(action) {
+  await pipeline(`[SPOTIFY_REMOTE]:${action}`, false, null, null, null, true);
+}
+
+function onImageSelected(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  e.target.value='';
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    const dataUrl=ev.target.result;
+    pendingImageBase64=dataUrl.split(',')[1];
+    pendingImageMime=file.type||'image/jpeg';
+    pendingImageName=file.name||'image.jpg';
+    document.getElementById('img-preview').src=dataUrl;
+    document.getElementById('img-preview-name').textContent=pendingImageName;
+    document.getElementById('img-preview-bar').classList.add('visible');
+    imgBtn.classList.add('has-image');
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage(){
+  pendingImageBase64=null; pendingImageMime=null; pendingImageName=null;
+  document.getElementById('img-preview').src='';
+  document.getElementById('img-preview-bar').classList.remove('visible');
+  imgBtn.classList.remove('has-image');
+}
+
+async function uploadImageToDrive(base64,mimeType,filename){
+  const res=await fetch(GOOGLE_SCRIPT_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ secret:GOOGLE_SECRET, tool:'drive_save_image', params:{ base64, mimeType, filename } }),
+  });
+  return await res.json();
+}
+
+function checkEnter(e){ if(e.key==='Enter') sendMessage(); }
+
+async function sendMessage(){
+  unlockAudio();
+  const inp=document.getElementById('text-input');
+  const text=inp.value.trim();
+  if(!text && !pendingImageBase64) return;
+  inp.value='';
+  await pipeline(text||"I've shared an image with you.", false, pendingImageBase64, pendingImageMime, pendingImageName);
+}
+
+// CAL SVG path shared constant
+const CAL_SVG = 'M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z';
+
+function formatMessageText(text) {
+  text = text.trim();
+  if(!text) return '';
+  if(text.includes('<div class="smart-card"') || text.includes('<div class="pill-btn"')) return text;
+
+  let cardHtml = '';
+  let events = [];
+  let cleanLines = [];
+
+  const lines = text.split('\n');
+  for (let line of lines) {
+    const eventMatch = line.match(/^(?:-|\*)\s*(?:\*\*)?(.+?)(?:\*\*)?\s*(?:—|-|–|:)\s*(.*(?:AM|PM|am|pm|all day|\d:\d).*)$/i) ||
+                       line.match(/^(?:-|\*)\s*(.*(?:AM|PM|am|pm|all day|\d:\d).*?)\s*(?:—|-|–|:)\s*(?:\*\*)?(.+?)(?:\*\*)?$/i);
+    if(eventMatch) {
+      let timeDesc, title;
+      if (/(AM|PM|am|pm|all day|\d:\d)/.test(eventMatch[1])) {
+        timeDesc = eventMatch[1].trim(); title = eventMatch[2].trim();
+      } else {
+        title = eventMatch[1].trim(); timeDesc = eventMatch[2].trim();
+      }
+      title = title.replace(/\*\*/g, '').trim();
+      let time = timeDesc, loc = '';
+      const locMatch = timeDesc.match(/(.*?)\s*\((.*?)\)$/);
+      if (locMatch) { time = locMatch[1].trim(); loc = locMatch[2].trim(); }
+      events.push({ title, time, loc });
+    } else {
+      cleanLines.push(line);
+    }
+  }
+
+  if (events.length > 0) {
+    const colors = ['#ff7b72', '#79c0ff', '#a5d6ff', '#7ee787', '#d2a8ff'];
+    let eventsHtml = events.map((ev, i) => {
+      return `
+        <div class="cal-event">
+          <div class="cal-time">${ev.time}</div>
+          <div class="cal-divider" style="background:${colors[i % colors.length]}"></div>
+          <div class="cal-details">
+            <div class="cal-event-title">${ev.title}</div>
+            ${ev.loc ? `<div class="cal-event-loc">${ev.loc}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Store calendar in canvas and auto-open the bottom sheet
+    const calId = 'cal_' + (++canvasIdCounter);
+    const calCardHtml = `
+      <div class="smart-card calendar" style="max-width:100%;width:100%">
+        <div class="cal-header">
+          <div class="cal-title">
+            <svg viewBox="0 0 24 24"><path d="${CAL_SVG}"/></svg>
+            Schedule
+          </div>
+        </div>
+        <div class="cal-events">${eventsHtml}</div>
+      </div>
+    `;
+    canvasStore[calId] = { type: 'calendar', title: 'Your Schedule', content: calCardHtml };
+    setTimeout(() => openStoredCanvas(calId), 400);
+
+    // Return a compact pill instead of the full inline card
+    cardHtml = `
+      <div class="pill-btn" onclick="openStoredCanvas('${calId}')">
+        <div class="pill-icon"><svg viewBox="0 0 24 24"><path d="${CAL_SVG}"/></svg></div>
+        <div class="pill-info">
+          <span class="pill-title">Schedule</span>
+          <span class="pill-type">${events.length} event${events.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="pill-action">View</div>
+      </div>
+    `;
+    text = cleanLines.join('\n').trim();
+  }
+
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  const paragraphs = text.split(/\n{2,}/);
+  let html = paragraphs.map(p => {
+    if(!p.trim()) return '';
+    return `<div class="msg-para">${p.replace(/\n/g, '<br>')}</div>`;
+  }).join('');
+
+  return html + cardHtml;
+}
+
+function addMessage(text, sender, imageBase64, imageMime, imageName, isVoice = false){
+  const c=document.getElementById('chat-container');
+  const div=document.createElement('div');
+  div.className='message '+sender;
+  if(isVoice) div.classList.add('hidden-voice');
+
+  if(sender==='oliver'){
+    div.innerHTML=`<div class="sender-row"><div class="sender-dot"></div><span class="sender-name">Oliver</span></div>
+      <div class="oliver-card"><div class="msg-text">${formatMessageText(text)}</div></div>`;
+  } else {
+    let inner='';
+    if(imageBase64) inner+=`<img class="msg-image" src="data:${imageMime||'image/jpeg'};base64,${imageBase64}" alt="${imageName||'image'}">`;
+    if(text) inner+=`<div>${text}</div>`;
+    div.innerHTML=`<div class="user-card">${inner}</div>`;
+  }
+  c.appendChild(div);
+  setTimeout(() => { c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' }); }, 10);
+  return div;
+}
+
+function showDriveBadge(filename){
+  const c=document.getElementById('chat-container');
+  const userMsgs=c.querySelectorAll('.message.user');
+  const last=userMsgs[userMsgs.length-1];
+  if(!last) return;
+  const badge=document.createElement('div');
+  badge.className='drive-badge';
+  badge.innerHTML=`<svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Saved to Drive: ${filename}`;
+  last.appendChild(badge);
+}
+
+function extractCanvasAndMarkdown(text) {
+  let processed = text;
+  let hasCanvas = false;
+
+  const canvasRe = /<CANVAS\s+type="([^"]+)"(?:\s+title="([^"]*)")?>([\s\S]*?)<\/CANVAS>/gi;
+  processed = processed.replace(canvasRe, (match, type, title, content) => {
+    hasCanvas = true;
+    const id = 'c_' + (++canvasIdCounter);
+    let cleanContent = content.trim();
+    cleanContent = cleanContent.replace(/^\s*```[a-zA-Z]*\n?/i, '');
+    cleanContent = cleanContent.replace(/\n?\s*```\s*$/i, '');
+    canvasStore[id] = { type: type.toLowerCase(), title: title || type, content: cleanContent };
+    setTimeout(() => { openStoredCanvas(id); }, 500);
+    return `\n<div class="pill-btn" onclick="openStoredCanvas('${id}')">
+              <div class="pill-icon"><svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg></div>
+              <div class="pill-info"><span class="pill-title">${title || type}</span><span class="pill-type">${type}</span></div>
+              <div class="pill-action">View</div>
+            </div>\n`;
+  });
+
+  const mdRe = /```(\w+)?\n([\s\S]*?)```/g;
+  processed = processed.replace(mdRe, (match, lang, content) => {
+    hasCanvas = true;
+    const id = 'c_' + (++canvasIdCounter);
+    const type = lang || 'code';
+    canvasStore[id] = { type: type, title: lang ? `Code Snippet` : 'Code', content: content.trim() };
+    setTimeout(() => { openStoredCanvas(id); }, 500);
+    return `\n<div class="pill-btn" onclick="openStoredCanvas('${id}')">
+              <div class="pill-icon"><svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg></div>
+              <div class="pill-info"><span class="pill-title">Code Snippet</span><span class="pill-type">${type}</span></div>
+              <div class="pill-action">View</div>
+            </div>\n`;
+  });
+
+  return { processed: processed.trim(), hasCanvas };
+}
+
+function checkLocalIntercepts(text) {
+  const tMatch = text.match(/timer for (\d+) (minute|minutes|second|seconds)/i);
+  if(tMatch) {
+    const val = parseInt(tMatch[1]);
+    const secs = tMatch[2].toLowerCase().startsWith('min') ? val * 60 : val;
+    setTimeout(() => injectTimerCard(secs), 1000);
+  }
+}
+
+async function pipeline(userText, speakReply=true, imageBase64=null, imageMime=null, imageName=null, isSilentCommand=false){
+  let isHiddenPrompt = userText.startsWith("[HIDDEN_PROMPT]:");
+  let textToSend = isHiddenPrompt ? userText.replace("[HIDDEN_PROMPT]:", "").trim() : userText;
+
+  if (isThinking && !isSilentCommand) return;
+
+  const runId = Date.now().toString();
+  let userMsgEl = null;
+
+  if (!isSilentCommand) {
+    isThinking = true;
+    if (!isHiddenPrompt) {
+      checkLocalIntercepts(textToSend);
+      userMsgEl = addMessage(textToSend, 'user', imageBase64, imageMime, imageName, speakReply);
+    }
+    updateOrbState();
+    if (!isHiddenPrompt) {
+      const lowerMsg = textToSend.toLowerCase();
+      if (lowerMsg.match(/^(play|pause|resume|skip|next|previous)/) || lowerMsg.includes("on spotify") || lowerMsg.includes("some music") || lowerMsg.includes("song")) {
+        setTimeout(() => {
+          localStorage.setItem('oliver_spotify_visible', 'true');
+          pollSpotifyStatus();
+        }, 1000);
+      }
+    }
+  } else {
+    if (!userText.includes("status")) {
+      const pip = document.getElementById('main-pip');
+      if (pip && !oliverSleepMode) pip.style.background = '#1DB954';
+    }
+  }
+
+  const elapsed = Math.floor((Date.now()-sessionStart)/1000);
+  const timeActive = `${Math.floor(elapsed/60)} minute(s) and ${elapsed%60} second(s)`;
+
+  let imageContext='';
+  if(imageBase64){
+    imgBtn.classList.add('uploading');
+    try{
+      const driveResult=await uploadImageToDrive(imageBase64,imageMime||'image/jpeg',imageName||'image.jpg');
+      if(driveResult.success){
+        imageContext=`\n\n[IMAGE UPLOADED TO DRIVE: filename="${driveResult.filename}"]`;
+        showDriveBadge(driveResult.filename);
+      }
+    }catch(err){ console.warn('Drive upload failed:',err); }
+    finally{ imgBtn.classList.remove('uploading'); clearImage(); }
+  }
+
+  const uiHistory = getUIHistory();
+  const currentInterruptedState = window.hasInterrupted;
+  window.hasInterrupted = false;
+
+  try {
+    const res = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({
+        message: textToSend + imageContext,
+        sessionDuration: timeActive,
+        sessionId: getSessionId(),
+        inputMode: speakReply ? 'voice' : 'text',
+        voiceEnabled: speakReply,
+        hasImage: !!imageBase64,
+        uiHistory: uiHistory,
+        wasInterrupted: currentInterruptedState
+      }),
+    });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const data = JSON.parse(line);
+
+        if (data.type === 'ignore') {
+          if (userMsgEl) {
+            userMsgEl.style.transition = 'all 0.4s ease';
+            userMsgEl.style.opacity = '0';
+            userMsgEl.style.transform = 'scale(0.95)';
+            setTimeout(() => userMsgEl.remove(), 400);
+          }
+        }
+        else if (data.type === 'spotify_update') {
+          if (data.data) {
+            updateOrInjectSpotifyCard(data.data);
+            spotifyIsPlaying = data.data.isPlaying;
+            localStorage.setItem('oliver_spotify_visible', 'true');
+          }
+        }
+        else if (data.type === 'filler') {
+          if (speakReply && !isSilentCommand) {
+            audioQueue.push({ text: data.text, runId: runId, isFiller: true });
+            if (!isPlayingQueue) processAudioQueue();
+          }
+        }
+        else if (data.type === 'final') {
+          let rawText = data.text || '';
+          let autoFollowUp = false;
+
+          if (rawText.includes("<CONTINUE>")) {
+            autoFollowUp = true;
+            rawText = rawText.replace(/<CONTINUE>/gi, '').trim();
+          } else {
+            const followUpRegex = /(let me try again|let me look|let me check|give me a sec|one sec|one moment|hang on|hold on|let me pull that up|let me see|let's see|i'll check|let me figure|bear with me|just a sec|just a moment)[\s.?!]*$/i;
+            const lower = rawText.toLowerCase();
+            if (followUpRegex.test(lower) || (lower.match(/let me try again|let me look|let me check|hang on|hold on|let me see|let's see|i'll check/i) && lower.length < 150)) {
+              autoFollowUp = true;
+            }
+          }
+
+          const { processed, hasCanvas } = extractCanvasAndMarkdown(rawText);
+
+          if (!isSilentCommand) {
+            if (processed.trim() !== '') {
+              const oliverMsgEl = addMessage(processed, 'oliver', null, null, null, speakReply);
+
+              // In voice mode: show message if it has canvas or any interactive elements (pills, cards)
+              if (speakReply && oliverMsgEl) {
+                const hasInteractive = hasCanvas || oliverMsgEl.querySelector('.pill-btn, .smart-card');
+                if (hasInteractive) oliverMsgEl.classList.remove('hidden-voice');
+              }
+
+              if (speakReply) {
+                audioQueue.push({ text: processed, runId: runId, isFiller: false, msgEl: oliverMsgEl });
+                if (!isPlayingQueue) processAudioQueue();
+              }
+            }
+
+            if (autoFollowUp) {
+              setTimeout(() => {
+                pipeline("[HIDDEN_PROMPT]: [SYSTEM MESSAGE: You asked for a moment. Please continue your internal thought process or tool execution now. If you need yet another cycle, append <CONTINUE> to the very end of your response.]", speakReply);
+              }, 1200);
+            }
+          } else {
+            const pip = document.getElementById('main-pip');
+            if (pip && !oliverSleepMode) pip.style.background = 'white';
+          }
+        }
+        else if (data.type === 'error') {
+          console.error("Pipeline Error:", data.text);
+        }
+      }
+    }
+  } catch(err) {
+    console.warn("Fetch error:", err);
+  } finally {
+    if (!isSilentCommand) {
+      isThinking = false;
+      updateOrbState();
+    } else {
+      const pip = document.getElementById('main-pip');
+      if (pip && !oliverSleepMode) pip.style.background = 'white';
+    }
+  }
+}
+
+async function processAudioQueue() {
+  if(audioQueue.length === 0) {
+    isPlayingQueue = false;
+    updateOrbState();
+    if (isContinuous && !isRecording && !isThinking && !oliverSleepMode) {
+      startListening();
+    }
+    return;
+  }
+  isPlayingQueue = true;
+  const currentItem = audioQueue.shift();
+  currentPlayingRunId = currentItem.runId;
+  await speakText(currentItem.text, currentItem.isFiller, currentItem.msgEl);
+}
+
+function cleanForTTS(text){
+  return text
+    .replace(/<CANVAS[\s\S]*?<\/CANVAS>/gi, '')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/\*\*(.+?)\*\*/g,'$1')
+    .replace(/\*(.+?)\*/g,'$1')
+    .replace(/#+\s/g,'')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g,'$1')
+    .replace(/<[^>]+>/g,' ')
+    .replace(/\n{2,}/g,' ')
+    .replace(/\n/g,' ')
+    .replace(/\s{2,}/g,' ')
+    .trim();
+}
+
+async function speakText(text, isFiller = false, msgEl = null) {
+  const ttsText = cleanForTTS(text);
+  if(!ttsText) {
+    if(msgEl) msgEl.classList.remove('hidden-voice');
+    processAudioQueue();
+    return;
+  }
+
+  isSpeaking = true;
+  addOliverMemory(ttsText);
+  updateOrbState();
+
+  try {
+    const ctx = getAudioCtx();
+    if(ctx.state === 'suspended') await ctx.resume();
+
+    const res = await fetch(XI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ text: ttsText }),
+    });
+
+    if(!res.ok) throw new Error(`TTS ${res.status}: ${await res.text()}`);
+
+    const arrayBuffer = await res.arrayBuffer();
+    const decoded = await ctx.decodeAudioData(arrayBuffer);
+
+    await new Promise((resolve) => {
+      const src = ctx.createBufferSource();
+      src.buffer = decoded;
+      src.connect(ctx.destination);
+      src.onended = resolve;
+      src.start(0);
+      currentAudio = src;
+    });
+
+  } catch(err) {
+    console.warn('TTS error:', err);
+    if(msgEl) msgEl.classList.remove('hidden-voice');
+  } finally {
+    currentAudio = null;
+    currentPlayingRunId = null;
+    isSpeaking = false;
+    if(audioQueue.length > 0) {
+      processAudioQueue();
+    } else {
+      isPlayingQueue = false;
+      updateOrbState();
+      if (isContinuous && !isRecording && !isThinking && !oliverSleepMode) {
+        startListening();
+      }
+    }
+  }
+}
+
+function toggleContinuous(){
+  unlockAudio();
+  isContinuous=!isContinuous;
+  convoBtn.classList.toggle('active',isContinuous);
+  if(isContinuous){
+    setTimeout(()=>{ if(isContinuous && !isRecording && !isSpeaking && !isThinking && !oliverSleepMode) startListening(); },300);
+  } else {
+    stopWave(); stopRecording(false);
+  }
+}
+
+function startListening(){
+  if(isRecording || isMicStarting || isThinking || isSpeaking || isPlayingQueue || oliverSleepMode) return;
+  isMicStarting = true;
+  recognition = buildRecognition();
+  if(!recognition) { isMicStarting = false; return; }
+  try{ setTimeout(() => recognition.start(), 50); }
+  catch(err){ console.warn("Mic start failed:", err); isMicStarting = false; }
+}
+
+function buildRecognition(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR) { addMessage("Speech recognition not supported in this browser.", 'oliver'); return null; }
+  const r=new SR();
+  r.continuous=true; r.interimResults=true; r.lang='en-US';
+
+  r.onstart=()=>{
+    isRecording=true; isMicStarting=false;
+    document.getElementById('convo-btn').classList.add('recording');
+    updateOrbState(); interimEl.textContent='';
+  };
+
+  r.onresult=(e)=>{
+    let interim='', final='';
+    for(let i=e.resultIndex; i<e.results.length; i++){
+      const t=e.results[i][0].transcript;
+      e.results[i].isFinal ? (final+=t) : (interim+=t);
+    }
+    const liveText = (interim || final).toLowerCase().trim();
+
+    if (isSpeaking || isPlayingQueue) {
+      const isWakeWord = liveText.includes("oliver") || liveText.includes("olive") || liveText.includes("all over") || liveText.includes("stop");
+      if (!isWakeWord) return;
+    }
+    if(isEcho(liveText)) return;
+
+    if (!oliverSleepMode && (liveText.includes("oliver ignore me") || liveText.includes("ignore me oliver") || liveText.includes("go to sleep oliver"))) {
+      oliverSleepMode = true;
+      interimEl.textContent = '';
+      clearTimeout(sentenceTimeout);
+      updateOrbState();
+      stopRecording(false);
+      const msgEl = addMessage("I'm going to sleep. Tap my microphone button when you need me.", "oliver", null, null, null, true);
+      msgEl.classList.remove('hidden-voice');
+      audioQueue.push({ text: "I'll go to sleep now. Tap my microphone button when you need me.", runId: Date.now().toString(), isFiller: false, msgEl: msgEl });
+      if (!isPlayingQueue) processAudioQueue();
+      return;
+    }
+
+    if (liveText.includes("oliver stop") || liveText.includes("stop listening completely")) {
+      stopRecording(false); toggleContinuous(); return;
+    }
+
+    if (liveText.includes("oliver") || liveText.includes("olive") || liveText.includes("all over")) {
+      if (isPlayingQueue || isSpeaking) {
+        window.hasInterrupted = true;
+        stopRecording(false);
+        if (currentAudio) { try{currentAudio.stop();}catch(e){} currentAudio = null; }
+        audioQueue = []; isPlayingQueue = false; isSpeaking = false;
+        startListening(); return;
+      }
+    }
+
+    if(liveText.length < 3) return;
+    interimEl.textContent = interim || final;
+    clearTimeout(sentenceTimeout);
+    if(liveText.trim()) {
+      sentenceTimeout = setTimeout(() => {
+        if(isRecording && interimEl.textContent.trim() && !oliverSleepMode) {
+          if (interimEl.textContent.trim().length > 2) { stopRecording(true); }
+          else { interimEl.textContent = ''; }
+        }
+      }, 1200);
+    }
+  };
+
+  r.onerror=(e)=>{
+    if(e.error === 'not-allowed') addMessage("Microphone access denied.", 'oliver');
+    isMicStarting = false; stopRecording(false);
+  };
+
+  r.onend=()=>{
+    if(isRecording) stopRecording(false);
+    isMicStarting = false;
+    if(isContinuous && !isRecording && !isThinking && !oliverSleepMode) {
+      setTimeout(startListening, 300);
+    }
+  };
+  return r;
+}
+
+function toggleMic(){
+  unlockAudio();
+  if (oliverSleepMode) { oliverSleepMode = false; updateOrbState(); }
+  if(isRecording){ stopRecording(true); return; }
+  if(isPlayingQueue || isSpeaking || isThinking) {
+    window.hasInterrupted = true;
+    if(currentAudio){ try{ currentAudio.stop(); }catch(_){} currentAudio=null; }
+    audioQueue = []; isPlayingQueue = false; isSpeaking = false;
+    updateOrbState();
+  }
+  startListening();
+}
+
+function stopRecording(processCurrent = false){
+  isRecording=false;
+  document.getElementById('convo-btn').classList.remove('recording');
+  clearTimeout(sentenceTimeout);
+  const capturedText = interimEl.textContent.trim();
+  interimEl.textContent='';
+  try{ if(recognition) recognition.stop(); }catch(_){}
+  updateOrbState();
+  if(processCurrent && capturedText && capturedText.length > 2) {
+    pipeline(capturedText, true);
+  }
+}
+
+setInterval(() => {
+  if (isContinuous && !isRecording && !isMicStarting && !isSpeaking && !isPlayingQueue && !isThinking && !oliverSleepMode) {
+    startListening();
+  }
+}, 1500);
+
+const canvasEl    = document.getElementById('oliver-canvas');
+const canvasBody  = document.getElementById('canvas-body');
+const canvasCopy  = document.getElementById('canvas-copy');
+const canvasBadge = document.getElementById('canvas-type-badge');
+const canvasTTitle= document.getElementById('canvas-title-text');
+let canvasRawContent='';
+let isMaximized = false;
+
+function openStoredCanvas(id) {
+  const data = canvasStore[id];
+  if(data) openCanvas(data.type, data.title, data.content);
+}
+
+function openCanvas(type, title, content){
+  if(['html','js','json','css','python','ts','typescript','javascript','sh','bash'].includes(type)) type = 'code';
+  if(['mp4','webm','mov'].includes(type)) type = 'video';
+
+  canvasTTitle.textContent=title||'Canvas';
+  canvasBadge.textContent=type||'code';
+  canvasRawContent=content;
+  canvasBody.className='type-'+type;
+  canvasBody.innerHTML='';
+  canvasCopy.style.display='none';
+
+  if(type==='code'){
+    const wrap = document.createElement('div');
+    wrap.id = 'canvas-code-wrap';
+    const pre=document.createElement('pre');
+    pre.id='canvas-code';
+    pre.innerHTML=syntaxHighlight(content);
+    wrap.appendChild(pre);
+    canvasBody.appendChild(wrap);
+    canvasCopy.style.display='block';
+  } else if(type==='calendar'){
+    // Full-bleed calendar view in canvas
+    const wrap = document.createElement('div');
+    wrap.className = 'canvas-calendar-wrap';
+    wrap.innerHTML = content;
+    canvasBody.appendChild(wrap);
+  } else if(type==='image'){
+    const img=document.createElement('img'); img.id='canvas-img';
+    img.src=content.trim(); img.alt=title||'Image'; canvasBody.appendChild(img);
+  } else if(type==='pdf'){
+    const obj=document.createElement('object');
+    obj.data=content.trim(); obj.type="application/pdf"; obj.style.width="100%"; obj.style.height="100%";
+    canvasBody.appendChild(obj);
+  } else if(type==='video'){
+    const vid=document.createElement('video'); vid.className='canvas-vid'; vid.controls=true; vid.autoplay=true;
+    const src=document.createElement('source'); src.src=content.trim(); vid.appendChild(src);
+    canvasBody.appendChild(vid);
+  } else if(type==='html_preview'){
+    const iframe=document.createElement('iframe'); iframe.id='canvas-iframe'; iframe.sandbox='allow-scripts';
+    canvasBody.appendChild(iframe);
+    iframe.contentDocument.open(); iframe.contentDocument.write(content); iframe.contentDocument.close();
+  } else if(type==='markdown'){
+    canvasBody.innerHTML=renderMarkdown(content);
+  } else if(type==='spotify'){
+    canvasBody.innerHTML=content;
+  } else {
+    const wrap = document.createElement('div'); wrap.id = 'canvas-code-wrap';
+    const pre=document.createElement('pre'); pre.id='canvas-code'; pre.textContent=content;
+    wrap.appendChild(pre); canvasBody.appendChild(wrap); canvasCopy.style.display='block';
+  }
+  canvasEl.classList.add('open');
+}
+
+function closeCanvas(){ canvasEl.classList.remove('open'); }
+
+function toggleMaximize(){
+  isMaximized = !isMaximized;
+  const panel = document.getElementById('canvas-panel');
+  const maxIcon = document.getElementById('max-icon');
+  if(isMaximized) {
+    panel.style.height = '100vh'; panel.style.borderRadius = '0';
+    maxIcon.innerHTML = '<path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>';
+  } else {
+    panel.style.height = '85vh'; panel.style.borderRadius = '24px 24px 0 0';
+    maxIcon.innerHTML = '<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>';
+  }
+}
+
+function copyCanvas(){
+  navigator.clipboard.writeText(canvasRawContent).catch(()=>{});
+  canvasCopy.textContent='Copied!';
+  setTimeout(()=>{ canvasCopy.textContent='Copy'; },1800);
+}
+
+function syntaxHighlight(code){
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return code.split('\n').map((line)=>{
+    let parsed = line;
+    if(/^\s*(\/\/|#|--|\/\*)/.test(line)) {
+      parsed = `<span class="tok-cmt">${esc(line)}</span>`;
+    } else {
+      parsed = esc(line)
+        .replace(/(&#39;.*?&#39;|&quot;.*?&quot;|`.*?`)/g,'<span class="tok-str">$1</span>')
+        .replace(/\b(\d+\.?\d*)\b/g,'<span class="tok-num">$1</span>')
+        .replace(/\b(const|let|var|function|return|if|else|for|while|class|import|export|from|async|await|try|catch|new|this|null|undefined|true|false|def|self|print|in|is|not|and|or|type|interface|extends|implements|public|private|static|void|int|string|bool)\b/g,'<span class="tok-kw">$1</span>')
+        .replace(/([a-zA-Z_$][a-zA-Z0-9_$]*)\s*(?=\()/g,'<span class="tok-fn">$1</span>');
+    }
+    return `<div class="line-row"><span class="line-num"></span><span class="line-content">${parsed||' '}</span></div>`;
+  }).join('');
+}
+
+function renderMarkdown(md){
+  return md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/```(\w+)?\n([\s\S]*?)```/g,'<pre><code>$2</code></pre>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/`([^`\n]+)`/g,'<code>$1</code>')
+    .replace(/^\- (.+)$/gm,'<li>$1</li>').replace(/(<li>.*<\/li>)/gs,'<ul>$1</ul>')
+    .replace(/^---$/gm,'<hr>').replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank">$1</a>')
+    .replace(/\n\n/g,'</p><p>').replace(/^(?!<[hupli]|<\/[hupli]|<pre)(.+)$/gm,'<p>$1</p>');
+}
+</script>
+</body>
+</html>
