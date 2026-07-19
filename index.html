@@ -170,7 +170,7 @@
                     <div id="loginPendingDuckBanner" class="hidden mb-4 bg-emerald-900/40 border border-emerald-500 rounded-lg p-3 shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse">
                         <p class="text-emerald-400 text-sm font-bold flex items-center justify-center gap-2 font-display">
                             <i data-lucide="scan-line" class="w-4 h-4"></i>
-                            Target Acquired! Sign in to claim.
+                            Rebel Duck Acquired! Sign in to claim.
                         </p>
                     </div>
 
@@ -208,7 +208,7 @@
                         <div id="regPendingDuckBanner" class="hidden my-3 bg-emerald-900/40 border border-emerald-500 rounded-lg p-3 shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse">
                             <p class="text-emerald-400 text-sm font-bold flex items-center justify-center gap-2 font-display">
                                 <i data-lucide="scan-line" class="w-4 h-4"></i>
-                                Target Acquired! Join to claim.
+                                Rebel Duck Acquired! Join to claim.
                             </p>
                         </div>
 
@@ -284,7 +284,7 @@
                         <!-- Overlay Stats Bar -->
                         <div class="absolute top-0 left-0 w-full bg-zinc-950/90 backdrop-blur-md border-b border-cyan-500/20 py-3 px-6 z-30 flex justify-between items-center">
                             <div class="flex flex-col items-center w-1/3">
-                                <span class="text-[9px] text-cyan-600 font-display font-bold uppercase tracking-[0.1em] leading-none mb-1">Targets</span>
+                                <span class="text-[9px] text-cyan-600 font-display font-bold uppercase tracking-[0.1em] leading-none mb-1">Rebel Ducks</span>
                                 <span class="text-sm font-display font-black text-cyan-300 drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]" id="statDucks">0</span>
                             </div>
                             <div class="flex flex-col items-center w-1/3 border-x border-cyan-900/50">
@@ -314,7 +314,7 @@
                                 <div class="w-20 h-20 bg-emerald-900 border-2 border-emerald-400 rounded-full flex items-center justify-center mb-4 shadow-[0_0_40px_rgba(16,185,129,0.8)]">
                                     <i data-lucide="check-circle-2" class="w-10 h-10 text-emerald-300"></i>
                                 </div>
-                                <h4 class="text-xl font-display font-bold text-white mb-1 uppercase tracking-widest" id="successDuckName">Target Acquired</h4>
+                                <h4 class="text-xl font-display font-bold text-white mb-1 uppercase tracking-widest" id="successDuckName">Rebel Duck Acquired</h4>
                                 <p class="text-yellow-400 font-display font-black text-3xl drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]" id="successPoints">+0 CR</p>
                             </div>
                         </div>
@@ -356,7 +356,7 @@
                     <p class="text-cyan-600 text-sm mb-6 tracking-wider uppercase font-semibold">Top Bounty Hunters</p>
                     
                     <div id="leaderboardContainer" class="space-y-3 text-left relative z-10">
-                        <div class="text-center py-8 text-cyan-800 text-sm font-display animate-pulse uppercase tracking-widest">Accessing Holo-Net...</div>
+                        <div class="text-center py-8 text-cyan-800 text-sm font-display animate-pulse uppercase tracking-widest">Accessing CAB Net...</div>
                     </div>
                 </div>
             </div>
@@ -378,7 +378,7 @@
                         </div>
                         <div>
                             <h3 class="text-base font-display font-black tracking-widest text-cyan-300 leading-none mb-0.5 uppercase drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">Sector Map</h3>
-                            <p class="text-cyan-600 text-[9px] uppercase tracking-[0.2em] font-bold">Live Target Coordinates</p>
+                            <p class="text-cyan-600 text-[9px] uppercase tracking-[0.2em] font-bold">Live Rebel Duck Coordinates</p>
                         </div>
                     </div>
                 </div>
@@ -399,7 +399,7 @@
                             <i data-lucide="radio-receiver" class="w-16 h-16 text-amber-500 animate-pulse"></i>
                         </div>
                         <h4 class="text-xs font-display font-bold text-amber-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2 drop-shadow-[0_0_5px_rgba(245,158,11,0.8)]">
-                            <i data-lucide="satellite" class="w-4 h-4"></i> Holo-Net Alert
+                            <i data-lucide="satellite" class="w-4 h-4"></i> CAB Net Alert
                         </h4>
                         <p id="infoBroadcastDisplay" class="text-sm text-amber-100 italic relative z-10 leading-relaxed font-medium">Monitoring secure channels...</p>
                     </div>
@@ -451,9 +451,9 @@
 
                     <!-- Admin Tabs -->
                     <div class="flex gap-2 mb-6 bg-zinc-950/80 p-1.5 rounded-lg border border-cyan-900/50 flex-wrap sm:flex-nowrap sm:w-fit shadow-inner">
-                        <button class="admin-tab active flex-1 py-2 px-4 text-xs sm:text-sm font-display font-bold rounded text-cyan-700 hover:text-cyan-300 transition-all uppercase tracking-wider" onclick="switchAdminTab('ducks')" id="tab-ducks">Targets</button>
+                        <button class="admin-tab active flex-1 py-2 px-4 text-xs sm:text-sm font-display font-bold rounded text-cyan-700 hover:text-cyan-300 transition-all uppercase tracking-wider" onclick="switchAdminTab('ducks')" id="tab-ducks">Rebel Ducks</button>
                         <button class="admin-tab flex-1 py-2 px-4 text-xs sm:text-sm font-display font-bold rounded border border-transparent text-cyan-700 hover:text-cyan-300 transition-all uppercase tracking-wider" onclick="switchAdminTab('players')" id="tab-players">Hunters</button>
-                        <button class="admin-tab flex-1 py-2 px-4 text-xs sm:text-sm font-display font-bold rounded border border-transparent text-cyan-700 hover:text-cyan-300 transition-all uppercase tracking-wider" onclick="switchAdminTab('feed')" id="tab-feed">Holo-Net Feed</button>
+                        <button class="admin-tab flex-1 py-2 px-4 text-xs sm:text-sm font-display font-bold rounded border border-transparent text-cyan-700 hover:text-cyan-300 transition-all uppercase tracking-wider" onclick="switchAdminTab('feed')" id="tab-feed">CAB Net Feed</button>
                     </div>
 
                     <!-- Manage Ducks Panel -->
@@ -469,16 +469,16 @@
                                 <div class="text-xl sm:text-2xl font-display font-black text-blue-400 drop-shadow-[0_0_5px_rgba(59,130,246,0.5)]" id="statAdminClaimed">0</div>
                             </div>
                             <div class="bg-emerald-900/20 border border-emerald-500/40 rounded-lg p-3 text-center shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]">
-                                <div class="text-[9px] sm:text-[10px] text-emerald-500 font-display font-bold uppercase tracking-[0.1em] mb-1">Active Targets</div>
+                                <div class="text-[9px] sm:text-[10px] text-emerald-500 font-display font-bold uppercase tracking-[0.1em] mb-1">Active Rebel Ducks</div>
                                 <div class="text-xl sm:text-2xl font-display font-black text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" id="statAdminActive">0</div>
                             </div>
                         </div>
 
                         <div class="bg-zinc-950/80 border border-cyan-900/50 rounded-lg p-5 mb-6 shadow-inner">
-                            <h4 class="text-sm font-display font-bold text-cyan-400 mb-4 uppercase tracking-widest border-b border-cyan-900/50 pb-2">Bulk Target Deployment</h4>
+                            <h4 class="text-sm font-display font-bold text-cyan-400 mb-4 uppercase tracking-widest border-b border-cyan-900/50 pb-2">Bulk Rebel Duck Deployment</h4>
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                                 <div>
-                                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Target Designation</label>
+                                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Rebel Duck Designation</label>
                                     <input type="text" id="bulkDuckName" class="control-item !py-2 font-display text-sm" placeholder="e.g. Probe Droid" />
                                 </div>
                                 <div>
@@ -532,7 +532,7 @@
                                     <thead class="bg-zinc-900/80 sticky top-0 z-10 border-b border-cyan-900/50 shadow-md">
                                         <tr>
                                             <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] w-10 text-center"><i data-lucide="check-square" class="w-3 h-3 mx-auto"></i></th>
-                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em]">Target Intel</th>
+                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em]">Rebel Duck Intel</th>
                                             <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-center">Bounty (CR)</th>
                                             <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-center">Status</th>
                                             <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-right">Directives</th>
@@ -573,7 +573,7 @@
                                         <tr>
                                             <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] w-12 text-center">Rank</th>
                                             <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em]">Hunter Identity</th>
-                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-center">Total CR / Targets</th>
+                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-center">Total CR / Rebel Ducks</th>
                                             <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-center">Signal</th>
                                             <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-right">Directives</th>
                                         </tr>
@@ -591,7 +591,7 @@
                         <!-- Broadcast Card -->
                         <div class="bg-zinc-950 border border-cyan-900/50 rounded-lg p-5 mb-6 shadow-inner max-w-2xl">
                             <h4 class="text-sm font-display font-bold text-amber-500 mb-4 uppercase tracking-widest border-b border-amber-900/30 pb-2 flex items-center gap-2 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]">
-                                <i data-lucide="satellite" class="w-4 h-4 text-amber-400"></i> Holo-Net Global Broadcast
+                                <i data-lucide="satellite" class="w-4 h-4 text-amber-400"></i> CAB Net Global Broadcast
                             </h4>
                             <div class="mb-4 p-3 bg-zinc-900 rounded border border-amber-900/40">
                                 <span class="text-[9px] text-amber-700 font-display uppercase font-bold tracking-widest block mb-1">Active Transmission</span>
@@ -684,7 +684,7 @@
     <div id="qrModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-zinc-950/95 backdrop-blur-md" onclick="hideQR()"></div>
         <div class="relative w-full max-w-sm glass-card rounded-lg p-8 flex flex-col items-center text-center shadow-2xl border-cyan-500/40">
-            <h3 class="text-xl font-display font-black mb-1 text-white uppercase tracking-widest" id="qrModalTitle">Target Code</h3>
+            <h3 class="text-xl font-display font-black mb-1 text-white uppercase tracking-widest" id="qrModalTitle">Rebel Duck Code</h3>
             <p class="text-cyan-500 text-xs font-display uppercase tracking-wider mb-6" id="qrModalLocation">Sector</p>
             
             <div class="bg-cyan-50 p-4 rounded mb-6 shadow-[0_0_30px_rgba(6,182,212,0.4)] border-2 border-cyan-400">
@@ -705,13 +705,13 @@
     <div id="editDuckModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="closeEditDuckModal()"></div>
         <div class="relative w-full max-w-sm glass-card rounded-lg p-8 flex flex-col items-center text-center shadow-2xl border-cyan-500/40">
-            <h3 class="text-xl font-display font-black mb-4 text-white uppercase tracking-widest">Reconfigure Target</h3>
+            <h3 class="text-xl font-display font-black mb-4 text-white uppercase tracking-widest">Reconfigure Rebel Duck</h3>
             
             <input type="hidden" id="editDuckCode" />
             
             <div class="w-full space-y-4 mb-6 text-left">
                 <div>
-                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Target Designation</label>
+                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Rebel Duck Designation</label>
                     <input type="text" id="editDuckName" class="control-item !py-2 font-display" />
                 </div>
                 <div>
@@ -738,7 +738,7 @@
         <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="closeBulkEditModal()"></div>
         <div class="relative w-full max-w-sm glass-card rounded-lg p-8 flex flex-col items-center text-center shadow-2xl border-cyan-500/40">
             <h3 class="text-xl font-display font-black mb-2 text-white uppercase tracking-widest">Mass Reconfiguration</h3>
-            <p class="text-[10px] text-cyan-600 font-display uppercase tracking-widest mb-4">Editing <span id="bulkEditCount" class="text-cyan-400 font-bold">0</span> targets. Leave blank to skip.</p>
+            <p class="text-[10px] text-cyan-600 font-display uppercase tracking-widest mb-4">Editing <span id="bulkEditCount" class="text-cyan-400 font-bold">0</span> Rebel Ducks. Leave blank to skip.</p>
             
             <div class="w-full space-y-4 mb-6 text-left">
                 <div>
@@ -1625,12 +1625,12 @@
     function generateCode() { return Math.random().toString(36).substring(2, 10); }
 
     async function generateBulkDucks() {
-        const literalName = document.getElementById('bulkDuckName').value || "Target";
+        const literalName = document.getElementById('bulkDuckName').value || "Rebel Duck";
         const locationInput = document.getElementById('bulkDuckLoc').value || "Unknown Sector";
         const pts = parseInt(document.getElementById('bulkDuckPoints').value) || 10;
         const count = parseInt(document.getElementById('bulkDuckCount').value) || 1;
 
-        if (count > 20000) return alert("Maximum 20,000 targets per batch.");
+        if (count > 20000) return alert("Maximum 20,000 Rebel Ducks per batch.");
 
         const btn = document.getElementById('bulkGenBtn');
         const btnText = document.getElementById('bulkGenText');
@@ -1662,7 +1662,7 @@
             document.getElementById('bulkDuckCount').value = '10';
             loadAdminDucks();
         } catch (err) {
-            alert("Error creating targets: " + err.message);
+            alert("Error creating Rebel Ducks: " + err.message);
         } finally {
             btn.disabled = false;
             btn.classList.remove('opacity-50', 'cursor-wait');
@@ -1696,7 +1696,7 @@
 
                 applyDuckFilters();
             } else {
-                list.innerHTML = '<tr><td colspan="5" class="text-cyan-800 text-center py-8 text-sm italic tracking-widest font-display">No targets deployed.</td></tr>';
+                list.innerHTML = '<tr><td colspan="5" class="text-cyan-800 text-center py-8 text-sm italic tracking-widest font-display">No Rebel Ducks deployed.</td></tr>';
                 allAdminDucks = [];
             }
         } catch (err) {
@@ -1753,7 +1753,7 @@
             `).join('');
             lucide.createIcons();
         } else {
-            list.innerHTML = '<tr><td colspan="5" class="text-cyan-800 text-center py-8 text-sm italic tracking-widest uppercase font-display">No targets found.</td></tr>';
+            list.innerHTML = '<tr><td colspan="5" class="text-cyan-800 text-center py-8 text-sm italic tracking-widest uppercase font-display">No Rebel Ducks found.</td></tr>';
         }
         updateBulkActionBtns();
     }
@@ -1786,7 +1786,7 @@
         const checkboxes = document.querySelectorAll('.duck-select-checkbox:checked');
         if (checkboxes.length === 0) return;
         
-        if (!confirm(`Are you sure you want to permanently delete ${checkboxes.length} targets? This will also DEDUCT credits from anyone who claimed them!`)) return;
+        if (!confirm(`Are you sure you want to permanently delete ${checkboxes.length} Rebel Ducks? This will also DEDUCT credits from anyone who claimed them!`)) return;
 
         const codesToDelete = Array.from(checkboxes).map(cb => cb.value);
         const btn = document.getElementById('bulkDeleteBtn');
@@ -1827,7 +1827,7 @@
             
             await loadAdminDucks(); 
         } catch (err) {
-            alert("Error deleting targets: " + err.message);
+            alert("Error deleting Rebel Ducks: " + err.message);
         } finally {
             btn.disabled = false;
             updateBulkActionBtns(); 
@@ -1899,7 +1899,7 @@
             closeEditDuckModal();
             loadAdminDucks(); 
         } catch (err) {
-            alert("Error updating target: " + err.message);
+            alert("Error updating Rebel Duck: " + err.message);
         } finally {
             btn.disabled = false;
             btn.innerHTML = 'Confirm';
@@ -1907,7 +1907,7 @@
     }
 
     async function deleteDuck(code) {
-        if (!confirm("Confirm target deletion? Credits will be deducted from anyone who claimed it!")) return;
+        if (!confirm("Confirm Rebel Duck deletion? Credits will be deducted from anyone who claimed it!")) return;
 
         try {
             const { data: scans } = await _supabase.from('scans').select('player_id, points_earned').eq('duck_code', code);
@@ -1927,7 +1927,7 @@
 
             loadAdminDucks(); 
         } catch (err) {
-            alert("Error deleting target: " + err.message);
+            alert("Error deleting Rebel Duck: " + err.message);
         }
     }
 
@@ -1983,7 +1983,7 @@
                 </td>
                 <td class="p-3 border-b border-cyan-900/30 text-center">
                     <div class="text-yellow-400 text-sm font-display font-black drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]">${p.points} CR</div>
-                    <div class="text-[10px] text-cyan-700 uppercase tracking-widest font-bold">${p.ducks} Targets</div>
+                    <div class="text-[10px] text-cyan-700 uppercase tracking-widest font-bold">${p.ducks} Rebel Ducks</div>
                 </td>
                 <td class="p-3 border-b border-cyan-900/30 text-center">
                     ${p.isOnline ? '<div class="w-2 h-2 rounded-full bg-emerald-500 mx-auto shadow-[0_0_8px_#10b981]" title="Active Signal"></div>' : '<div class="w-2 h-2 rounded-full bg-zinc-800 mx-auto border border-zinc-700" title="Lost Signal"></div>'}
@@ -2138,7 +2138,7 @@
 
                 const seenId = localStorage.getItem('seenBroadcastId');
                 if (seenId !== latest.id) {
-                    showAppAlert("Holo-Net Transmission", latest.message, latest.id);
+                    showAppAlert("CAB Net Transmission", latest.message, latest.id);
                 }
             } else {
                 document.getElementById('infoBroadcastDisplay').textContent = "Monitoring secure channels...";
