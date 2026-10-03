@@ -1,2258 +1,419 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Duck Hunt 2026</title>
-    
-    <link rel="icon" href="data:," />
-    
-    <!-- Supabase JS Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Tailwind CSS -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic Login - Hyperspeed Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     
-    <!-- Google Fonts - SciFi Theme -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- QR Code Generator & Scanner Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
-    <!-- Leaflet JS (For Custom Interactive Maps) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { 
-                        sans: ['Rajdhani', 'sans-serif'],
-                        display: ['Orbitron', 'sans-serif']
-                    },
-                    colors: {
-                        zinc: {
-                            900: '#18181b',
-                            950: '#09090b',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #09090b; border-left: 1px solid #18181b; }
-        ::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 0px; box-shadow: 0 0 10px #06b6d4; }
-        ::-webkit-scrollbar-thumb:hover { background: #22d3ee; }
-        .no-save-pass { -webkit-text-security: disc !important; text-security: disc !important; }
-
-        /* CRT Scanline Effect */
-        .scanlines {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 4px, 3px 100%;
-            pointer-events: none;
-            z-index: 9998; /* Below modals but above everything else */
-            opacity: 0.25;
+        body {
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
         }
 
-        .glass-card {
-            background: rgba(9, 9, 11, 0.75);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(6, 182, 212, 0.2); /* Cyan border */
-            box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.05), 0 10px 40px rgba(0, 0, 0, 0.8);
-            border-radius: 0.75rem; /* More angular datapad look */
+        #starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .font-tech {
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .shimmer-wrapper {
+            position: relative;
+            padding: 2px;
+            border-radius: 1.25rem; 
+            background: linear-gradient(
+                60deg, 
+                #000000 0%,    
+                #0a0a0a 25%,   
+                #171717 45%,   
+                #cbd5e1 50%,   
+                #171717 55%,   
+                #0a0a0a 75%,   
+                #000000 100%   
+            );
+            background-size: 300% 300%;
+            animation: glide-shimmer 7s ease-in-out infinite alternate;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+        }
+
+        @keyframes glide-shimmer {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        .glass-inner {
+            background: rgba(0, 0, 0, 0.95); 
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: calc(1.25rem - 2px); 
+            box-shadow: 
+                inset 0 1px 1px rgba(255, 255, 255, 0.08), 
+                inset 1px 0 1px rgba(255, 255, 255, 0.03), 
+                inset 0 -1px 2px rgba(0, 0, 0, 0.9),       
+                inset -1px 0 2px rgba(0, 0, 0, 0.9),       
+                0 25px 50px -12px rgba(0, 0, 0, 1);       
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 
+                inset 0 0 15px rgba(255, 255, 255, 0.05),
+                0 4px 10px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
         }
         
-        .primary-card {
-            border: 1px solid rgba(6, 182, 212, 0.5); /* Glowing Cyan */
-            box-shadow: 0 0 25px rgba(6, 182, 212, 0.15);
-        }
-
-        .view { display: none; opacity: 0; transform: translateY(15px); transition: 0.4s ease; width: 100%; }
-        .view.active { display: block; opacity: 1; transform: translateY(0); }
-
-        .control-item {
-            width: 100%;
-            background: #18181b;
-            border: 1px solid #27272a;
-            color: #ffffff;
-            border-radius: 0.5rem; /* angular */
-            padding: 0.75rem 1rem;
-            font-family: inherit;
-            font-size: 1rem;
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.5);
             outline: none;
-            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
-        }
-        @media (min-width: 640px) {
-            .control-item { padding: 1rem 1.25rem; }
-        }
-        @media (hover: hover) {
-            .control-item:hover {
-                border-color: rgba(6, 182, 212, 0.4);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
-            }
-        }
-        .control-item::placeholder { color: rgba(255, 255, 255, 0.4); }
-        .control-item:focus {
-            border-color: #06b6d4; /* cyan-500 */
-            background: rgba(6, 182, 212, 0.05);
-            box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+            box-shadow: 
+                inset 0 0 20px rgba(255, 255, 255, 0.1),
+                0 0 15px rgba(255,255,255,0.15);
         }
 
-        .form-label { display: block; margin-bottom: 0.75rem; color: #ffffff; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; line-height: 1.4; font-family: 'Orbitron', sans-serif; }
-        
-        .loader { display: none; width: 18px; height: 18px; border: 2px solid #fff; border-bottom-color: transparent; border-radius: 50%; animation: rotation 1s linear infinite; margin-left: 10px; }
-        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
-        
-        @keyframes flyUp {
-            0% { transform: translateY(10vh) translateX(0) rotate(0deg) scale(0.5); opacity: 1; filter: drop-shadow(0 0 15px #06b6d4); }
-            50% { transform: translateY(-40vh) translateX(30px) rotate(15deg) scale(1.5); opacity: 1; filter: drop-shadow(0 0 25px #06b6d4); }
-            100% { transform: translateY(-110vh) translateX(-30px) rotate(-10deg) scale(1); opacity: 0; filter: drop-shadow(0 0 10px #06b6d4); }
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active{
+            -webkit-box-shadow: 0 0 0 30px #0a0a0a inset !important;
+            -webkit-text-fill-color: white !important;
+            transition: background-color 5000s ease-in-out 0s;
         }
-        .flying-duck {
-            position: fixed;
-            font-size: 3rem;
-            z-index: 9999;
-            pointer-events: none;
-        }
-        
-        /* Admin specific styles */
-        .admin-tab.active { background: rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.5); color: #22d3ee; box-shadow: inset 0 0 10px rgba(6,182,212,0.2); }
 
-        /* Leaflet Dark Mode / SciFi Overrides */
-        .leaflet-tile { filter: invert(100%) hue-rotate(180deg) brightness(80%) contrast(120%) sepia(30%) hue-rotate(150deg); }
-        .leaflet-container { background: #09090b; font-family: 'Rajdhani', sans-serif; }
-        .custom-div-icon { background: transparent; border: none; }
-        .leaflet-control-zoom { border: none !important; box-shadow: 0 0 20px rgba(0,0,0,0.8) !important; border-radius: 0 !important; }
-        .leaflet-control-zoom a { background: #18181b !important; color: #06b6d4 !important; border-color: #06b6d4 !important; border-radius: 0 !important; font-family: 'Orbitron', sans-serif; }
+        /* Custom Checkbox styles */
+        .custom-checkbox {
+            appearance: none;
+            background-color: rgba(255, 255, 255, 0.05);
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.25em;
+            height: 1.25em;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 0.25em;
+            display: grid;
+            place-content: center;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+
+        .custom-checkbox::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em #000;
+            background-color: #000;
+            transform-origin: center;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+
+        .custom-checkbox:checked {
+            background-color: #ffe81f;
+            border-color: #ffe81f;
+            box-shadow: 0 0 10px rgba(255, 232, 31, 0.5);
+        }
+
+        .custom-checkbox:checked::before {
+            transform: scale(1);
+        }
+        
+        /* Utility for smooth transitions */
+        .fade-transition {
+            transition: opacity 0.5s ease-in-out;
+        }
     </style>
 </head>
-<body class="text-zinc-100 min-h-[100dvh] relative overflow-x-hidden selection:bg-cyan-500/30 font-sans">
+<body class="text-white antialiased selection:bg-gray-500/30">
 
-    <!-- Starfield Canvas -->
-    <canvas id="starfield" class="fixed inset-0 z-[0] w-full h-full pointer-events-none bg-[#050508]"></canvas>
+    <canvas id="starfield"></canvas>
 
-    <!-- Dark Overlay & CRT Lines -->
-    <div class="fixed inset-0 bg-zinc-950/60 z-[1] pointer-events-none"></div>
-    <div class="scanlines"></div>
-
-    <main class="relative z-10 w-full max-w-7xl mx-auto px-3 py-4 sm:p-8 min-h-[100dvh] flex flex-col">
-
-        <div class="flex-1 w-full flex flex-col items-center justify-center py-8 sm:py-10">
-
-            <!-- LOGIN VIEW -->
-            <div id="loginView" class="view active mx-auto w-full" style="max-width: min(22rem, calc(100% - 2.5rem));">
-                <div class="glass-card primary-card px-6 py-8 sm:p-8 text-center">
-                    <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB Logo" class="h-12 sm:h-16 w-auto mx-auto mb-5 sm:mb-6 object-contain drop-shadow-[0_0_15px_rgba(6,182,212,0.5)]" style="filter: hue-rotate(220deg) brightness(1.5);" />
+    <main class="relative z-10 min-h-screen w-full px-4 sm:px-6 flex justify-center items-center">
+        
+        <!-- LOGIN VIEW -->
+        <div id="login-view" class="fade-transition opacity-100 w-full max-w-sm flex justify-center">
+            <div class="shimmer-wrapper w-[380px]">
+                <div class="glass-inner w-full h-full p-8 sm:p-10 flex flex-col items-center">
                     
-                    <h3 class="text-2xl sm:text-3xl font-display font-black mb-2 sm:mb-3 tracking-widest text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.4)] uppercase">Duck Hunt 2026</h3>
-                    
-                    <!-- Pending Duck Banner -->
-                    <div id="loginPendingDuckBanner" class="hidden mb-4 bg-emerald-900/40 border border-emerald-500 rounded-lg p-3 shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse">
-                        <p class="text-emerald-400 text-sm font-bold flex items-center justify-center gap-2 font-display">
-                            <i data-lucide="scan-line" class="w-4 h-4"></i>
-                            Rebel Duck Acquired! Sign in to claim.
-                        </p>
+                    <div class="flex flex-col items-center mb-2 w-full">
+                        <img src="https://i.imgur.com/p2qZOL5.png" alt="Company Logo" class="w-20 h-auto -mb-4 object-contain relative z-10">
+                        <img src="https://i.imgur.com/f4kE3Fg.png" alt="Galactic Logo" class="h-44 w-auto max-w-full object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
                     </div>
 
-                    <p class="text-cyan-400 mb-6 sm:mb-8 font-medium text-sm leading-relaxed tracking-widest uppercase">Enter Hunter ID</p>
-
-                    <div class="mb-3 text-center">
-                        <label class="form-label text-cyan-500">Hunter ID Code</label>
-                        <input type="number" id="loginStudentID" class="control-item text-center text-lg font-display tracking-widest !py-3 sm:!py-3.5 max-w-[240px] mx-auto block" placeholder="e.g. 123456" autocomplete="off" onkeyup="if(event.key==='Enter') studentLogin()"/>
-                    </div>
-                    
-                    <div class="mb-6 text-center">
-                        <a href="#" class="text-sm text-cyan-600 hover:text-cyan-400 underline underline-offset-4 transition-colors font-semibold tracking-wider uppercase">Mission Briefing</a>
-                    </div>
-
-                    <button class="w-full max-w-[240px] mx-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-display font-black py-3 sm:py-3.5 rounded-lg flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.7)] text-base border border-cyan-400/50 uppercase tracking-widest" id="loginBtn" onclick="studentLogin()">
-                        <span>Initiate</span>
-                        <div class="loader" id="loginLoader"></div>
-                    </button>
-
-                    <div class="mt-5 pt-4 border-t border-cyan-900/50 flex flex-col items-center gap-1">
-                        <span class="text-cyan-800 text-xs tracking-widest font-display">© <span id="year"></span> Galactic CAB</span>
-                        <button class="opacity-50 hover:opacity-100 transition-opacity uppercase tracking-widest bg-transparent border-none text-[10px] cursor-pointer text-cyan-600 p-1 mt-1 font-display" onclick="showGate()">Command Access</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- REGISTER VIEW (First Time Login) -->
-            <div id="registerView" class="view mx-auto w-full" style="max-width: min(24rem, calc(100% - 2.5rem));">
-                <div class="glass-card primary-card px-6 py-8 sm:p-8">
-                    <div class="text-center mb-6">
-                        <i data-lucide="crosshair" class="w-12 h-12 text-cyan-400 mx-auto mb-4 drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]"></i>
-                        <h3 class="text-2xl sm:text-3xl font-display font-black mb-2 tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 uppercase">Enlist Now</h3>
-                        
-                        <!-- Pending Duck Banner -->
-                        <div id="regPendingDuckBanner" class="hidden my-3 bg-emerald-900/40 border border-emerald-500 rounded-lg p-3 shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse">
-                            <p class="text-emerald-400 text-sm font-bold flex items-center justify-center gap-2 font-display">
-                                <i data-lucide="scan-line" class="w-4 h-4"></i>
-                                Rebel Duck Acquired! Join to claim.
-                            </p>
+                    <form onsubmit="event.preventDefault();" class="flex flex-col w-full">
+                        <div class="relative w-full mb-6">
+                            <label for="student-id" class="sr-only">Student ID</label>
+                            <input 
+                                type="text" 
+                                id="student-id" 
+                                placeholder="Student ID" 
+                                class="glass-input w-full rounded-xl px-4 py-4 text-center text-[17px] text-white placeholder-gray-300/80 focus:placeholder-transparent"
+                                required
+                            >
                         </div>
 
-                        <p class="text-cyan-500 text-sm font-medium tracking-widest uppercase">Initialize Hunter Profile</p>
-                    </div>
-
-                    <div class="space-y-4 mb-8 text-center">
-                        <div>
-                            <label class="form-label text-cyan-500">Hunter Designation (Name)</label>
-                            <input type="text" id="regName" class="control-item text-center font-display" placeholder="First & Last Name" autocomplete="name" />
-                        </div>
-                        <div>
-                            <label class="form-label text-cyan-500">Hunter ID Code</label>
-                            <input type="number" id="regStudentID" class="control-item bg-zinc-900/50 text-cyan-800 cursor-not-allowed border-zinc-800 focus:border-zinc-800 focus:box-shadow-none text-center font-display" readonly />
-                        </div>
-                    </div>
-
-                    <button class="w-full max-w-[240px] mx-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-display font-black py-3 sm:py-3.5 rounded-lg flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.7)] text-base border border-cyan-400/50 uppercase tracking-widest" id="regBtn" onclick="registerPlayer()">
-                        <span>Join The Hunt</span>
-                        <div class="loader" id="regLoader"></div>
-                    </button>
-                    
-                    <button class="w-full mt-4 text-cyan-700 hover:text-cyan-400 text-sm font-semibold tracking-widest uppercase transition-colors" onclick="switchView('loginView')">
-                        Abort Sequence
-                    </button>
-                </div>
-            </div>
-
-            <!-- OFFLINE VIEW -->
-            <div id="offlineView" class="view mx-auto w-full" style="max-width: min(22rem, calc(100% - 2.5rem));">
-                <div class="glass-card primary-card px-6 py-8 sm:p-8 text-center border-rose-500/50 shadow-[0_0_40px_rgba(244,63,94,0.15)]">
-                    <div class="w-32 h-32 mx-auto mb-6 rounded-lg overflow-hidden border-2 border-rose-500/50 shadow-[0_0_30px_rgba(244,63,94,0.4)] bg-zinc-900">
-                        <img src="https://i.imgur.com/01ZosHG.gif" alt="System Offline" class="w-full h-full object-cover filter grayscale sepia hue-rotate-300" />
-                    </div>
-                    <h3 class="text-2xl font-display font-black mb-3 tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-red-600 uppercase">System Offline</h3>
-                    <p class="text-rose-200 mb-6 font-medium text-sm leading-relaxed tracking-wider">The Hunt Engine is currently suspended by High Command. Stand by for reactivation.</p>
-                    <button class="opacity-50 hover:opacity-100 transition-opacity uppercase tracking-widest bg-transparent border-none text-[10px] cursor-pointer text-rose-500 p-1 mt-1 font-display" onclick="showGate()">Command Access</button>
-                </div>
-            </div>
-
-            <!-- SCANNER VIEW -->
-            <div id="scannerView" class="view mx-auto w-full pb-24" style="max-width: min(24rem, calc(100% - 2.5rem));">
-                <div class="glass-card primary-card px-4 py-6 sm:p-8 text-center relative overflow-hidden">
-                    
-                    <!-- Decorative Datapad Lines -->
-                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50"></div>
-                    <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50"></div>
-
-                    <!-- Personalized Welcome -->
-                    <div class="flex justify-between items-start mb-6 border-b border-cyan-900/50 pb-4">
-                        <div class="text-left">
-                            <h3 class="text-xl sm:text-2xl font-display font-black tracking-widest text-white leading-tight uppercase">Hunter <span id="playerNameDisplay" class="text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">Player</span></h3>
-                            <p class="text-emerald-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1 drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]"><i data-lucide="activity" class="w-3 h-3 inline pb-0.5"></i> Status: Active</p>
-                        </div>
-                        <button class="text-cyan-600 hover:text-rose-400 bg-zinc-900/80 hover:bg-zinc-800 border border-cyan-900/50 p-2.5 rounded-lg transition-all" onclick="logout()" title="Log Out">
-                            <i data-lucide="power" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-
-                    <!-- Scanner Window with Integrated Stats -->
-                    <div class="relative w-full aspect-square bg-zinc-950 rounded-lg border border-cyan-500/30 overflow-hidden mb-6 flex items-center justify-center shadow-[inset_0_0_30px_rgba(6,182,212,0.1)] group">
-                        <!-- Live Video Feed -->
-                        <video id="cameraFeed" playsinline class="absolute inset-0 w-full h-full object-cover hidden"></video>
-                        <canvas id="qrCanvas" class="hidden"></canvas>
-                        
-                        <!-- Animated Scanning Elements & Fallback Icon -->
-                        <div class="absolute top-24 bottom-8 left-8 right-8 pointer-events-none z-10 overflow-hidden flex items-center justify-center">
-                            <i id="cameraFallbackIcon" data-lucide="focus" class="w-20 h-20 text-cyan-900/50 absolute z-0 animate-pulse"></i>
-                            <div class="absolute inset-0 bg-cyan-900/10"></div>
-                            <div class="absolute left-0 w-full h-[2px] bg-cyan-400 shadow-[0_0_20px_rgba(6,182,212,1)] animate-[scan_3s_ease-in-out_infinite] z-20" id="scanLine"></div>
-                        </div>
-                        
-                        <!-- Overlay Stats Bar -->
-                        <div class="absolute top-0 left-0 w-full bg-zinc-950/90 backdrop-blur-md border-b border-cyan-500/20 py-3 px-6 z-30 flex justify-between items-center">
-                            <div class="flex flex-col items-center w-1/3">
-                                <span class="text-[9px] text-cyan-600 font-display font-bold uppercase tracking-[0.1em] leading-none mb-1">Rebel Ducks</span>
-                                <span class="text-sm font-display font-black text-cyan-300 drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]" id="statDucks">0</span>
-                            </div>
-                            <div class="flex flex-col items-center w-1/3 border-x border-cyan-900/50">
-                                <span class="text-[9px] text-yellow-600 font-display font-bold uppercase tracking-[0.1em] leading-none mb-1">Credits</span>
-                                <span class="text-sm font-display font-black text-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]" id="statPoints">0</span>
-                            </div>
-                            <div class="flex flex-col items-center w-1/3">
-                                <span class="text-[9px] text-purple-500 font-display font-bold uppercase tracking-[0.1em] leading-none mb-1">Rank</span>
-                                <span class="text-sm font-display font-black text-purple-400 drop-shadow-[0_0_5px_rgba(168,85,247,0.5)]" id="statRank">--</span>
-                            </div>
+                        <div class="mb-8 text-center">
+                            <a href="#" class="text-[16px] text-gray-400 underline decoration-gray-500/50 underline-offset-[5px] hover:text-white hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.7)] transition-all duration-300">
+                                What is Duck Hunt?
+                            </a>
                         </div>
 
-                        <!-- Sci-Fi Target Brackets -->
-                        <div class="absolute top-20 left-6 w-12 h-12 border-t-2 border-l-2 border-cyan-400/80 z-20"></div>
-                        <div class="absolute top-20 right-6 w-12 h-12 border-t-2 border-r-2 border-cyan-400/80 z-20"></div>
-                        <div class="absolute bottom-6 left-6 w-12 h-12 border-b-2 border-l-2 border-cyan-400/80 z-20"></div>
-                        <div class="absolute bottom-6 right-6 w-12 h-12 border-b-2 border-r-2 border-cyan-400/80 z-20"></div>
-                        
-                        <!-- Crosshair Center -->
-                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 border border-cyan-500/30 rounded-full z-20 pointer-events-none flex items-center justify-center">
-                            <div class="w-1 h-1 bg-cyan-400/50 rounded-full"></div>
-                        </div>
-
-                        <!-- Scan Success Overlay -->
-                        <div id="scanSuccessOverlay" class="absolute inset-0 bg-emerald-950/95 backdrop-blur-sm z-40 hidden flex items-center justify-center p-6 text-center transform scale-105 opacity-0 transition-all duration-300 border-2 border-emerald-500">
-                            <div class="flex flex-col items-center">
-                                <div class="w-20 h-20 bg-emerald-900 border-2 border-emerald-400 rounded-full flex items-center justify-center mb-4 shadow-[0_0_40px_rgba(16,185,129,0.8)]">
-                                    <i data-lucide="check-circle-2" class="w-10 h-10 text-emerald-300"></i>
-                                </div>
-                                <h4 class="text-xl font-display font-bold text-white mb-1 uppercase tracking-widest" id="successDuckName">Rebel Duck Acquired</h4>
-                                <p class="text-yellow-400 font-display font-black text-3xl drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]" id="successPoints">+0 CR</p>
-                            </div>
-                        </div>
-
-                        <!-- Scan Error Overlay -->
-                        <div id="scanErrorOverlay" class="absolute inset-0 bg-rose-950/95 backdrop-blur-sm z-40 hidden flex items-center justify-center p-6 text-center transform scale-105 opacity-0 transition-all duration-300 border-2 border-rose-500">
-                            <div class="flex flex-col items-center">
-                                <div class="w-20 h-20 bg-rose-900 border-2 border-rose-400 rounded-full flex items-center justify-center mb-4 shadow-[0_0_40px_rgba(244,63,94,0.8)]">
-                                    <i data-lucide="alert-triangle" class="w-10 h-10 text-rose-300"></i>
-                                </div>
-                                <h4 class="text-xl font-display font-bold text-white mb-1 uppercase tracking-widest">Scan Failed</h4>
-                                <p class="text-rose-300 text-sm font-semibold tracking-wider uppercase" id="errorDuckMsg">Data Corrupted.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- View Scans Link -->
-                    <div class="mt-4 text-center">
-                        <button class="text-xs text-cyan-500 hover:text-cyan-300 uppercase tracking-[0.2em] font-display font-bold flex items-center justify-center gap-2 mx-auto transition-colors" onclick="showScanHistory()">
-                            <i data-lucide="database" class="w-4 h-4"></i> View Databanks
-                        </button>
-                    </div>
-                    
-                    <p id="cameraErrorMsg" class="hidden text-xs text-rose-400 mt-4 font-bold tracking-widest uppercase"><i data-lucide="video-off" class="w-4 h-4 inline pb-0.5"></i> Optics Offline. Enable Permissions.</p>
-                </div>
-            </div>
-
-            <!-- LEADERBOARD VIEW -->
-            <div id="leaderboardView" class="view mx-auto w-full pb-24" style="max-width: min(24rem, calc(100% - 2.5rem));">
-                <div class="glass-card primary-card px-6 py-8 sm:p-8 text-center relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                        <i data-lucide="bar-chart-2" class="w-32 h-32 text-cyan-500"></i>
-                    </div>
-
-                    <div class="w-16 h-16 bg-cyan-900/30 rounded-lg flex items-center justify-center mx-auto mb-4 border border-cyan-500/50 shadow-[0_0_30px_rgba(6,182,212,0.4)] transform rotate-45">
-                        <i data-lucide="medal" class="w-8 h-8 text-cyan-400 -rotate-45"></i>
-                    </div>
-                    <h3 class="text-2xl font-display font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2 uppercase">Galactic Ranks</h3>
-                    <p class="text-cyan-600 text-sm mb-6 tracking-wider uppercase font-semibold">Top Bounty Hunters</p>
-                    
-                    <div id="leaderboardContainer" class="space-y-3 text-left relative z-10">
-                        <div class="text-center py-8 text-cyan-800 text-sm font-display animate-pulse uppercase tracking-widest">Accessing CAB Net...</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- MAP VIEW (Full Screen Overlay) -->
-            <div id="mapView" class="view fixed inset-0 z-20 bg-zinc-950 w-full h-[100dvh]">
-                <!-- Leaflet Interactive Map -->
-                <div id="leafletMap" class="absolute top-0 left-0 w-full h-[calc(100dvh-76px)] z-0"></div>
-                
-                <!-- Radar Overlay Effect -->
-                <div class="absolute top-0 left-0 w-full h-[calc(100dvh-76px)] pointer-events-none shadow-[inset_0_0_80px_rgba(9,9,11,1)] z-10"></div>
-                <div class="scanlines"></div>
-                
-                <!-- Floating Header -->
-                <div class="absolute top-0 left-0 w-full p-4 z-30 pointer-events-none" style="padding-top: max(1rem, env(safe-area-inset-top));">
-                    <div class="max-w-sm mx-auto glass-card border-cyan-500/50 rounded-lg px-4 py-3 flex items-center gap-3 pointer-events-auto shadow-[0_0_30px_rgba(6,182,212,0.2)] bg-zinc-950/90">
-                        <div class="w-10 h-10 bg-cyan-900/40 rounded border border-cyan-500/60 flex shrink-0 items-center justify-center shadow-[inset_0_0_15px_rgba(6,182,212,0.4)]">
-                            <i data-lucide="crosshair" class="w-5 h-5 text-cyan-400 animate-[spin_4s_linear_infinite]"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-base font-display font-black tracking-widest text-cyan-300 leading-none mb-0.5 uppercase drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">Sector Map</h3>
-                            <p class="text-cyan-600 text-[9px] uppercase tracking-[0.2em] font-bold">Live Rebel Duck Coordinates</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- INFO VIEW -->
-            <div id="infoView" class="view mx-auto w-full pb-24" style="max-width: min(24rem, calc(100% - 2.5rem));">
-                <div class="glass-card primary-card px-6 py-8 sm:p-8 text-center relative">
-                    <div class="w-16 h-16 bg-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-4 border border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.4)]">
-                        <i data-lucide="terminal" class="w-8 h-8 text-blue-400"></i>
-                    </div>
-                    <h3 class="text-2xl font-display font-black tracking-widest text-white mb-2 uppercase">Comms & Data</h3>
-                    <p class="text-cyan-600 text-sm mb-6 tracking-wider uppercase font-semibold">Guild Directives.</p>
-                    
-                    <!-- Persistent Broadcast Box -->
-                    <div class="bg-zinc-950/80 border border-amber-500/50 rounded-lg p-5 mb-6 text-left relative overflow-hidden shadow-[inset_0_0_20px_rgba(245,158,11,0.15)]">
-                        <div class="absolute top-0 right-0 p-3 opacity-20">
-                            <i data-lucide="radio-receiver" class="w-16 h-16 text-amber-500 animate-pulse"></i>
-                        </div>
-                        <h4 class="text-xs font-display font-bold text-amber-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2 drop-shadow-[0_0_5px_rgba(245,158,11,0.8)]">
-                            <i data-lucide="satellite" class="w-4 h-4"></i> CAB Net Alert
-                        </h4>
-                        <p id="infoBroadcastDisplay" class="text-sm text-amber-100 italic relative z-10 leading-relaxed font-medium">Monitoring secure channels...</p>
-                    </div>
-
-                    <div class="space-y-3 mb-8 text-left">
-                        <div class="bg-zinc-900/60 rounded-lg border border-cyan-900/50 hover:border-cyan-500/50 hover:bg-cyan-900/20 transition-colors cursor-pointer p-4 flex items-center gap-3">
-                            <i data-lucide="book" class="w-5 h-5 text-cyan-500"></i>
-                            <span class="text-cyan-100 text-sm font-semibold tracking-wider uppercase">Hunter Manual</span>
-                        </div>
-                        <div class="bg-zinc-900/60 rounded-lg border border-cyan-900/50 hover:border-cyan-500/50 hover:bg-cyan-900/20 transition-colors cursor-pointer p-4 flex items-center gap-3">
-                            <i data-lucide="help-circle" class="w-5 h-5 text-cyan-500"></i>
-                            <span class="text-cyan-100 text-sm font-semibold tracking-wider uppercase">Guild FAQs</span>
-                        </div>
-                        <div class="bg-zinc-900/60 rounded-lg border border-cyan-900/50 hover:border-cyan-500/50 hover:bg-cyan-900/20 transition-colors cursor-pointer p-4 flex items-center gap-3">
-                            <i data-lucide="shield" class="w-5 h-5 text-cyan-500"></i>
-                            <span class="text-cyan-100 text-sm font-semibold tracking-wider uppercase">Security Uplink</span>
-                        </div>
-                    </div>
-
-                    <button class="w-full bg-rose-950/50 hover:bg-rose-900 border border-rose-500/50 text-rose-400 font-display font-bold py-3.5 rounded-lg transition-all duration-300 flex justify-center items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(244,63,94,0.2)]" onclick="logout()">
-                        <i data-lucide="power" class="w-5 h-5"></i>
-                        <span>Disconnect</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- ADMIN VIEW (Staff Only) -->
-            <div id="adminView" class="view mx-auto w-full pb-10" style="max-width: min(72rem, calc(100% - 2.5rem));">
-                <div class="glass-card primary-card px-4 py-6 sm:p-8">
-                    <div class="flex justify-between items-start mb-6 border-b border-cyan-900/50 pb-4">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-cyan-900/40 p-2 sm:p-3 rounded border border-cyan-500/60 shadow-[inset_0_0_15px_rgba(6,182,212,0.4)]">
-                                <i data-lucide="command" class="w-6 sm:w-8 h-6 sm:h-8 text-cyan-400"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-xl sm:text-2xl font-display font-black text-white leading-none mb-1 uppercase tracking-widest drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]">High Command</h3>
-                                <p class="text-[10px] text-cyan-600 uppercase tracking-[0.2em] font-bold">System Override Panel</p>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-end gap-3">
-                            <button class="text-cyan-600 hover:text-rose-400 transition-colors p-1.5 bg-zinc-950 rounded border border-cyan-900/50" onclick="switchView('loginView')" title="Exit Admin">
-                                <i data-lucide="power" class="w-5 h-5"></i>
+                        <div class="flex gap-3 w-full">
+                            <button 
+                                type="button" 
+                                onclick="navigate('login', 'home')"
+                                class="flex-1 bg-white/5 border border-white/20 backdrop-blur-md hover:bg-white/10 hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] text-white font-bold text-[17px] py-4 rounded-xl transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.8)] active:scale-[0.98]"
+                            >
+                                Sign In
                             </button>
-                            <button id="adminHuntToggle" class="bg-emerald-900/40 text-emerald-400 hover:bg-emerald-800 hover:text-white border border-emerald-500/60 px-4 py-2 rounded text-xs sm:text-sm font-display font-black uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center gap-2" onclick="toggleHuntStatus()">
-                                <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse drop-shadow-[0_0_5px_#10b981]"></div> SUSPEND ENGINE
+                            <button 
+                                type="button" 
+                                onclick="navigate('login', 'register')"
+                                class="flex-1 bg-[#ffe81f]/10 border border-[#ffe81f]/40 backdrop-blur-md hover:bg-[#ffe81f]/20 hover:border-[#ffe81f]/60 hover:shadow-[0_0_15px_rgba(255,232,31,0.3)] text-white font-bold text-[17px] py-4 rounded-xl transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.8)] active:scale-[0.98]"
+                            >
+                                Register
                             </button>
                         </div>
-                    </div>
-
-                    <!-- Admin Tabs -->
-                    <div class="flex gap-2 mb-6 bg-zinc-950/80 p-1.5 rounded-lg border border-cyan-900/50 flex-wrap sm:flex-nowrap sm:w-fit shadow-inner">
-                        <button class="admin-tab active flex-1 py-2 px-4 text-xs sm:text-sm font-display font-bold rounded text-cyan-700 hover:text-cyan-300 transition-all uppercase tracking-wider" onclick="switchAdminTab('ducks')" id="tab-ducks">Rebel Ducks</button>
-                        <button class="admin-tab flex-1 py-2 px-4 text-xs sm:text-sm font-display font-bold rounded border border-transparent text-cyan-700 hover:text-cyan-300 transition-all uppercase tracking-wider" onclick="switchAdminTab('players')" id="tab-players">Hunters</button>
-                        <button class="admin-tab flex-1 py-2 px-4 text-xs sm:text-sm font-display font-bold rounded border border-transparent text-cyan-700 hover:text-cyan-300 transition-all uppercase tracking-wider" onclick="switchAdminTab('feed')" id="tab-feed">CAB Net Feed</button>
-                    </div>
-
-                    <!-- Manage Ducks Panel -->
-                    <div id="panel-ducks" class="block">
-                        <!-- Duck Stats -->
-                        <div class="grid grid-cols-3 gap-3 mb-6">
-                            <div class="bg-zinc-950 border border-cyan-900/50 rounded-lg p-3 text-center shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
-                                <div class="text-[9px] sm:text-[10px] text-cyan-700 font-display font-bold uppercase tracking-[0.1em] mb-1">Total Deployed</div>
-                                <div class="text-xl sm:text-2xl font-display font-black text-white" id="statAdminTotal">0</div>
-                            </div>
-                            <div class="bg-blue-900/20 border border-blue-500/40 rounded-lg p-3 text-center shadow-[inset_0_0_20px_rgba(59,130,246,0.1)]">
-                                <div class="text-[9px] sm:text-[10px] text-blue-500 font-display font-bold uppercase tracking-[0.1em] mb-1">Acquired</div>
-                                <div class="text-xl sm:text-2xl font-display font-black text-blue-400 drop-shadow-[0_0_5px_rgba(59,130,246,0.5)]" id="statAdminClaimed">0</div>
-                            </div>
-                            <div class="bg-emerald-900/20 border border-emerald-500/40 rounded-lg p-3 text-center shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]">
-                                <div class="text-[9px] sm:text-[10px] text-emerald-500 font-display font-bold uppercase tracking-[0.1em] mb-1">Active Rebel Ducks</div>
-                                <div class="text-xl sm:text-2xl font-display font-black text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" id="statAdminActive">0</div>
-                            </div>
-                        </div>
-
-                        <div class="bg-zinc-950/80 border border-cyan-900/50 rounded-lg p-5 mb-6 shadow-inner">
-                            <h4 class="text-sm font-display font-bold text-cyan-400 mb-4 uppercase tracking-widest border-b border-cyan-900/50 pb-2">Bulk Rebel Duck Deployment</h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                                <div>
-                                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Rebel Duck Designation</label>
-                                    <input type="text" id="bulkDuckName" class="control-item !py-2 font-display text-sm" placeholder="e.g. Probe Droid" />
-                                </div>
-                                <div>
-                                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Sector</label>
-                                    <input type="text" id="bulkDuckLoc" class="control-item !py-2 font-display text-sm" placeholder="e.g. Outer Rim" />
-                                </div>
-                                <div>
-                                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Credit Bounty</label>
-                                    <input type="number" id="bulkDuckPoints" class="control-item !py-2 font-display text-sm text-yellow-400" placeholder="50" value="50" />
-                                </div>
-                                <div>
-                                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Quantity</label>
-                                    <input type="number" id="bulkDuckCount" class="control-item !py-2 font-display text-sm" placeholder="10" value="10" />
-                                </div>
-                                <div class="sm:col-span-2 lg:col-span-4 flex justify-end">
-                                    <button id="bulkGenBtn" class="w-full sm:w-auto bg-cyan-700 hover:bg-cyan-600 text-white font-display font-black py-2 px-6 rounded flex justify-center items-center gap-2 transition-all uppercase tracking-widest border border-cyan-400/50 shadow-[0_0_15px_rgba(6,182,212,0.3)]" onclick="generateBulkDucks()">
-                                        <i data-lucide="layers" class="w-4 h-4"></i> <span id="bulkGenText">Execute</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Filter Bar -->
-                        <div class="flex flex-col sm:flex-row gap-2 mb-4 bg-zinc-950/80 p-3 rounded-lg border border-cyan-900/50">
-                            <input type="text" id="filterDuckName" placeholder="Filter Code/Designation..." class="control-item !py-2 !text-xs flex-1 font-display" onkeyup="applyDuckFilters()">
-                            <input type="text" id="filterDuckLoc" placeholder="Filter Sector..." class="control-item !py-2 !text-xs flex-1 font-display" onkeyup="applyDuckFilters()">
-                            <input type="number" id="filterDuckPts" placeholder="Credits..." class="control-item !py-2 !text-xs w-full sm:w-28 font-display text-yellow-400" onkeyup="applyDuckFilters()">
-                            <select id="sortDucks" class="control-item !py-2 !text-xs w-full sm:w-48 bg-zinc-950 font-display text-cyan-400 uppercase" onchange="applyDuckFilters()">
-                                <option value="newest">Recent Broadcasts</option>
-                                <option value="ptsDesc">Highest Bounty (CR)</option>
-                                <option value="claimedDesc">Most Acquired</option>
-                            </select>
-                        </div>
-
-                        <div class="flex justify-between items-end mb-3">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h4 class="text-sm font-display font-bold text-cyan-400 uppercase tracking-widest drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">Active Coordinates</h4>
-                                <button id="bulkEditBtn" class="hidden text-[10px] bg-blue-900/40 border border-blue-500/60 text-blue-300 hover:bg-blue-800 hover:text-white px-2 py-1 rounded transition-all ml-2 font-display uppercase tracking-wider" onclick="openBulkEditModal()">Edit Selected (0)</button>
-                                <button id="bulkDeleteBtn" class="hidden text-[10px] bg-rose-900/40 border border-rose-500/60 text-rose-300 hover:bg-rose-800 hover:text-white px-2 py-1 rounded transition-all ml-1 font-display uppercase tracking-wider" onclick="bulkDeleteSelected()">Delete Selected (0)</button>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <button class="text-[10px] font-display font-bold text-cyan-600 hover:text-cyan-300 whitespace-nowrap uppercase tracking-wider" onclick="toggleSelectAllFiltered()">Select All</button>
-                                <button class="text-xs font-display font-bold text-cyan-400 hover:text-cyan-200 flex items-center gap-1 uppercase tracking-wider" onclick="loadAdminDucks()"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Sync</button>
-                            </div>
-                        </div>
-                        
-                        <!-- Table Wrapper -->
-                        <div class="bg-zinc-950 border border-cyan-900/50 rounded-lg overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-                            <div class="overflow-x-auto max-h-[500px]">
-                                <table class="w-full text-left border-collapse min-w-[600px] font-display">
-                                    <thead class="bg-zinc-900/80 sticky top-0 z-10 border-b border-cyan-900/50 shadow-md">
-                                        <tr>
-                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] w-10 text-center"><i data-lucide="check-square" class="w-3 h-3 mx-auto"></i></th>
-                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em]">Rebel Duck Intel</th>
-                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-center">Bounty (CR)</th>
-                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-center">Status</th>
-                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-right">Directives</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="adminDucksList" class="divide-y divide-cyan-900/30">
-                                        <tr><td colspan="5" class="text-cyan-800 text-center py-8 text-sm uppercase tracking-widest font-display animate-pulse">Syncing Databanks...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Manage Players Panel -->
-                    <div id="panel-players" class="hidden">
-                        <!-- Player Stats -->
-                        <div class="grid grid-cols-2 gap-3 mb-6 max-w-xl">
-                            <div class="bg-zinc-950 border border-cyan-900/50 rounded-lg p-3 text-center shadow-inner">
-                                <div class="text-[9px] sm:text-[10px] text-cyan-700 font-display font-bold uppercase tracking-[0.1em] mb-1">Guild Roster</div>
-                                <div class="text-xl sm:text-2xl font-display font-black text-white" id="statAdminPlayers">0</div>
-                            </div>
-                            <div class="bg-emerald-900/20 border border-emerald-500/40 rounded-lg p-3 text-center shadow-inner">
-                                <div class="text-[9px] sm:text-[10px] text-emerald-500 font-display font-bold uppercase tracking-[0.1em] mb-1">Active Hunters (5m)</div>
-                                <div class="text-xl sm:text-2xl font-display font-black text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" id="statAdminOnline">0</div>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-between items-end mb-3">
-                            <h4 class="text-sm font-display font-bold text-cyan-400 uppercase tracking-widest drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">Bounty Hunter Registry</h4>
-                            <button class="text-xs font-display font-bold text-cyan-400 hover:text-cyan-200 flex items-center gap-1 uppercase tracking-wider" onclick="loadAdminPlayers()"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Sync</button>
-                        </div>
-                        
-                        <!-- Table Wrapper -->
-                        <div class="bg-zinc-950 border border-cyan-900/50 rounded-lg overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-                            <div class="overflow-x-auto max-h-[500px]">
-                                <table class="w-full text-left border-collapse min-w-[600px] font-display">
-                                    <thead class="bg-zinc-900/80 sticky top-0 z-10 border-b border-cyan-900/50 shadow-md">
-                                        <tr>
-                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] w-12 text-center">Rank</th>
-                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em]">Hunter Identity</th>
-                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-center">Total CR / Rebel Ducks</th>
-                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-center">Signal</th>
-                                            <th class="p-3 text-[10px] font-bold text-cyan-600 uppercase tracking-[0.2em] text-right">Directives</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="adminPlayersList" class="divide-y divide-cyan-900/30">
-                                        <tr><td colspan="5" class="text-cyan-800 text-center py-8 text-sm uppercase tracking-widest font-display animate-pulse">Syncing Registry...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Live Feed Panel -->
-                    <div id="panel-feed" class="hidden">
-                        <!-- Broadcast Card -->
-                        <div class="bg-zinc-950 border border-cyan-900/50 rounded-lg p-5 mb-6 shadow-inner max-w-2xl">
-                            <h4 class="text-sm font-display font-bold text-amber-500 mb-4 uppercase tracking-widest border-b border-amber-900/30 pb-2 flex items-center gap-2 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]">
-                                <i data-lucide="satellite" class="w-4 h-4 text-amber-400"></i> CAB Net Global Broadcast
-                            </h4>
-                            <div class="mb-4 p-3 bg-zinc-900 rounded border border-amber-900/40">
-                                <span class="text-[9px] text-amber-700 font-display uppercase font-bold tracking-widest block mb-1">Active Transmission</span>
-                                <span id="currentBroadcastDisplay" class="text-sm text-amber-200 font-medium">Monitoring...</span>
-                            </div>
-                            <div class="flex flex-col sm:flex-row gap-3">
-                                <input type="text" id="broadcastMsg" class="control-item flex-1 font-display text-sm focus:border-amber-500 focus:shadow-[0_0_15px_rgba(245,158,11,0.2)]" placeholder="Transmit sector-wide orders..." onkeyup="if(event.key==='Enter') sendBroadcast()"/>
-                                <button class="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-zinc-950 font-display font-black py-2 px-6 rounded flex items-center justify-center gap-2 transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(245,158,11,0.3)]" onclick="sendBroadcast()" id="broadcastBtn">
-                                    <i data-lucide="send" class="w-4 h-4"></i> Transmit
-                                </button>
-                                <button class="w-full sm:w-auto bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-display font-bold py-2 px-4 rounded flex items-center justify-center gap-2 transition-all uppercase tracking-widest border border-amber-900/50" onclick="clearBroadcast()" id="clearBroadcastBtn">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i> Purge
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-between items-end mb-3 max-w-2xl">
-                            <h4 class="text-sm font-display font-bold text-cyan-400 uppercase tracking-widest drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">Sector Activity Feed</h4>
-                            <button class="text-xs font-display font-bold text-cyan-400 hover:text-cyan-200 flex items-center gap-1 uppercase tracking-wider" onclick="loadAdminFeed()"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Sync</button>
-                        </div>
-                        <div class="space-y-2 max-h-[400px] overflow-y-auto pr-2 max-w-2xl font-display" id="adminFeedList">
-                            <div class="text-cyan-800 text-center py-4 text-sm uppercase tracking-widest animate-pulse">Monitoring Frequencies...</div>
-                        </div>
-                    </div>
-
+                    </form>
                 </div>
             </div>
+        </div>
 
+        <!-- REGISTER VIEW (Hidden Initially) -->
+        <div id="register-view" class="hidden fade-transition opacity-0 w-full max-w-sm flex justify-center absolute">
+            <div class="shimmer-wrapper w-[380px]">
+                <div class="glass-inner w-full h-full p-8 sm:p-10 flex flex-col items-center">
+                    
+                    <div class="flex flex-col items-center mb-6 w-full">
+                        <img src="https://i.imgur.com/f4kE3Fg.png" alt="Galactic Logo" class="h-16 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] mb-3">
+                        <h2 class="text-2xl font-bold text-white text-center font-tech tracking-wider">Welcome To The Rescue!</h2>
+                    </div>
+
+                    <form onsubmit="event.preventDefault();" class="flex flex-col w-full gap-4">
+                        
+                        <input type="text" placeholder="First Name" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
+                        <input type="text" placeholder="Last Name" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
+                        <input type="text" placeholder="Student ID" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
+                        <input type="email" placeholder="Email @my.gcu.edu" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
+
+                        <div class="flex items-center gap-3 mt-2 mb-4 px-2">
+                            <input type="checkbox" id="terms" class="custom-checkbox cursor-pointer" required>
+                            <label for="terms" class="text-[14px] text-gray-300 cursor-pointer select-none leading-tight">
+                                I agree to the <span class="text-white underline decoration-gray-500/50 underline-offset-2 hover:text-[#ffe81f] transition-colors">Terms & Conditions</span>
+                            </label>
+                        </div>
+
+                        <div class="flex gap-3 w-full">
+                            <button 
+                                type="button" 
+                                onclick="navigate('register', 'login')"
+                                class="flex-1 bg-white/5 border border-white/20 backdrop-blur-md hover:bg-white/10 hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] text-white font-bold text-[16px] py-3 rounded-xl transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.8)] active:scale-[0.98]"
+                            >
+                                Back
+                            </button>
+                            <button 
+                                type="button" 
+                                onclick="navigate('register', 'home')"
+                                class="flex-1 bg-[#ffe81f]/10 border border-[#ffe81f]/40 backdrop-blur-md hover:bg-[#ffe81f]/20 hover:border-[#ffe81f]/60 hover:shadow-[0_0_15px_rgba(255,232,31,0.3)] text-white font-bold text-[16px] py-3 rounded-xl transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.8)] active:scale-[0.98]"
+                            >
+                                Submit
+                            </button>
+                        </div>
+                        
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- HOME PAGE PLACEHOLDER (Hidden Initially) -->
+        <div id="home-view" class="hidden fade-transition opacity-0 flex flex-col items-center absolute text-center">
+            <h1 class="text-4xl md:text-5xl font-bold font-tech text-white tracking-widest drop-shadow-[0_0_20px_rgba(255,255,255,0.5)] mb-4">
+                HOME PAGE
+            </h1>
+            <p class="text-gray-400 text-lg">(To be built later...)</p>
+            <button onclick="navigate('home', 'login')" class="mt-8 text-[#ffe81f] hover:text-white underline underline-offset-4 opacity-70 hover:opacity-100 transition-all">Go Back</button>
         </div>
 
     </main>
 
-    <!-- BOTTOM NAVIGATION -->
-    <nav id="mainNav" class="fixed bottom-0 left-0 w-full z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-cyan-500/30 hidden shadow-[0_-5px_20px_rgba(0,0,0,0.8)]" style="padding-bottom: max(0px, env(safe-area-inset-bottom));">
-        <div class="max-w-md mx-auto flex justify-between items-center px-6 py-3">
-            <button onclick="switchView('scannerView')" id="nav-scannerView" class="nav-btn flex flex-col items-center gap-1.5 text-cyan-400 transition-colors w-16">
-                <i data-lucide="scan" class="w-6 h-6"></i>
-                <span class="text-[9px] font-display font-bold uppercase tracking-[0.2em]">Scanner</span>
-            </button>
-            <button onclick="switchView('leaderboardView')" id="nav-leaderboardView" class="nav-btn flex flex-col items-center gap-1.5 text-cyan-800 hover:text-cyan-500 transition-colors w-16">
-                <i data-lucide="medal" class="w-6 h-6"></i>
-                <span class="text-[9px] font-display font-bold uppercase tracking-[0.2em]">Ranks</span>
-            </button>
-            <button onclick="switchView('mapView')" id="nav-mapView" class="nav-btn flex flex-col items-center gap-1.5 text-cyan-800 hover:text-cyan-500 transition-colors w-16">
-                <i data-lucide="map" class="w-6 h-6"></i>
-                <span class="text-[9px] font-display font-bold uppercase tracking-[0.2em]">Map</span>
-            </button>
-            <button onclick="switchView('infoView')" id="nav-infoView" class="nav-btn flex flex-col items-center gap-1.5 text-cyan-800 hover:text-cyan-500 transition-colors w-16">
-                <i data-lucide="terminal" class="w-6 h-6"></i>
-                <span class="text-[9px] font-display font-bold uppercase tracking-[0.2em]">Comms</span>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Scan History Modal -->
-    <div id="scanHistoryModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="hideScanHistory()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-lg p-6 flex flex-col shadow-2xl border-cyan-500/40 max-h-[80vh]">
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-cyan-900/50">
-                <h3 class="text-lg font-display font-black text-white flex items-center gap-2 uppercase tracking-widest drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">
-                    <i data-lucide="database" class="w-5 h-5 text-cyan-400"></i> Databanks
-                </h3>
-                <button class="text-cyan-600 hover:text-rose-400 bg-zinc-900/80 hover:bg-zinc-800 border border-cyan-900/30 p-2 rounded transition-colors" onclick="hideScanHistory()">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <div class="space-y-2 overflow-y-auto pr-1 flex-1 font-display" id="scanHistoryContainer">
-                <div class="text-cyan-800 text-xs text-center py-4 uppercase tracking-widest">No records found. Begin hunt.</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Staff Login Modal -->
-    <div id="gateModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="hideGate()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-lg p-8 flex flex-col items-center text-center shadow-2xl border-cyan-500/40">
-            <div class="w-16 h-16 bg-zinc-900 rounded-lg p-3 mb-4 flex items-center justify-center border border-cyan-900/50 transition-transform hover:rotate-12 shadow-[inset_0_0_15px_rgba(6,182,212,0.1)]">
-                <i data-lucide="lock" class="w-8 h-8 text-cyan-500"></i>
-            </div>
-            <h3 class="text-xl font-display font-black mb-1 text-white uppercase tracking-widest">Security Override</h3>
-            <p class="text-cyan-600 text-[10px] font-display uppercase tracking-[0.2em] mb-6">Enter Command Clearance Code.</p>
-            <input type="password" id="adminPass" class="control-item text-center mb-6 no-save-pass font-display tracking-[0.3em] text-lg text-cyan-300" placeholder="••••••" onkeyup="if(event.key==='Enter') verifyAdmin()"/>
-            <button class="w-full bg-gradient-to-r from-cyan-700 to-blue-700 border border-cyan-400/50 text-white font-display font-black py-3 rounded flex justify-center items-center gap-2 transition-all duration-300 hover:-translate-y-1 shadow-[0_0_20px_rgba(6,182,212,0.4)] uppercase tracking-widest" onclick="verifyAdmin()">
-                <span>Authenticate</span>
-            </button>
-        </div>
-    </div>
-
-    <!-- QR Code Display Modal (Admin) -->
-    <div id="qrModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-zinc-950/95 backdrop-blur-md" onclick="hideQR()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-lg p-8 flex flex-col items-center text-center shadow-2xl border-cyan-500/40">
-            <h3 class="text-xl font-display font-black mb-1 text-white uppercase tracking-widest" id="qrModalTitle">Rebel Duck Code</h3>
-            <p class="text-cyan-500 text-xs font-display uppercase tracking-wider mb-6" id="qrModalLocation">Sector</p>
-            
-            <div class="bg-cyan-50 p-4 rounded mb-6 shadow-[0_0_30px_rgba(6,182,212,0.4)] border-2 border-cyan-400">
-                <div id="qrcodeDisplay"></div>
-            </div>
-            
-            <div class="w-full bg-zinc-950 border border-cyan-900/50 p-3 rounded mb-4 text-[10px] font-mono text-cyan-400 break-all select-all opacity-70" id="qrModalUrl">
-                URL
-            </div>
-
-            <button class="w-full bg-zinc-900 hover:bg-zinc-800 border border-cyan-900/50 text-white font-display font-bold py-3 rounded transition-all uppercase tracking-widest" onclick="hideQR()">
-                Terminate Link
-            </button>
-        </div>
-    </div>
-
-    <!-- Edit Duck Modal (Admin) -->
-    <div id="editDuckModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="closeEditDuckModal()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-lg p-8 flex flex-col items-center text-center shadow-2xl border-cyan-500/40">
-            <h3 class="text-xl font-display font-black mb-4 text-white uppercase tracking-widest">Reconfigure Rebel Duck</h3>
-            
-            <input type="hidden" id="editDuckCode" />
-            
-            <div class="w-full space-y-4 mb-6 text-left">
-                <div>
-                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Rebel Duck Designation</label>
-                    <input type="text" id="editDuckName" class="control-item !py-2 font-display" />
-                </div>
-                <div>
-                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Sector</label>
-                    <input type="text" id="editDuckLocation" class="control-item !py-2 font-display" />
-                </div>
-                <div>
-                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Credit Bounty</label>
-                    <input type="number" id="editDuckPoints" class="control-item !py-2 font-display text-yellow-400" />
-                </div>
-            </div>
-
-            <div class="flex gap-3 w-full">
-                <button class="flex-1 bg-zinc-900 hover:bg-zinc-800 border border-cyan-900/50 text-cyan-500 font-display font-bold py-3 rounded transition-all uppercase tracking-wider" onclick="closeEditDuckModal()">Abort</button>
-                <button class="flex-1 bg-cyan-700 hover:bg-cyan-600 text-white font-display font-black py-3 rounded transition-all flex justify-center items-center gap-2 uppercase tracking-wider shadow-[0_0_15px_rgba(6,182,212,0.4)]" onclick="saveDuckEdit()" id="saveDuckBtn">
-                    Confirm
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bulk Edit Duck Modal (Admin) -->
-    <div id="bulkEditModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="closeBulkEditModal()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-lg p-8 flex flex-col items-center text-center shadow-2xl border-cyan-500/40">
-            <h3 class="text-xl font-display font-black mb-2 text-white uppercase tracking-widest">Mass Reconfiguration</h3>
-            <p class="text-[10px] text-cyan-600 font-display uppercase tracking-widest mb-4">Editing <span id="bulkEditCount" class="text-cyan-400 font-bold">0</span> Rebel Ducks. Leave blank to skip.</p>
-            
-            <div class="w-full space-y-4 mb-6 text-left">
-                <div>
-                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">New Sector</label>
-                    <input type="text" id="bulkEditLocation" class="control-item !py-2 font-display" placeholder="Leave blank to skip" />
-                </div>
-                <div>
-                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">New Credit Bounty</label>
-                    <input type="number" id="bulkEditPoints" class="control-item !py-2 font-display text-yellow-400" placeholder="Leave blank to skip" />
-                </div>
-            </div>
-
-            <div class="flex gap-3 w-full">
-                <button class="flex-1 bg-zinc-900 hover:bg-zinc-800 border border-cyan-900/50 text-cyan-500 font-display font-bold py-3 rounded transition-all uppercase tracking-wider" onclick="closeBulkEditModal()">Abort</button>
-                <button class="flex-1 bg-blue-700 hover:bg-blue-600 text-white font-display font-bold py-3 rounded transition-all flex justify-center items-center gap-2 uppercase tracking-wider shadow-[0_0_15px_rgba(59,130,246,0.4)]" onclick="saveBulkEdit()" id="saveBulkEditBtn">
-                    Execute
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Player Modal (Admin) -->
-    <div id="editPlayerModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="closeEditPlayerModal()"></div>
-        <div class="relative w-full max-w-sm glass-card rounded-lg p-8 flex flex-col items-center text-center shadow-2xl border-cyan-500/40">
-            <h3 class="text-xl font-display font-black mb-4 text-white uppercase tracking-widest">Hunter Databank</h3>
-            
-            <input type="hidden" id="editPlayerId" />
-            
-            <div class="w-full space-y-4 mb-6 text-left">
-                <div>
-                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Hunter Designation</label>
-                    <input type="text" id="editPlayerName" class="control-item !py-2 bg-zinc-900/50 text-cyan-800 cursor-not-allowed border-zinc-800 font-display" readonly />
-                </div>
-                <div>
-                    <label class="form-label text-cyan-600 !mb-1 !text-[10px]">Credit Balance</label>
-                    <input type="number" id="editPlayerPoints" class="control-item !py-2 font-display text-yellow-400" />
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-3 w-full">
-                <div class="flex gap-3 w-full">
-                    <button class="flex-1 bg-zinc-900 hover:bg-zinc-800 border border-cyan-900/50 text-cyan-500 font-display font-bold py-3 rounded transition-all uppercase tracking-wider" onclick="closeEditPlayerModal()">Abort</button>
-                    <button class="flex-1 bg-blue-700 hover:bg-blue-600 text-white font-display font-bold py-3 rounded transition-all flex justify-center items-center gap-2 uppercase tracking-wider shadow-[0_0_15px_rgba(59,130,246,0.4)]" onclick="savePlayerEdit()">
-                        Update CR
-                    </button>
-                </div>
-                <button id="banPlayerBtn" class="w-full bg-rose-950/60 border border-rose-500/60 text-rose-400 hover:bg-rose-900 hover:text-white font-display font-bold py-3 rounded transition-all flex justify-center items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(244,63,94,0.3)]" onclick="togglePlayerBan()">
-                    Revoke License
-                </button>
-            </div>
-        </div>
-    </div>
-
-<script>
-    // --- Security Deterrents (Blocks Right-Click & DevTools Shortcuts) ---
-    async function triggerAutoBan() {
-        // 1. Instantly nuke the screen to block all interaction
-        document.body.innerHTML = '<div style="display:flex; flex-direction:column; height:100vh; width:100vw; background:black; color:red; align-items:center; justify-content:center; font-size:1.5rem; font-weight:900; text-transform:uppercase; text-align:center; padding:2rem; font-family:\'Orbitron\', sans-serif;"><span>⚠️ SECURITY ALERT ⚠️</span><br/><span style="font-size:1rem; color:#06b6d4; margin-top:1rem;">Unauthorized terminal access detected. Guild license suspended.</span><br/><span style="font-size:0.875rem; color:#fff; margin-top:2rem; text-transform:none; font-weight:500;">Contact <a href="mailto:Chris.Hinojosa@gcu.edu" style="color:#22d3ee; text-decoration:underline;">High Command</a> for appeal.</span></div>';
-        
-        // 2. Ban the account if logged in
-        if (currentPlayer && !currentPlayer.is_banned) {
-            currentPlayer.is_banned = true; // Lock locally
-            try {
-                // Fire the ban quietly in the background
-                await _supabase.from('players').update({ is_banned: true }).eq('student_id', currentPlayer.student_id);
-            } catch(e) {}
-        }
-        
-        // 3. Clear session and reload after giving them time to read the email address
-        setTimeout(() => { window.location.reload(); }, 8000);
-    }
-
-    document.addEventListener('contextmenu', event => event.preventDefault()); // Block right-click
-    
-    document.addEventListener('keydown', function(event) {
-        let tampering = false;
-        if (event.key === 'F12' || event.keyCode === 123) tampering = true;
-        if (event.ctrlKey && event.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(event.key)) tampering = true;
-        if (event.metaKey && event.altKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(event.key)) tampering = true;
-        if ((event.ctrlKey || event.metaKey) && ['U', 'u'].includes(event.key)) tampering = true;
-        if (event.metaKey && event.altKey && ['U', 'u'].includes(event.key)) tampering = true;
-
-        if (tampering) {
-            event.preventDefault();
-            triggerAutoBan();
-        }
-    });
-
-    setInterval(function() {
-        const start = performance.now();
-        debugger; 
-        const end = performance.now();
-        if (end - start > 300) triggerAutoBan();
-    }, 2000);
-
-    // Supabase Configuration
-    const SUPABASE_URL = "https://tnaqzfollfoobjaymxqy.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_d0JzltkYdsqNWGhEe-clbw_oaRctt-0";
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // Global State
-    let currentPlayer = null;
-    let currentStream = null;
-    let scanning = false;
-    let scanThrottle = false; 
-    let lastScannedCode = null;
-    let lastScanTime = 0;
-
-    // System State
-    let isHuntLive = true;
-    let systemStatusInterval = null;
-    let heartbeatInterval = null;
-    let announcementInterval = null;
-
-    // Check for Deep Link on Load
-    const urlParams = new URLSearchParams(window.location.search);
-    const pendingDuckCode = urlParams.get('duck');
-    if (pendingDuckCode) {
-        sessionStorage.setItem('pendingDuckCode', pendingDuckCode);
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
-    if (sessionStorage.getItem('pendingDuckCode')) {
-        const loginBanner = document.getElementById('loginPendingDuckBanner');
-        const regBanner = document.getElementById('regPendingDuckBanner');
-        if (loginBanner) loginBanner.classList.remove('hidden');
-        if (regBanner) regBanner.classList.remove('hidden');
-    }
-
-    // Initialize UI
-    document.getElementById('year').textContent = new Date().getFullYear();
-    lucide.createIcons();
-    startSystemTracker();
-    initStarfield();
-
-    // --- Starfield Background ---
-    function initStarfield() {
+    <script>
         const canvas = document.getElementById('starfield');
-        if (!canvas) return;
         const ctx = canvas.getContext('2d');
+
         let width, height, stars = [];
+        const numStars = 400; 
         
+        // Hyperspeed state
+        let hyperspeedFactor = 0;
+        let isHyperspeed = false;
+
         function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            initStars();
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
         }
-        
+
+        window.addEventListener('resize', () => {
+            resize();
+            initStars();
+        });
+
+        class Star {
+            constructor() {
+                this.reset(true);
+            }
+
+            reset(initial = false) {
+                this.x = Math.random() * width;
+                this.y = initial ? Math.random() * height : -100; // Spawn higher up in case of warp
+                this.z = Math.random() * 2 + 0.1; 
+                this.radius = this.z * 0.7; 
+                this.speed = (this.z * 0.5) + 0.1; 
+                this.baseAlpha = (Math.random() * 0.5) + 0.3; 
+                this.twinkleSpeed = (Math.random() * 0.02) + 0.005;
+                this.alphaPhase = Math.random() * Math.PI * 2;
+            }
+
+            update() {
+                // Incorporate hyperspeed multiplier (up to 80x speed based on depth)
+                let currentSpeed = this.speed + (hyperspeedFactor * 80 * this.z);
+                this.y += currentSpeed;
+
+                // Normal twinkling when not in max hyperspeed
+                if (hyperspeedFactor < 0.2) {
+                    this.alphaPhase += this.twinkleSpeed;
+                    this.currentAlpha = this.baseAlpha + (Math.sin(this.alphaPhase) * 0.2);
+                    this.currentAlpha = Math.max(0, Math.min(1, this.currentAlpha));
+                } else {
+                    this.currentAlpha = 1; // Full brightness during warp
+                }
+
+                if (this.y > height + 10) {
+                    this.reset();
+                    // Spawn further back if warping to prevent blank gaps
+                    if (hyperspeedFactor > 0.5) {
+                        this.y = - (Math.random() * height);
+                    }
+                }
+            }
+
+            draw() {
+                // Calculate stretch length for hyperspeed
+                let stretch = hyperspeedFactor * 150 * this.z;
+
+                if (stretch > 2) {
+                    // Draw lines for hyperspeed effect
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x, this.y - stretch);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${this.currentAlpha})`;
+                    ctx.lineWidth = this.radius * 1.5;
+                    ctx.lineCap = "round";
+                    ctx.stroke();
+                } else {
+                    // Draw standard dots
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${this.currentAlpha})`;
+                    ctx.fill();
+                }
+            }
+        }
+
         function initStars() {
             stars = [];
-            // Calculate number of stars based on screen size to maintain density
-            const numStars = Math.floor((width * height) / 1500); 
             for (let i = 0; i < numStars; i++) {
-                stars.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    radius: Math.random() * 1.5,
-                    speed: (Math.random() * 0.1) + 0.02, // Subtle drift
-                    opacity: Math.random(),
-                    twinkleSpeed: (Math.random() * 0.015) + 0.005,
-                    twinkleDir: Math.random() > 0.5 ? 1 : -1
-                });
+                stars.push(new Star());
             }
         }
 
         function animate() {
-            ctx.clearRect(0, 0, width, height);
-            
-            for (let star of stars) {
-                // Parallax drift upwards and slightly left
-                star.y -= star.speed;
-                star.x -= star.speed * 0.2;
-                
-                // Wrap around edges
-                if (star.y < 0) star.y = height;
-                if (star.x < 0) star.x = width;
+            // Lower trail opacity for faster fading during warp
+            let trail = isHyperspeed ? 0.4 : 0.8;
+            ctx.fillStyle = `rgba(0, 0, 0, ${trail})`;
+            ctx.fillRect(0, 0, width, height);
 
-                // Twinkling effect
-                star.opacity += star.twinkleSpeed * star.twinkleDir;
-                if (star.opacity >= 1) {
-                    star.opacity = 1;
-                    star.twinkleDir = -1;
-                } else if (star.opacity <= 0.1) {
-                    star.opacity = 0.1;
-                    star.twinkleDir = 1;
-                }
-
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-                // Slight cyan tint for sci-fi feel
-                ctx.fillStyle = `rgba(165, 243, 252, ${star.opacity})`; 
-                ctx.fill();
+            for (let i = 0; i < stars.length; i++) {
+                stars[i].update();
+                stars[i].draw();
             }
+
             requestAnimationFrame(animate);
         }
-        
-        window.addEventListener('resize', resize);
-        resize();
-        animate();
-    }
 
-    // --- View Handling ---
-    function switchView(viewId) {
-        document.querySelectorAll('.view').forEach(v => {
-            v.classList.remove('active');
-            v.style.display = 'none'; 
-        });
-        
-        const target = document.getElementById(viewId);
-        if (target) {
-            target.style.display = 'block';
-            setTimeout(() => target.classList.add('active'), 10);
-        }
-
-        // Camera Activation Handling
-        if (viewId === 'scannerView') {
-            startCamera();
-        } else {
-            stopCamera();
-        }
-
-        // Refresh Data on specific views
-        if (viewId === 'scannerView') refreshPlayerStats();
-        if (viewId === 'leaderboardView') loadLeaderboard();
-        if (viewId === 'mapView') {
-            loadMapData();
-            setTimeout(() => { if (huntMap) huntMap.invalidateSize(); }, 50);
-        }
-
-        // Bottom Nav Logic
-        const navViews = ['scannerView', 'leaderboardView', 'mapView', 'infoView'];
-        const nav = document.getElementById('mainNav');
-        if (navViews.includes(viewId)) {
-            nav.style.display = 'block';
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('text-cyan-400');
-                btn.classList.add('text-cyan-800');
-            });
-            const activeBtn = document.getElementById('nav-' + viewId);
-            if (activeBtn) {
-                activeBtn.classList.remove('text-cyan-800');
-                activeBtn.classList.add('text-cyan-400');
-            }
-        } else {
-            nav.style.display = 'none';
-        }
-        
-        lucide.createIcons();
-    }
-
-    function logout() {
-        currentPlayer = null;
-        if (announcementInterval) clearInterval(announcementInterval);
-        if (heartbeatInterval) clearInterval(heartbeatInterval);
-        switchView('loginView');
-    }
-
-    function showScanHistory() { document.getElementById('scanHistoryModal').classList.remove('hidden'); }
-    function hideScanHistory() { document.getElementById('scanHistoryModal').classList.add('hidden'); }
-
-    // --- Camera & QR Scanning Functions ---
-    async function startCamera() {
-        const video = document.getElementById('cameraFeed');
-        const fallback = document.getElementById('cameraFallbackIcon');
-        const error = document.getElementById('cameraErrorMsg');
-        
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment" } 
-            });
-            currentStream = stream;
-            video.srcObject = stream;
-            video.setAttribute("playsinline", true);
-            video.play();
+        // Hyperspeed animation trigger
+        function triggerHyperspeed(onComplete) {
+            isHyperspeed = true;
+            const duration = 2200; // 2.2 seconds total warp
+            const startTime = performance.now();
             
-            video.classList.remove('hidden');
-            fallback.classList.add('hidden');
-            error.classList.add('hidden');
-            
-            scanning = true;
-            requestAnimationFrame(tickScan);
-        } catch (err) {
-            console.error(err);
-            video.classList.add('hidden');
-            fallback.classList.remove('hidden');
-            error.classList.remove('hidden');
-            scanning = false;
-        }
-    }
-
-    function stopCamera() {
-        scanning = false;
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-            currentStream = null;
-        }
-        const video = document.getElementById('cameraFeed');
-        if (video) video.srcObject = null;
-    }
-
-    function tickScan() {
-        if (!scanning) return;
-        
-        const video = document.getElementById('cameraFeed');
-        const canvasElement = document.getElementById('qrCanvas');
-        const canvas = canvasElement.getContext("2d", { willReadFrequently: true });
-
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            canvasElement.height = video.videoHeight;
-            canvasElement.width = video.videoWidth;
-            canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-            
-            if (!scanThrottle) {
-                const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                    inversionAttempts: "dontInvert",
-                });
-                
-                if (code && code.data) {
-                    processQRData(code.data);
-                }
-            }
-        }
-        requestAnimationFrame(tickScan);
-    }
-
-    function processQRData(qrData) {
-        let codeToProcess = qrData;
-        
-        const match = qrData.match(/[?&]duck=([^&]+)/);
-        if (match) {
-            codeToProcess = match[1];
-        } else {
-            try {
-                const url = new URL(qrData);
-                const duckParam = url.searchParams.get('duck');
-                if (duckParam) codeToProcess = duckParam;
-            } catch (e) {}
-        }
-        
-        codeToProcess = codeToProcess.trim();
-
-        const now = Date.now();
-        if (codeToProcess === lastScannedCode && (now - lastScanTime) < 5000) {
-            return;
-        }
-
-        scanThrottle = true;
-        lastScannedCode = codeToProcess;
-        lastScanTime = now;
-
-        document.getElementById('scanLine').style.animationPlayState = 'paused';
-
-        claimDuck(codeToProcess);
-    }
-
-    async function claimDuck(duckCode) {
-        if (!currentPlayer) return;
-
-        try {
-            const { data: duckInfo, error: duckErr } = await _supabase
-                .from('duck_codes')
-                .select('*')
-                .eq('code', duckCode)
-                .single();
-
-            if (duckErr || !duckInfo) {
-                showErrorAnim("Invalid or inactive coordinates.");
-                return;
-            }
-
-            const { data: existingScan } = await _supabase
-                .from('scans')
-                .select('id')
-                .eq('player_id', currentPlayer.student_id)
-                .eq('duck_code', duckCode) 
-                .single();
-
-            if (existingScan) {
-                showErrorAnim("Bounty already claimed.");
-                return;
-            }
-
-            const { error: scanErr } = await _supabase
-                .from('scans')
-                .insert([{
-                    player_id: currentPlayer.student_id,
-                    duck_code: duckCode,
-                    duck_name: duckInfo.name,
-                    points_earned: duckInfo.points
-                }]);
-
-            if (scanErr) throw scanErr;
-
-            const newPoints = (currentPlayer.points || 0) + duckInfo.points;
-            const newDucks = (currentPlayer.ducks || 0) + 1;
-
-            const { error: updateErr } = await _supabase
-                .from('players')
-                .update({ points: newPoints, ducks: newDucks })
-                .eq('student_id', currentPlayer.student_id);
-
-            if (updateErr) throw updateErr;
-
-            currentPlayer.points = newPoints;
-            currentPlayer.ducks = newDucks;
-
-            showSuccessAnim(duckInfo.name, duckInfo.points);
-
-        } catch (err) {
-            console.error("Claim Error:", err);
-            showErrorAnim("Network disruption. Retry.");
-        }
-    }
-
-    function showSuccessAnim(name, points) {
-        const overlay = document.getElementById('scanSuccessOverlay');
-        document.getElementById('successDuckName').textContent = name;
-        document.getElementById('successPoints').textContent = `+${points} CR`;
-        
-        overlay.classList.remove('hidden');
-        void overlay.offsetWidth;
-        overlay.classList.remove('opacity-0', 'scale-105');
-        overlay.classList.add('opacity-100', 'scale-100');
-
-        refreshPlayerStats();
-        spawnFlyingDucks();
-        
-        if (name.toLowerCase().includes('gold') || name.toLowerCase().includes('legendary')) {
-            spawnConfetti();
-        }
-
-        setTimeout(() => {
-            overlay.classList.remove('opacity-100', 'scale-100');
-            overlay.classList.add('opacity-0', 'scale-105');
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-                resumeScanning();
-            }, 300);
-        }, 2500);
-    }
-
-    function showErrorAnim(msg) {
-        const overlay = document.getElementById('scanErrorOverlay');
-        document.getElementById('errorDuckMsg').textContent = msg;
-        
-        overlay.classList.remove('hidden');
-        void overlay.offsetWidth;
-        overlay.classList.remove('opacity-0', 'scale-105');
-        overlay.classList.add('opacity-100', 'scale-100');
-
-        setTimeout(() => {
-            overlay.classList.remove('opacity-100', 'scale-100');
-            overlay.classList.add('opacity-0', 'scale-105');
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-                resumeScanning();
-            }, 300);
-        }, 2000);
-    }
-
-    function showBanAlert() {
-        if (document.getElementById('banAlertModal')) return; 
-
-        const modalHtml = `
-            <div id="banAlertModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 font-sans">
-                <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md"></div>
-                <div class="relative w-full max-w-sm glass-card rounded-lg p-8 flex flex-col items-center text-center shadow-2xl border-rose-500/50 transform transition-all">
-                    <div class="w-16 h-16 bg-rose-900/40 rounded-full flex items-center justify-center mb-4 border border-rose-500/60 shadow-[0_0_30px_rgba(244,63,94,0.5)]">
-                        <i data-lucide="shield-alert" class="w-8 h-8 text-rose-400"></i>
-                    </div>
-                    <h3 class="text-xl font-display font-black mb-2 text-white uppercase tracking-widest">License Revoked</h3>
-                    <p class="text-rose-200 text-sm mb-6 font-medium leading-relaxed tracking-wider">Your Guild access has been terminated. Contact <a href="mailto:Chris.Hinojosa@gcu.edu" class="text-cyan-400 hover:text-cyan-300 underline font-bold">High Command</a> to appeal.</p>
-                    <button class="w-full bg-zinc-900 hover:bg-zinc-800 text-rose-400 font-display font-bold py-3 rounded transition-all shadow-lg border border-rose-900/50 uppercase tracking-widest" onclick="document.getElementById('banAlertModal').remove()">Acknowledge</button>
-                </div>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        lucide.createIcons();
-    }
-
-    function spawnFlyingDucks() {
-        const duckCount = 10 + Math.floor(Math.random() * 10);
-        for(let i=0; i<duckCount; i++) {
-            setTimeout(() => {
-                const duck = document.createElement('div');
-                // Use a generic sci-fi/ship emoji or keep duck for irony. We'll use 🚀 for sci-fi
-                duck.textContent = Math.random() > 0.5 ? '🚀' : '🛸'; 
-                duck.className = 'flying-duck';
-                duck.style.left = (Math.random() * 100) + 'vw';
-                duck.style.bottom = '-50px';
-                
-                const duration = 1.5 + Math.random() * 2;
-                duck.style.animation = `flyUp ${duration}s ease-in forwards`;
-
-                document.body.appendChild(duck);
-                
-                setTimeout(() => { duck.remove(); }, duration * 1000);
-            }, i * 150);
-        }
-    }
-
-    function spawnConfetti() {
-        var duration = 2.5 * 1000;
-        var animationEnd = Date.now() + duration;
-        var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10000, colors: ['#06b6d4', '#3b82f6', '#facc15'] }; // Cyan, Blue, Yellow
-
-        function randomInRange(min, max) { return Math.random() * (max - min) + min; }
-
-        var interval = setInterval(function() {
-            var timeLeft = animationEnd - Date.now();
-            if (timeLeft <= 0) return clearInterval(interval);
-
-            var particleCount = 50 * (timeLeft / duration);
-            confetti(Object.assign({}, defaults, { particleCount,
-                origin: { x: randomInRange(0.1, 0.9), y: Math.random() - 0.2 }
-            }));
-        }, 250);
-    }
-
-    function resumeScanning() {
-        scanThrottle = false;
-        document.getElementById('scanLine').style.animationPlayState = 'running';
-    }
-
-    function checkForPendingDuck() {
-        const pendingCode = sessionStorage.getItem('pendingDuckCode');
-        if (pendingCode && currentPlayer) {
-            sessionStorage.removeItem('pendingDuckCode');
-            const loginBanner = document.getElementById('loginPendingDuckBanner');
-            const regBanner = document.getElementById('regPendingDuckBanner');
-            if (loginBanner) loginBanner.classList.add('hidden');
-            if (regBanner) regBanner.classList.add('hidden');
-
-            setTimeout(() => claimDuck(pendingCode), 1000);
-        }
-    }
-
-    function startHeartbeat() {
-        if (heartbeatInterval) clearInterval(heartbeatInterval);
-        updateHeartbeat();
-        heartbeatInterval = setInterval(updateHeartbeat, 60000);
-    }
-
-    async function updateHeartbeat() {
-        if (!currentPlayer) return;
-        try {
-            await _supabase.from('players').update({ last_active: new Date().toISOString() }).eq('student_id', currentPlayer.student_id);
-        } catch (e) { }
-    }
-
-    function startSystemTracker() {
-        if(systemStatusInterval) clearInterval(systemStatusInterval);
-        checkSystemStatus();
-        systemStatusInterval = setInterval(checkSystemStatus, 10000);
-    }
-
-    async function checkSystemStatus() {
-        try {
-            const { data } = await _supabase.from('system_settings').select('hunt_active').eq('id', 1).single();
-            if (data) {
-                isHuntLive = data.hunt_active;
-                updateSystemUI();
-
-                const currentView = document.querySelector('.view.active');
-                if (!currentView) return;
-
-                if (!isHuntLive && currentView.id !== 'adminView' && currentView.id !== 'offlineView') {
-                    switchView('offlineView');
-                }
-                
-                if (isHuntLive && currentView.id === 'offlineView') {
-                    switchView('loginView');
-                }
-            }
-        } catch(e) {}
-    }
-
-    function updateSystemUI() {
-        const toggleBtn = document.getElementById('adminHuntToggle');
-        if (toggleBtn) {
-            if (isHuntLive) {
-                toggleBtn.innerHTML = '<div class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse drop-shadow-[0_0_5px_#f43f5e]"></div> SUSPEND ENGINE';
-                toggleBtn.className = 'bg-rose-900/40 text-rose-400 hover:bg-rose-800 hover:text-white border border-rose-500/60 px-4 py-2 rounded text-xs sm:text-sm font-display font-black uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(244,63,94,0.3)] flex items-center gap-2';
-            } else {
-                toggleBtn.innerHTML = '<div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse drop-shadow-[0_0_5px_#10b981]"></div> ACTIVATE ENGINE';
-                toggleBtn.className = 'bg-emerald-900/40 text-emerald-400 hover:bg-emerald-800 hover:text-white border border-emerald-500/60 px-4 py-2 rounded text-xs sm:text-sm font-display font-black uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center gap-2';
-            }
-        }
-    }
-
-    async function toggleHuntStatus() {
-        const newState = !isHuntLive;
-        const toggleBtn = document.getElementById('adminHuntToggle');
-        toggleBtn.innerHTML = '<div class="loader" style="display:block; width:14px; height:14px; margin:0;"></div> ...';
-        
-        try {
-            const { error } = await _supabase.from('system_settings').update({ hunt_active: newState }).eq('id', 1);
-            if (error) throw error;
-            
-            isHuntLive = newState;
-            updateSystemUI();
-            checkSystemStatus();
-        } catch (e) {
-            alert('Failed to update system status: ' + e.message);
-            updateSystemUI(); 
-        }
-    }
-
-    async function studentLogin() {
-        const studentId = document.getElementById('loginStudentID').value;
-        if (!studentId) return;
-
-        const btn = document.getElementById('loginBtn');
-        const loader = document.getElementById('loginLoader');
-        btn.disabled = true; loader.style.display = 'block';
-
-        try {
-            const { data, error } = await _supabase
-                .from('players')
-                .select('*')
-                .eq('student_id', studentId)
-                .single();
-
-            if (error || !data) {
-                document.getElementById('regStudentID').value = studentId;
-                switchView('registerView');
-            } else if (data.is_banned) {
-                showBanAlert();
-            } else {
-                currentPlayer = data;
-                switchView('scannerView');
-                document.getElementById('loginStudentID').value = '';
-                startHeartbeat();
-                startAnnouncementTracker();
-                checkForPendingDuck();
-            }
-        } catch (err) {
-            console.error("Login Error:", err);
-            alert("Database connection failed. Check your credentials.");
-        } finally {
-            btn.disabled = false; loader.style.display = 'none';
-        }
-    }
-
-    async function registerPlayer() {
-        const name = document.getElementById('regName').value.trim();
-        const studentId = document.getElementById('regStudentID').value;
-
-        if (!name) return alert("Please specify Hunter Designation.");
-
-        const btn = document.getElementById('regBtn');
-        const loader = document.getElementById('regLoader');
-        btn.disabled = true; loader.style.display = 'block';
-
-        try {
-            const { data, error } = await _supabase
-                .from('players')
-                .insert([{ 
-                    student_id: studentId, 
-                    name: name, 
-                    points: 0,
-                    ducks: 0,
-                    is_banned: false
-                }])
-                .select()
-                .single();
-
-            if (error) throw error;
-            currentPlayer = data;
-            switchView('scannerView');
-            startHeartbeat();
-            startAnnouncementTracker();
-            checkForPendingDuck();
-        } catch (err) {
-            alert("Registration failed: " + err.message);
-        } finally {
-            btn.disabled = false; loader.style.display = 'none';
-        }
-    }
-
-    async function refreshPlayerStats() {
-        if (!currentPlayer) return;
-
-        const { data: rankData } = await _supabase.from('player_rankings').select('player_rank').eq('student_id', currentPlayer.student_id).single();
-        const { data: freshPlayer } = await _supabase.from('players').select('ducks, points, name, is_banned').eq('student_id', currentPlayer.student_id).single();
-
-        if (freshPlayer && freshPlayer.is_banned) {
-            logout();
-            showBanAlert();
-            return;
-        }
-
-        const { data: history } = await _supabase.from('scans').select('*').eq('player_id', currentPlayer.student_id).order('created_at', { ascending: false });
-
-        if (freshPlayer) currentPlayer = { ...currentPlayer, ...freshPlayer };
-
-        let firstName = currentPlayer.name.split(' ')[0];
-        firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-
-        document.getElementById('playerNameDisplay').textContent = firstName;
-        document.getElementById('statDucks').textContent = currentPlayer.ducks || 0;
-        document.getElementById('statPoints').textContent = currentPlayer.points || 0;
-        document.getElementById('statRank').textContent = rankData ? '#' + rankData.player_rank : '--';
-
-        const historyList = document.getElementById('scanHistoryContainer');
-        if (history && history.length > 0) {
-            historyList.innerHTML = history.map(scan => `
-                <div class="bg-zinc-900/60 border border-cyan-900/30 rounded p-3 flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded bg-cyan-900/40 border border-cyan-500/50 flex items-center justify-center">
-                            <i data-lucide="crosshair" class="w-4 h-4 text-cyan-400"></i>
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-white uppercase tracking-wider">${scan.duck_name}</div>
-                            <div class="text-[10px] text-cyan-600">${new Date(scan.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                        </div>
-                    </div>
-                    <div class="text-xs font-display font-black text-yellow-400 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]">+${scan.points_earned} CR</div>
-                </div>
-            `).join('');
-            lucide.createIcons();
-        } else {
-            historyList.innerHTML = '<div class="text-cyan-800 text-xs text-center py-4 uppercase tracking-widest">No records found.</div>';
-        }
-    }
-
-    async function loadLeaderboard() {
-        const { data, error } = await _supabase.from('players').select('name, points, is_banned').eq('is_banned', false).order('points', { ascending: false }).limit(20);
-
-        const container = document.getElementById('leaderboardContainer');
-        if (data && data.length > 0) {
-            container.innerHTML = data.map((player, index) => {
-                const isMe = currentPlayer && player.name === currentPlayer.name;
-                let displayName = player.name;
-                if (displayName) {
-                    const nameParts = displayName.trim().split(/\s+/);
-                    if (nameParts.length > 1) {
-                        const firstName = nameParts[0];
-                        const lastInitial = nameParts[nameParts.length - 1].charAt(0).toUpperCase();
-                        displayName = `${firstName} ${lastInitial}.`;
+            function animateHyper(time) {
+                const elapsed = time - startTime;
+                if (elapsed < duration) {
+                    // Smooth ease-in (power 3) and ease-out
+                    if (elapsed < duration / 2) {
+                        hyperspeedFactor = Math.pow(elapsed / (duration / 2), 3); 
+                    } else {
+                        hyperspeedFactor = Math.pow(1 - ((elapsed - duration / 2) / (duration / 2)), 3);
                     }
-                }
-                return `
-                    <div class="flex items-center justify-between p-3 ${isMe ? 'bg-cyan-900/40 border-cyan-500/60 shadow-[inset_0_0_15px_rgba(6,182,212,0.3)]' : 'bg-zinc-900/60 border-cyan-900/30'} rounded border mb-2 transition-all">
-                        <div class="flex items-center gap-3">
-                            <span class="text-cyan-700 font-display font-bold w-4">#${index + 1}</span>
-                            <span class="${isMe ? 'text-cyan-300 font-bold' : 'text-zinc-300 font-semibold'} text-sm tracking-widest uppercase">${displayName}</span>
-                        </div>
-                        <span class="text-yellow-400 font-display font-black text-sm drop-shadow-[0_0_5px_rgba(250,204,21,0.3)]">${player.points} CR</span>
-                    </div>
-                `;
-            }).join('');
-        } else {
-            container.innerHTML = '<div class="text-center py-8 text-cyan-800 text-sm tracking-widest uppercase font-display">No ranks established.</div>';
-        }
-    }
-
-    // Global Map Variables
-    let huntMap = null;
-    let groveMarker = null;
-
-    async function loadMapData() {
-        if (!huntMap) {
-            huntMap = L.map('leafletMap', { zoomControl: false }).setView([33.513291833333334, -112.12995883333333], 17);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OSM'
-            }).addTo(huntMap);
-
-            L.control.zoom({ position: 'bottomright' }).addTo(huntMap);
-
-            const groveHtml = `
-                <div class="bg-zinc-950/95 backdrop-blur-md border border-cyan-500/60 rounded px-3 py-2 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.4)] min-w-[80px]">
-                    <span class="text-[9px] font-display font-bold text-cyan-600 uppercase tracking-widest leading-none mb-1 text-center">The Grove</span>
-                    <span class="text-sm font-display font-black text-cyan-400 leading-none flex items-center gap-1 drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">
-                        <span id="mapGroveCount">--</span> <span class="text-[9px] text-cyan-700 font-bold uppercase tracking-wider">Active</span>
-                    </span>
-                    <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-cyan-500/60"></div>
-                </div>
-            `;
-            
-            const customIcon = L.divIcon({
-                className: 'custom-div-icon',
-                html: groveHtml,
-                iconSize: [80, 40],
-                iconAnchor: [40, 45] 
-            });
-
-            groveMarker = L.marker([33.515718413540334, -112.1313999167288], {icon: customIcon}).addTo(huntMap);
-        }
-
-        try {
-            const { data: ducks, error: duckErr } = await _supabase.from('duck_codes').select('code, location');
-            if (duckErr) throw duckErr;
-            
-            const { data: scans, error: scanErr } = await _supabase.from('scans').select('duck_code');
-            if (scanErr) throw scanErr;
-            
-            const claimCounts = {};
-            if (scans) {
-                scans.forEach(s => { claimCounts[s.duck_code] = (claimCounts[s.duck_code] || 0) + 1; });
-            }
-            
-            const locationStats = {};
-            if (ducks) {
-                ducks.forEach(d => {
-                    const loc = d.location.trim().toUpperCase();
-                    if (!locationStats[loc]) locationStats[loc] = { total: 0, claimed: 0, originalName: d.location.trim() };
-                    
-                    locationStats[loc].total += 1;
-                    if (claimCounts[d.code] && claimCounts[d.code] > 0) {
-                        locationStats[loc].claimed += 1;
-                    }
-                });
-            }
-            
-            if (!locationStats['THE GROVE']) {
-                locationStats['THE GROVE'] = { total: 0, claimed: 0, originalName: 'The Grove' };
-            }
-            
-            const groveActiveCount = locationStats['THE GROVE'].total - locationStats['THE GROVE'].claimed;
-            const countEl = document.getElementById('mapGroveCount');
-            if (countEl) {
-                countEl.textContent = groveActiveCount;
-                if (groveActiveCount === 0) {
-                    countEl.parentElement.parentElement.classList.replace('border-cyan-500/60', 'border-zinc-800');
-                    countEl.parentElement.parentElement.classList.replace('shadow-[0_0_20px_rgba(6,182,212,0.4)]', 'shadow-none');
-                    countEl.classList.replace('text-cyan-400', 'text-zinc-600');
-                    countEl.nextElementSibling.classList.replace('text-cyan-700', 'text-zinc-700');
-                    countEl.parentElement.nextElementSibling.classList.replace('border-t-cyan-500/60', 'border-t-zinc-800');
+                    requestAnimationFrame(animateHyper);
                 } else {
-                    countEl.parentElement.parentElement.classList.replace('border-zinc-800', 'border-cyan-500/60');
-                    countEl.parentElement.parentElement.classList.replace('shadow-none', 'shadow-[0_0_20px_rgba(6,182,212,0.4)]');
-                    countEl.classList.replace('text-zinc-600', 'text-cyan-400');
-                    countEl.nextElementSibling.classList.replace('text-zinc-700', 'text-cyan-700');
-                    countEl.parentElement.nextElementSibling.classList.replace('border-t-zinc-800', 'border-t-cyan-500/60');
+                    hyperspeedFactor = 0;
+                    isHyperspeed = false;
+                    if (onComplete) onComplete();
                 }
             }
+            requestAnimationFrame(animateHyper);
+        }
+
+        // Handle card transitions
+        function navigate(fromTarget, toTarget) {
+            const currentView = document.getElementById(fromTarget + '-view');
+            const targetView = document.getElementById(toTarget + '-view');
             
-        } catch (err) {
-            console.error("Map Loading Error:", err.message);
-        }
-    }
-
-    // --- ADMIN LOGIC ---
-
-    function showGate() { 
-        document.getElementById('gateModal').classList.remove('hidden'); 
-        document.getElementById('adminPass').value = '';
-        document.getElementById('adminPass').focus();
-    }
-    
-    function hideGate() { document.getElementById('gateModal').classList.add('hidden'); }
-
-    function verifyAdmin() {
-        const pass = document.getElementById('adminPass').value;
-        if (pass === 'cab2026') {
-            hideGate();
-            switchView('adminView');
-            loadAdminDucks();
-        } else {
-            alert('Clearance Denied. Invalid Code.');
-        }
-    }
-
-    function switchAdminTab(tab) {
-        ['ducks', 'players', 'feed'].forEach(t => {
-            document.getElementById(`tab-${t}`).classList.remove('active');
-            document.getElementById(`panel-${t}`).style.display = 'none';
-        });
-
-        document.getElementById(`tab-${tab}`).classList.add('active');
-        document.getElementById(`panel-${tab}`).style.display = 'block';
-
-        if (tab === 'ducks') loadAdminDucks();
-        if (tab === 'players') loadAdminPlayers();
-        if (tab === 'feed') loadAdminFeed();
-    }
-
-    // -- Admin Ducks --
-    function generateCode() { return Math.random().toString(36).substring(2, 10); }
-
-    async function generateBulkDucks() {
-        const literalName = document.getElementById('bulkDuckName').value || "Rebel Duck";
-        const locationInput = document.getElementById('bulkDuckLoc').value || "Unknown Sector";
-        const pts = parseInt(document.getElementById('bulkDuckPoints').value) || 10;
-        const count = parseInt(document.getElementById('bulkDuckCount').value) || 1;
-
-        if (count > 20000) return alert("Maximum 20,000 Rebel Ducks per batch.");
-
-        const btn = document.getElementById('bulkGenBtn');
-        const btnText = document.getElementById('bulkGenText');
-        
-        btn.disabled = true;
-        btn.classList.add('opacity-50', 'cursor-wait');
-        btnText.textContent = `Deploying ${count}...`;
-
-        try {
-            let codesToInsert = [];
-            for (let i = 0; i < count; i++) {
-                const uniqueCode = generateCode() + Math.random().toString(36).substring(2, 6);
-                codesToInsert.push({ 
-                    code: uniqueCode, 
-                    name: literalName, 
-                    location: locationInput, 
-                    points: pts 
-                });
-            }
-
-            const chunkSize = 1000;
-            for (let i = 0; i < codesToInsert.length; i += chunkSize) {
-                const chunk = codesToInsert.slice(i, i + chunkSize);
-                const { error } = await _supabase.from('duck_codes').insert(chunk);
-                if (error) throw error;
-                btnText.textContent = `Syncing... ${Math.min(i + chunkSize, count)}/${count}`;
-            }
+            // 1. Fade out current view
+            currentView.classList.remove('opacity-100');
+            currentView.classList.add('opacity-0');
             
-            document.getElementById('bulkDuckCount').value = '10';
-            loadAdminDucks();
-        } catch (err) {
-            alert("Error creating Rebel Ducks: " + err.message);
-        } finally {
-            btn.disabled = false;
-            btn.classList.remove('opacity-50', 'cursor-wait');
-            btnText.textContent = 'Execute';
-        }
-    }
-
-    let allAdminDucks = [];
-
-    async function loadAdminDucks() {
-        const list = document.getElementById('adminDucksList');
-        list.innerHTML = '<tr><td colspan="5" class="text-cyan-800 text-center py-8 text-sm font-display tracking-widest uppercase animate-pulse">Syncing Databanks...</td></tr>';
-
-        try {
-            const { data: ducks, error } = await _supabase.from('duck_codes').select('*').order('created_at', { ascending: false });
-            if (error) throw error;
-
-            const { data: scanData } = await _supabase.from('scans').select('duck_code');
-            const scanCounts = {};
-            if (scanData) scanData.forEach(s => { scanCounts[s.duck_code] = (scanCounts[s.duck_code] || 0) + 1; });
-
-            if (ducks && ducks.length > 0) {
-                allAdminDucks = ducks.map(d => ({ ...d, claimCount: scanCounts[d.code] || 0 }));
+            // 2. Wait for fade, then hide it and start hyperspeed
+            setTimeout(() => {
+                currentView.classList.add('hidden');
                 
-                const totalDucks = allAdminDucks.length;
-                const claimedDucks = allAdminDucks.filter(d => d.claimCount > 0).length;
-                
-                document.getElementById('statAdminTotal').textContent = totalDucks.toLocaleString();
-                document.getElementById('statAdminClaimed').textContent = claimedDucks.toLocaleString();
-                document.getElementById('statAdminActive').textContent = (totalDucks - claimedDucks).toLocaleString();
-
-                applyDuckFilters();
-            } else {
-                list.innerHTML = '<tr><td colspan="5" class="text-cyan-800 text-center py-8 text-sm italic tracking-widest font-display">No Rebel Ducks deployed.</td></tr>';
-                allAdminDucks = [];
-            }
-        } catch (err) {
-            list.innerHTML = `<tr><td colspan="5" class="text-rose-500 text-center py-8 text-sm">Error: ${err.message}</td></tr>`;
-        }
-    }
-
-    function applyDuckFilters() {
-        const nameF = (document.getElementById('filterDuckName').value || '').toLowerCase();
-        const locF = (document.getElementById('filterDuckLoc').value || '').toLowerCase();
-        const ptsF = document.getElementById('filterDuckPts').value;
-        const sortVal = document.getElementById('sortDucks').value;
-
-        let filtered = allAdminDucks.filter(d => {
-            return d.name.toLowerCase().includes(nameF) && 
-                   d.location.toLowerCase().includes(locF) && 
-                   (ptsF ? d.points.toString() === ptsF : true);
-        });
-
-        if (sortVal === 'ptsDesc') filtered.sort((a, b) => b.points - a.points);
-        else if (sortVal === 'claimedDesc') filtered.sort((a, b) => b.claimCount - a.claimCount);
-        else filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-        renderAdminDucks(filtered);
-    }
-
-    function renderAdminDucks(data) {
-        const list = document.getElementById('adminDucksList');
-        if (data.length > 0) {
-            list.innerHTML = data.map(d => `
-                <tr class="hover:bg-cyan-900/10 transition-colors group">
-                    <td class="p-3 border-b border-cyan-900/30 text-center">
-                        <input type="checkbox" class="duck-select-checkbox w-4 h-4 rounded border-cyan-700 bg-zinc-950 text-cyan-500 focus:ring-cyan-500 cursor-pointer" value="${d.code}" onchange="updateBulkActionBtns()">
-                    </td>
-                    <td class="p-3 border-b border-cyan-900/30">
-                        <div class="font-bold text-sm text-white truncate max-w-[200px] tracking-wide uppercase">${d.name}</div>
-                        <div class="text-[10px] text-cyan-600 truncate max-w-[200px] font-semibold">${d.location}</div>
-                        <code class="text-[10px] text-cyan-500 bg-zinc-950 px-1 py-0.5 rounded border border-cyan-900/50 mt-1 inline-block">${d.code}</code>
-                    </td>
-                    <td class="p-3 border-b border-cyan-900/30 text-center">
-                        <span class="text-yellow-400 text-xs font-black bg-yellow-900/20 px-2 py-1 rounded border border-yellow-500/30 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]">${d.points} CR</span>
-                    </td>
-                    <td class="p-3 border-b border-cyan-900/30 text-center">
-                        <span class="${d.claimCount > 0 ? 'text-emerald-400 bg-emerald-900/30 border-emerald-500/50' : 'text-cyan-700 bg-zinc-900/50 border-cyan-900/50'} text-[10px] font-bold px-2 py-1 rounded border uppercase tracking-wider">Acquired: ${d.claimCount}</span>
-                    </td>
-                    <td class="p-3 border-b border-cyan-900/30 text-right">
-                        <div class="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                            <button class="bg-zinc-900 border border-cyan-900/50 hover:bg-cyan-700 hover:text-white p-2 rounded transition-colors text-cyan-500" onclick="generateQR('${d.code}', '${d.name.replace(/'/g, "\\'")}', '${d.location.replace(/'/g, "\\'")}')" title="QR Code"><i data-lucide="qr-code" class="w-4 h-4"></i></button>
-                            <button class="bg-zinc-900 border border-blue-900/50 hover:bg-blue-700 hover:text-white p-2 rounded transition-colors text-blue-500" onclick="openEditDuckModal('${d.code}')" title="Edit"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
-                            <button class="bg-zinc-900 border border-rose-900/50 hover:bg-rose-700 hover:text-white p-2 rounded transition-colors text-rose-500" onclick="deleteDuck('${d.code}')" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-            lucide.createIcons();
-        } else {
-            list.innerHTML = '<tr><td colspan="5" class="text-cyan-800 text-center py-8 text-sm italic tracking-widest uppercase font-display">No Rebel Ducks found.</td></tr>';
-        }
-        updateBulkActionBtns();
-    }
-
-    function updateBulkActionBtns() {
-        const checkboxes = document.querySelectorAll('.duck-select-checkbox:checked');
-        const delBtn = document.getElementById('bulkDeleteBtn');
-        const editBtn = document.getElementById('bulkEditBtn');
-        if (checkboxes.length > 0) {
-            delBtn.textContent = `Delete Selected (${checkboxes.length})`;
-            delBtn.classList.remove('hidden');
-            editBtn.textContent = `Edit Selected (${checkboxes.length})`;
-            editBtn.classList.remove('hidden');
-        } else {
-            delBtn.classList.add('hidden');
-            editBtn.classList.add('hidden');
-        }
-    }
-
-    function toggleSelectAllFiltered() {
-        const checkboxes = document.querySelectorAll('.duck-select-checkbox');
-        if (checkboxes.length === 0) return;
-        
-        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        checkboxes.forEach(cb => cb.checked = !allChecked);
-        updateBulkActionBtns();
-    }
-
-    async function bulkDeleteSelected() {
-        const checkboxes = document.querySelectorAll('.duck-select-checkbox:checked');
-        if (checkboxes.length === 0) return;
-        
-        if (!confirm(`Are you sure you want to permanently delete ${checkboxes.length} Rebel Ducks? This will also DEDUCT credits from anyone who claimed them!`)) return;
-
-        const codesToDelete = Array.from(checkboxes).map(cb => cb.value);
-        const btn = document.getElementById('bulkDeleteBtn');
-        
-        btn.textContent = 'Purging...';
-        btn.disabled = true;
-
-        try {
-            const { data: scans } = await _supabase.from('scans').select('player_id, points_earned').in('duck_code', codesToDelete);
-            
-            const pointDeductions = {};
-            const duckDeductions = {};
-            if (scans) {
-                scans.forEach(scan => {
-                    pointDeductions[scan.player_id] = (pointDeductions[scan.player_id] || 0) + scan.points_earned;
-                    duckDeductions[scan.player_id] = (duckDeductions[scan.player_id] || 0) + 1;
-                });
-            }
-
-            const chunkSize = 100;
-            for (let i = 0; i < codesToDelete.length; i += chunkSize) {
-                const chunk = codesToDelete.slice(i, i + chunkSize);
-                const { error } = await _supabase
-                    .from('duck_codes')
-                    .delete()
-                    .in('code', chunk);
-                if (error) throw error;
-            }
-
-            for (const playerId in pointDeductions) {
-                const { data: player } = await _supabase.from('players').select('points, ducks').eq('student_id', playerId).single();
-                if (player) {
-                    const newPts = Math.max(0, player.points - pointDeductions[playerId]);
-                    const newDucks = Math.max(0, player.ducks - duckDeductions[playerId]);
-                    await _supabase.from('players').update({ points: newPts, ducks: newDucks }).eq('student_id', playerId);
-                }
-            }
-            
-            await loadAdminDucks(); 
-        } catch (err) {
-            alert("Error deleting Rebel Ducks: " + err.message);
-        } finally {
-            btn.disabled = false;
-            updateBulkActionBtns(); 
-        }
-    }
-
-    function openBulkEditModal() {
-        const cbs = document.querySelectorAll('.duck-select-checkbox:checked');
-        if (cbs.length === 0) return;
-        document.getElementById('bulkEditCount').textContent = cbs.length;
-        document.getElementById('bulkEditModal').classList.remove('hidden');
-    }
-    function closeBulkEditModal() { document.getElementById('bulkEditModal').classList.add('hidden'); }
-
-    async function saveBulkEdit() {
-        const codes = Array.from(document.querySelectorAll('.duck-select-checkbox:checked')).map(cb => cb.value);
-        const loc = document.getElementById('bulkEditLocation').value.trim();
-        const pts = document.getElementById('bulkEditPoints').value;
-        
-        let payload = {};
-        if (loc) payload.location = loc;
-        if (pts) payload.points = parseInt(pts);
-
-        if (Object.keys(payload).length === 0) return alert("No changes specified.");
-
-        document.getElementById('saveBulkEditBtn').disabled = true;
-
-        try {
-            for (let i = 0; i < codes.length; i += 100) {
-                await _supabase.from('duck_codes').update(payload).in('code', codes.slice(i, i + 100));
-            }
-            closeBulkEditModal();
-            await loadAdminDucks();
-        } catch (err) { alert(err.message); } 
-        finally { document.getElementById('saveBulkEditBtn').disabled = false; }
-    }
-
-    function openEditDuckModal(code) {
-        const duck = allAdminDucks.find(d => d.code === code);
-        if (!duck) return;
-        document.getElementById('editDuckCode').value = duck.code;
-        document.getElementById('editDuckName').value = duck.name;
-        document.getElementById('editDuckLocation').value = duck.location;
-        document.getElementById('editDuckPoints').value = duck.points;
-        document.getElementById('editDuckModal').classList.remove('hidden');
-    }
-    function closeEditDuckModal() { document.getElementById('editDuckModal').classList.add('hidden'); }
-
-    async function saveDuckEdit() {
-        const code = document.getElementById('editDuckCode').value;
-        const name = document.getElementById('editDuckName').value.trim();
-        const loc = document.getElementById('editDuckLocation').value.trim();
-        const pts = parseInt(document.getElementById('editDuckPoints').value);
-
-        if (!name || !loc || isNaN(pts)) return alert("Please specify valid parameters.");
-
-        const btn = document.getElementById('saveDuckBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<div class="loader" style="display:block;"></div> Syncing...';
-
-        try {
-            const { error } = await _supabase
-                .from('duck_codes')
-                .update({ name: name, location: loc, points: pts })
-                .eq('code', code);
-                
-            if (error) throw error;
-            
-            closeEditDuckModal();
-            loadAdminDucks(); 
-        } catch (err) {
-            alert("Error updating Rebel Duck: " + err.message);
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = 'Confirm';
-        }
-    }
-
-    async function deleteDuck(code) {
-        if (!confirm("Confirm Rebel Duck deletion? Credits will be deducted from anyone who claimed it!")) return;
-
-        try {
-            const { data: scans } = await _supabase.from('scans').select('player_id, points_earned').eq('duck_code', code);
-            const { error } = await _supabase.from('duck_codes').delete().eq('code', code);
-            if (error) throw error;
-
-            if (scans && scans.length > 0) {
-                for (const scan of scans) {
-                    const { data: player } = await _supabase.from('players').select('points, ducks').eq('student_id', scan.player_id).single();
-                    if (player) {
-                        const newPts = Math.max(0, player.points - scan.points_earned);
-                        const newDucks = Math.max(0, player.ducks - 1);
-                        await _supabase.from('players').update({ points: newPts, ducks: newDucks }).eq('student_id', scan.player_id);
-                    }
-                }
-            }
-
-            loadAdminDucks(); 
-        } catch (err) {
-            alert("Error deleting Rebel Duck: " + err.message);
-        }
-    }
-
-    async function loadAdminPlayers() {
-        const list = document.getElementById('adminPlayersList');
-        list.innerHTML = '<tr><td colspan="5" class="text-cyan-800 text-center py-8 text-sm font-display tracking-widest uppercase animate-pulse">Syncing Registry...</td></tr>';
-
-        try {
-            const { data: rankData } = await _supabase.from('player_rankings').select('*');
-            const { data: players, error } = await _supabase.from('players').select('*');
-            if (error) throw error;
-
-            if (players && players.length > 0) {
-                const rankMap = {};
-                if(rankData) rankData.forEach(r => rankMap[r.student_id] = r.player_rank);
-
-                const now = new Date();
-                let onlineCount = 0;
-
-                allAdminPlayers = players.map(p => {
-                    const isOnline = p.last_active && ((now - new Date(p.last_active)) / 1000 / 60 < 5); 
-                    if (isOnline) onlineCount++;
-                    return { ...p, rank: rankMap[p.student_id] || 999, isOnline };
+                triggerHyperspeed(() => {
+                    // 3. After hyperspeed, show target view
+                    targetView.classList.remove('hidden');
+                    
+                    // Small delay to allow display:block to apply before animating opacity
+                    setTimeout(() => {
+                        targetView.classList.remove('opacity-0');
+                        targetView.classList.add('opacity-100');
+                    }, 50);
                 });
 
-                allAdminPlayers.sort((a, b) => a.rank - b.rank);
-
-                document.getElementById('statAdminPlayers').textContent = allAdminPlayers.length;
-                document.getElementById('statAdminOnline').textContent = onlineCount;
-
-                renderAdminPlayers(allAdminPlayers);
-            } else {
-                list.innerHTML = '<tr><td colspan="5" class="text-cyan-800 text-center py-8 text-sm italic tracking-widest uppercase font-display">No registered hunters.</td></tr>';
-            }
-        } catch (err) {
-            list.innerHTML = `<tr><td colspan="5" class="text-rose-500 text-center py-8 text-sm">Error: ${err.message}</td></tr>`;
+            }, 500); // 500ms matches CSS transition duration
         }
-    }
 
-    function renderAdminPlayers(data) {
-        const list = document.getElementById('adminPlayersList');
-        list.innerHTML = data.map(p => `
-            <tr class="hover:bg-cyan-900/10 transition-colors group ${p.is_banned ? 'opacity-50' : ''}">
-                <td class="p-3 border-b border-cyan-900/30 text-center">
-                    <span class="text-cyan-700 font-display font-bold">#${p.rank}</span>
-                </td>
-                <td class="p-3 border-b border-cyan-900/30">
-                    <div class="font-bold text-sm text-white flex items-center gap-2 uppercase tracking-wide">
-                        ${p.name}
-                        ${p.is_banned ? '<span class="bg-rose-900/40 border border-rose-500/50 text-rose-400 text-[8px] px-1 py-0.5 rounded uppercase tracking-widest font-display">Revoked</span>' : ''}
-                    </div>
-                    <div class="text-[10px] text-cyan-600 font-semibold">${p.student_id}</div>
-                </td>
-                <td class="p-3 border-b border-cyan-900/30 text-center">
-                    <div class="text-yellow-400 text-sm font-display font-black drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]">${p.points} CR</div>
-                    <div class="text-[10px] text-cyan-700 uppercase tracking-widest font-bold">${p.ducks} Rebel Ducks</div>
-                </td>
-                <td class="p-3 border-b border-cyan-900/30 text-center">
-                    ${p.isOnline ? '<div class="w-2 h-2 rounded-full bg-emerald-500 mx-auto shadow-[0_0_8px_#10b981]" title="Active Signal"></div>' : '<div class="w-2 h-2 rounded-full bg-zinc-800 mx-auto border border-zinc-700" title="Lost Signal"></div>'}
-                </td>
-                <td class="p-3 border-b border-cyan-900/30 text-right">
-                    <div class="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <button class="bg-zinc-900 border border-blue-900/50 hover:bg-blue-700 hover:text-white p-2 rounded transition-colors text-blue-500" onclick="openEditPlayerModal('${p.student_id}')" title="Edit Profile"><i data-lucide="user-cog" class="w-4 h-4"></i></button>
-                        <button class="bg-zinc-900 border border-rose-900/50 hover:bg-rose-700 hover:text-white p-2 rounded transition-colors text-rose-500" onclick="deletePlayer('${p.student_id}')" title="Terminate Hunter"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
-        lucide.createIcons();
-    }
-
-    async function deletePlayer(studentId) {
-        if (!confirm("Permanently erase this hunter? All databank records will be lost!")) return;
-        
-        try {
-            const { error } = await _supabase.from('players').delete().eq('student_id', studentId);
-            if (error) throw error;
-            
-            loadAdminPlayers();
-        } catch (err) {
-            alert("Error deleting hunter: " + err.message);
-        }
-    }
-
-    function openEditPlayerModal(id) {
-        const p = allAdminPlayers.find(p => p.student_id === id);
-        if (!p) return;
-        document.getElementById('editPlayerId').value = p.student_id;
-        document.getElementById('editPlayerName').value = p.name;
-        document.getElementById('editPlayerPoints').value = p.points;
-        
-        const banBtn = document.getElementById('banPlayerBtn');
-        if (p.is_banned) {
-            banBtn.innerHTML = 'Reinstate License';
-            banBtn.className = "w-full bg-emerald-950/60 border border-emerald-500/60 text-emerald-400 hover:bg-emerald-900 hover:text-white font-display font-bold py-3 rounded transition-all flex justify-center items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.3)]";
-        } else {
-            banBtn.innerHTML = 'Revoke License';
-            banBtn.className = "w-full bg-rose-950/60 border border-rose-500/60 text-rose-400 hover:bg-rose-900 hover:text-white font-display font-bold py-3 rounded transition-all flex justify-center items-center gap-2 uppercase tracking-widest shadow-[0_0_15px_rgba(244,63,94,0.3)]";
-        }
-        document.getElementById('editPlayerModal').classList.remove('hidden');
-    }
-    function closeEditPlayerModal() { document.getElementById('editPlayerModal').classList.add('hidden'); }
-
-    async function savePlayerEdit() {
-        const id = document.getElementById('editPlayerId').value;
-        const pts = parseInt(document.getElementById('editPlayerPoints').value);
-        try {
-            await _supabase.from('players').update({ points: pts }).eq('student_id', id);
-            closeEditPlayerModal();
-            loadAdminPlayers();
-        } catch (err) { alert(err.message); }
-    }
-
-    async function togglePlayerBan() {
-        const id = document.getElementById('editPlayerId').value;
-        const p = allAdminPlayers.find(p => p.student_id === id);
-        try {
-            await _supabase.from('players').update({ is_banned: !p.is_banned }).eq('student_id', id);
-            closeEditPlayerModal();
-            loadAdminPlayers();
-        } catch (err) { alert(err.message); }
-    }
-
-    // -- Admin Feed & Broadcast --
-    async function loadAdminFeed() {
-        loadCurrentAdminBroadcast();
-        const list = document.getElementById('adminFeedList');
-        list.innerHTML = '<div class="text-cyan-800 text-center py-4 text-sm font-display tracking-widest uppercase animate-pulse">Monitoring Frequencies...</div>';
-
-        try {
-            const { data: scans, error: scanErr } = await _supabase
-                .from('scans')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(100);
-
-            if (scanErr) throw scanErr;
-
-            if (!scans || scans.length === 0) {
-                list.innerHTML = '<div class="text-cyan-800 text-center py-4 text-sm italic tracking-widest font-display uppercase">No sector activity.</div>';
-                return;
-            }
-
-            const studentIds = [...new Set(scans.map(s => s.player_id))];
-            const { data: players } = await _supabase
-                .from('players')
-                .select('student_id, name')
-                .in('student_id', studentIds);
-
-            const playerMap = {};
-            if (players) {
-                players.forEach(p => playerMap[p.student_id] = p.name);
-            }
-
-            list.innerHTML = scans.map(scan => {
-                const playerName = playerMap[scan.player_id] || `ID: ${scan.player_id}`;
-                const time = new Date(scan.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                
-                return `
-                    <div class="bg-zinc-900/60 border border-cyan-900/30 rounded p-3 flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded border border-emerald-500/50 bg-emerald-900/40 flex items-center justify-center">
-                                <i data-lucide="crosshair" class="w-5 h-5 text-emerald-400"></i>
-                            </div>
-                            <div>
-                                <h5 class="text-white font-bold text-sm tracking-wide uppercase">${playerName} <span class="text-cyan-700 font-normal lowercase tracking-normal">acquired</span></h5>
-                                <p class="text-cyan-400 font-bold text-xs uppercase tracking-widest drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">${scan.duck_name} <span class="text-cyan-800 font-normal ml-1 tracking-normal">• ${time}</span></p>
-                            </div>
-                        </div>
-                        <div class="bg-yellow-900/30 text-yellow-400 font-display font-black text-xs px-2 py-1 rounded border border-yellow-500/50 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]">
-                            +${scan.points_earned} CR
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            lucide.createIcons();
-            
-        } catch (err) {
-            list.innerHTML = `<div class="text-rose-500 text-center py-4 text-sm">Error: ${err.message}</div>`;
-        }
-    }
-
-    // --- Broadcast & Announcement System ---
-    function startAnnouncementTracker() {
-        if (announcementInterval) clearInterval(announcementInterval);
-        checkAnnouncements(); 
-        announcementInterval = setInterval(checkAnnouncements, 15000); 
-    }
-
-    async function checkAnnouncements() {
-        if (!currentPlayer) return;
-        try {
-            const { data } = await _supabase
-                .from('announcements')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(1);
-
-            if (data && data.length > 0) {
-                const latest = data[0];
-                
-                if (latest.message === "[CLEAR]") {
-                    document.getElementById('infoBroadcastDisplay').textContent = "Monitoring secure channels...";
-                    return;
-                }
-
-                document.getElementById('infoBroadcastDisplay').textContent = `"${latest.message}"`;
-
-                const seenId = localStorage.getItem('seenBroadcastId');
-                if (seenId !== latest.id) {
-                    showAppAlert("CAB Net Transmission", latest.message, latest.id);
-                }
-            } else {
-                document.getElementById('infoBroadcastDisplay').textContent = "Monitoring secure channels...";
-            }
-        } catch (e) {}
-    }
-
-    function showAppAlert(title, message, id) {
-        if (document.getElementById('sysAlertModal')) return; 
-
-        const modalHtml = `
-            <div id="sysAlertModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 font-sans">
-                <div class="absolute inset-0 bg-zinc-950/90 backdrop-blur-md" onclick="dismissAppAlert('${id}')"></div>
-                <div class="relative w-full max-w-sm glass-card rounded-lg p-8 flex flex-col items-center text-center shadow-2xl border-amber-500/50 transform transition-all">
-                    <div class="w-16 h-16 bg-amber-900/40 rounded-full flex items-center justify-center mb-4 border border-amber-500/60 shadow-[0_0_30px_rgba(245,158,11,0.5)]">
-                        <i data-lucide="satellite" class="w-8 h-8 text-amber-400"></i>
-                    </div>
-                    <h3 class="text-xl font-display font-black mb-2 text-white uppercase tracking-widest drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]">${title}</h3>
-                    <p class="text-amber-100 text-sm mb-6 font-medium leading-relaxed">"${message}"</p>
-                    <button class="w-full bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-zinc-950 font-display font-black py-3 rounded transition-all shadow-lg border border-amber-400/50 uppercase tracking-widest" onclick="dismissAppAlert('${id}')">Acknowledge</button>
-                </div>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        lucide.createIcons();
-    }
-
-    function dismissAppAlert(id) {
-        localStorage.setItem('seenBroadcastId', id);
-        const modal = document.getElementById('sysAlertModal');
-        if (modal) modal.remove();
-    }
-
-    async function loadCurrentAdminBroadcast() {
-        try {
-            const { data } = await _supabase
-                .from('announcements')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(1);
-                
-            if (data && data.length > 0 && data[0].message !== "[CLEAR]") {
-                document.getElementById('currentBroadcastDisplay').textContent = `"${data[0].message}"`;
-            } else {
-                document.getElementById('currentBroadcastDisplay').textContent = "None";
-            }
-        } catch(e) {}
-    }
-
-    async function sendBroadcast() {
-        const msg = document.getElementById('broadcastMsg').value.trim();
-        if (!msg) return;
-        
-        const btn = document.getElementById('broadcastBtn');
-        btn.disabled = true;
-        
-        try {
-            await _supabase.from('announcements').insert([{ message: msg }]);
-            document.getElementById('broadcastMsg').value = '';
-            loadCurrentAdminBroadcast();
-            alert("Transmission sent! All hunters will receive this brief.");
-        } catch (err) { 
-            alert("Transmission Failed: " + err.message); 
-        } finally { 
-            btn.disabled = false; 
-        }
-    }
-
-    async function clearBroadcast() {
-        const btn = document.getElementById('clearBroadcastBtn');
-        btn.disabled = true;
-        
-        try {
-            await _supabase.from('announcements').insert([{ message: "[CLEAR]" }]);
-            loadCurrentAdminBroadcast();
-            alert("Transmission purged from all active databanks.");
-        } catch (err) { 
-            alert("Purge Failed: " + err.message); 
-        } finally { 
-            btn.disabled = false; 
-        }
-    }
-
-    // --- QR Code Generator ---
-    let qrcodeInstance = null;
-    
-    function generateQR(code, name, location) {
-        document.getElementById('qrModalTitle').textContent = name;
-        document.getElementById('qrModalLocation').textContent = location;
-        
-        let baseUrl = window.location.href.split('?')[0].split('#')[0];
-        const duckUrl = `${baseUrl}?duck=${code}`;
-        
-        document.getElementById('qrModalUrl').textContent = duckUrl;
-
-        const qrContainer = document.getElementById('qrcodeDisplay');
-        qrContainer.innerHTML = ''; 
-        
-        qrcodeInstance = new QRCode(qrContainer, {
-            text: duckUrl,
-            width: 200,
-            height: 200,
-            colorDark : "#09090b",
-            colorLight : "#ecfeff", // cyan-50 equivalent
-            correctLevel : QRCode.CorrectLevel.H
-        });
-
-        document.getElementById('qrModal').classList.remove('hidden');
-    }
-
-    function hideQR() {
-        document.getElementById('qrModal').classList.add('hidden');
-    }
-
-</script>
+        window.onload = function() {
+            resize();
+            initStars();
+            animate();
+        };
+    </script>
 </body>
 </html>
