@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galactic Login - Hyperspeed Edition</title>
+    <title>Duck Hunt</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
@@ -133,6 +134,81 @@
             transform: scale(1);
         }
         
+        /* ---------- HOME VIEW ---------- */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .card-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 13px;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: rgba(203, 213, 225, 0.7);
+        }
+
+        /* Scanner viewport */
+        #qr-reader { border: none !important; }
+        #qr-reader video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+        }
+        #qr-reader img, #qr-reader__dashboard, #qr-reader__header_message { display: none !important; }
+
+        .scan-corner {
+            position: absolute;
+            width: 34px;
+            height: 34px;
+            color: #ffe81f;
+            filter: drop-shadow(0 0 6px rgba(255, 232, 31, 0.6));
+            pointer-events: none;
+            z-index: 3;
+        }
+        .scan-corner.tl { top: 14px; left: 14px; border-top: 3px solid; border-left: 3px solid; border-top-left-radius: 10px; }
+        .scan-corner.tr { top: 14px; right: 14px; border-top: 3px solid; border-right: 3px solid; border-top-right-radius: 10px; }
+        .scan-corner.bl { bottom: 14px; left: 14px; border-bottom: 3px solid; border-left: 3px solid; border-bottom-left-radius: 10px; }
+        .scan-corner.br { bottom: 14px; right: 14px; border-bottom: 3px solid; border-right: 3px solid; border-bottom-right-radius: 10px; }
+
+        .scan-line {
+            position: absolute;
+            left: 8%;
+            right: 8%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ffe81f, transparent);
+            box-shadow: 0 0 12px rgba(255, 232, 31, 0.8);
+            animation: scan-sweep 2.2s ease-in-out infinite alternate;
+            z-index: 3;
+            pointer-events: none;
+        }
+        @keyframes scan-sweep {
+            0% { top: 10%; }
+            100% { top: 90%; }
+        }
+
+        .rank-progress {
+            background: linear-gradient(90deg, #a38f00, #ffe81f);
+            box-shadow: 0 0 12px rgba(255, 232, 31, 0.5);
+            transition: width 0.8s ease;
+        }
+
+        /* Bottom nav */
+        .nav-glass {
+            background: rgba(0, 0, 0, 0.94);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow:
+                inset 0 1px 1px rgba(255, 255, 255, 0.08),
+                0 -10px 40px rgba(0, 0, 0, 0.9);
+        }
+        .nav-item { color: rgba(156, 163, 175, 1); transition: all 0.25s ease; }
+        .nav-item:hover { color: #fff; }
+        .nav-item.active { color: #ffe81f; filter: drop-shadow(0 0 8px rgba(255, 232, 31, 0.5)); }
+
+        .toast {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
         /* Utility for smooth transitions */
         .fade-transition {
             transition: opacity 0.5s ease-in-out;
@@ -176,7 +252,7 @@
                         <div class="flex gap-3 w-full">
                             <button 
                                 type="button" 
-                                onclick="navigate('login', 'home')"
+                                onclick="signIn()"
                                 class="flex-1 bg-white/5 border border-white/20 backdrop-blur-md hover:bg-white/10 hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] text-white font-bold text-[17px] py-4 rounded-xl transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.8)] active:scale-[0.98]"
                             >
                                 Sign In
@@ -206,10 +282,10 @@
 
                     <form onsubmit="event.preventDefault();" class="flex flex-col w-full gap-4">
                         
-                        <input type="text" placeholder="First Name" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
-                        <input type="text" placeholder="Last Name" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
-                        <input type="text" placeholder="Student ID" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
-                        <input type="email" placeholder="Email @my.gcu.edu" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
+                        <input id="reg-first" type="text" placeholder="First Name" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
+                        <input id="reg-last" type="text" placeholder="Last Name" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
+                        <input id="reg-id" type="text" placeholder="Student ID" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
+                        <input id="reg-email" type="email" placeholder="Email @my.gcu.edu" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
 
                         <div class="flex items-center gap-3 mt-2 mb-4 px-2">
                             <input type="checkbox" id="terms" class="custom-checkbox cursor-pointer" required>
@@ -228,7 +304,7 @@
                             </button>
                             <button 
                                 type="button" 
-                                onclick="navigate('register', 'home')"
+                                onclick="register()"
                                 class="flex-1 bg-[#ffe81f]/10 border border-[#ffe81f]/40 backdrop-blur-md hover:bg-[#ffe81f]/20 hover:border-[#ffe81f]/60 hover:shadow-[0_0_15px_rgba(255,232,31,0.3)] text-white font-bold text-[16px] py-3 rounded-xl transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.8)] active:scale-[0.98]"
                             >
                                 Submit
@@ -240,13 +316,138 @@
             </div>
         </div>
 
-        <!-- HOME PAGE PLACEHOLDER (Hidden Initially) -->
-        <div id="home-view" class="hidden fade-transition opacity-0 flex flex-col items-center absolute text-center">
-            <h1 class="text-4xl md:text-5xl font-bold font-tech text-white tracking-widest drop-shadow-[0_0_20px_rgba(255,255,255,0.5)] mb-4">
-                HOME PAGE
-            </h1>
-            <p class="text-gray-400 text-lg">(To be built later...)</p>
-            <button onclick="navigate('home', 'login')" class="mt-8 text-[#ffe81f] hover:text-white underline underline-offset-4 opacity-70 hover:opacity-100 transition-all">Go Back</button>
+        <!-- HOME VIEW (Hidden Initially) -->
+        <div id="home-view" class="hidden fade-transition opacity-0 fixed inset-0 overflow-y-auto no-scrollbar">
+            <div class="w-full max-w-md mx-auto px-4 pt-6 pb-36 flex flex-col gap-5">
+
+                <!-- Header: Duck Hunt logo -->
+                <header class="relative flex flex-col items-center">
+                    <button
+                        type="button"
+                        onclick="signOut()"
+                        aria-label="Sign out"
+                        class="absolute right-0 top-1 p-2 rounded-xl bg-white/5 border border-white/15 text-gray-400 hover:text-white hover:border-white/40 hover:bg-white/10 transition-all duration-300"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+                    </button>
+                    <img src="https://i.imgur.com/f4kE3Fg.png" alt="Duck Hunt Logo" class="h-28 w-auto max-w-[75%] object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                </header>
+
+                <!-- Welcome -->
+                <section class="text-center -mt-1">
+                    <p class="card-label">Welcome back</p>
+                    <h1 id="welcome-name" class="text-[34px] leading-tight font-bold font-tech tracking-wider text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.35)]">Cadet</h1>
+                </section>
+
+                <!-- Rank -->
+                <section id="rank-section" class="shimmer-wrapper w-full scroll-mt-6">
+                    <div class="glass-inner w-full p-5">
+                        <div class="flex items-center gap-4">
+                            <div class="shrink-0 w-16 h-16 rounded-2xl bg-[#ffe81f]/10 border border-[#ffe81f]/40 flex items-center justify-center shadow-[0_0_20px_rgba(255,232,31,0.2)]">
+                                <svg class="w-9 h-9 text-[#ffe81f]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.9 6.26L21.5 9l-4.9 4.52L17.8 20 12 16.77 6.2 20l1.2-6.48L2.5 9l6.6-.74L12 2z"/></svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="card-label">Current Rank</p>
+                                <h2 id="rank-name" class="text-2xl font-bold font-tech tracking-wider text-white truncate">Rookie Cadet</h2>
+                                <p class="text-[13px] text-gray-400"><span id="rank-ducks" class="text-[#ffe81f] font-semibold">0</span> ducks rescued</p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+                                <div id="rank-progress" class="rank-progress h-full rounded-full" style="width: 0%"></div>
+                            </div>
+                            <p id="rank-next" class="mt-2 text-[12px] text-gray-400 text-right">3 more to Duck Spotter</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- QR Scanner -->
+                <section id="scan-section" class="shimmer-wrapper w-full scroll-mt-6">
+                    <div class="glass-inner w-full p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <p class="card-label">Scanner</p>
+                                <h2 class="text-xl font-bold font-tech tracking-wider text-white">Scan a Duck</h2>
+                            </div>
+                            <span id="scan-status" class="text-[12px] px-3 py-1 rounded-full bg-white/5 border border-white/15 text-gray-400">Idle</span>
+                        </div>
+
+                        <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-black/70 border border-white/15 shadow-[inset_0_0_30px_rgba(0,0,0,0.9)]">
+                            <div id="qr-reader" class="absolute inset-0"></div>
+
+                            <div id="scan-idle" class="absolute inset-0 flex flex-col items-center justify-center text-center px-8 z-[2]">
+                                <svg class="w-16 h-16 text-white/30 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75h-.75v-.75zM13.5 19.5h.75v.75h-.75v-.75zM19.5 13.5h.75v.75h-.75v-.75zM19.5 19.5h.75v.75h-.75v-.75zM16.5 16.5h.75v.75h-.75v-.75z"/></svg>
+                                <p id="scan-idle-text" class="text-[14px] text-gray-400 leading-snug">Point your camera at a duck's QR code to log your rescue.</p>
+                            </div>
+
+                            <span class="scan-corner tl"></span>
+                            <span class="scan-corner tr"></span>
+                            <span class="scan-corner bl"></span>
+                            <span class="scan-corner br"></span>
+                            <div id="scan-line" class="scan-line hidden"></div>
+                        </div>
+
+                        <button
+                            id="scan-btn"
+                            type="button"
+                            onclick="toggleScanner()"
+                            class="mt-4 w-full bg-[#ffe81f]/10 border border-[#ffe81f]/40 backdrop-blur-md hover:bg-[#ffe81f]/20 hover:border-[#ffe81f]/60 hover:shadow-[0_0_15px_rgba(255,232,31,0.3)] text-white font-bold text-[17px] py-4 rounded-xl transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.8)] active:scale-[0.98]"
+                        >
+                            Start Scanning
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Scan History -->
+                <section id="history-section" class="shimmer-wrapper w-full scroll-mt-6">
+                    <div class="glass-inner w-full p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <p class="card-label">Log</p>
+                                <h2 class="text-xl font-bold font-tech tracking-wider text-white">Scan History</h2>
+                            </div>
+                            <span id="history-count" class="text-[12px] px-3 py-1 rounded-full bg-white/5 border border-white/15 text-gray-400">0 scans</span>
+                        </div>
+
+                        <ul id="history-list" class="flex flex-col divide-y divide-white/10"></ul>
+
+                        <div id="history-empty" class="py-8 text-center">
+                            <p class="text-gray-400 text-[15px]">No ducks rescued yet.</p>
+                            <p class="text-gray-500 text-[13px] mt-1">Your scans will show up here.</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Bottom Nav -->
+            <nav class="fixed bottom-0 inset-x-0 z-20 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                <div class="nav-glass max-w-md mx-auto rounded-2xl h-[70px] px-2 grid grid-cols-5 items-center">
+                    <button type="button" data-nav="home" onclick="navTo('home')" class="nav-item active flex flex-col items-center gap-1">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
+                        <span class="text-[11px] font-tech tracking-wider">Home</span>
+                    </button>
+                    <button type="button" data-nav="rank" onclick="navTo('rank')" class="nav-item flex flex-col items-center gap-1">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"/></svg>
+                        <span class="text-[11px] font-tech tracking-wider">Rank</span>
+                    </button>
+                    <div class="flex justify-center">
+                        <button type="button" data-nav="scan" onclick="navTo('scan')" aria-label="Scan" class="-mt-8 w-16 h-16 rounded-full bg-[#ffe81f] text-black flex items-center justify-center shadow-[0_0_25px_rgba(255,232,31,0.55)] border-4 border-black hover:scale-105 active:scale-95 transition-transform duration-200">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 7.5V5.25A1.5 1.5 0 015.25 3.75H7.5M16.5 3.75h2.25a1.5 1.5 0 011.5 1.5V7.5M20.25 16.5v2.25a1.5 1.5 0 01-1.5 1.5H16.5M7.5 20.25H5.25a1.5 1.5 0 01-1.5-1.5V16.5M3.75 12h16.5"/></svg>
+                        </button>
+                    </div>
+                    <button type="button" data-nav="history" onclick="navTo('history')" class="nav-item flex flex-col items-center gap-1">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span class="text-[11px] font-tech tracking-wider">History</span>
+                    </button>
+                    <button type="button" data-nav="profile" onclick="navTo('profile')" class="nav-item flex flex-col items-center gap-1">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                        <span class="text-[11px] font-tech tracking-wider">Profile</span>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Toast -->
+            <div id="toast" class="toast fixed left-1/2 -translate-x-1/2 bottom-28 z-30 opacity-0 translate-y-2 pointer-events-none px-5 py-3 rounded-xl bg-black/90 border border-[#ffe81f]/40 text-[14px] text-white shadow-[0_0_20px_rgba(255,232,31,0.25)] whitespace-nowrap"></div>
         </div>
 
     </main>
@@ -382,11 +583,252 @@
             requestAnimationFrame(animateHyper);
         }
 
+        // ---------- USER / STORAGE ----------
+        const STORAGE_KEY = 'duckhunt';
+
+        function loadStore() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { users: {}, current: null };
+            } catch (e) {
+                return { users: {}, current: null };
+            }
+        }
+
+        function saveStore(store) {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); } catch (e) {}
+        }
+
+        let store = loadStore();
+
+        function currentUser() {
+            return store.current ? store.users[store.current] : null;
+        }
+
+        function signIn() {
+            const id = document.getElementById('student-id').value.trim() || 'guest';
+            if (!store.users[id]) {
+                store.users[id] = { firstName: '', lastName: '', studentId: id, scans: [] };
+            }
+            store.current = id;
+            saveStore(store);
+            navigate('login', 'home');
+        }
+
+        function register() {
+            const first = document.getElementById('reg-first').value.trim();
+            const last = document.getElementById('reg-last').value.trim();
+            const id = document.getElementById('reg-id').value.trim() || 'guest';
+            const email = document.getElementById('reg-email').value.trim();
+            const existing = store.users[id];
+            store.users[id] = {
+                firstName: first,
+                lastName: last,
+                studentId: id,
+                email: email,
+                scans: existing ? existing.scans : []
+            };
+            store.current = id;
+            saveStore(store);
+            navigate('register', 'home');
+        }
+
+        function signOut() {
+            stopScanner();
+            store.current = null;
+            saveStore(store);
+            navigate('home', 'login');
+        }
+
+        // ---------- RANKS ----------
+        const RANKS = [
+            { name: 'Rookie Cadet', min: 0 },
+            { name: 'Duck Spotter', min: 3 },
+            { name: 'Wing Pilot', min: 6 },
+            { name: 'Squadron Leader', min: 10 },
+            { name: 'Galactic Commander', min: 15 },
+            { name: 'Duck Master', min: 25 }
+        ];
+
+        function getRank(count) {
+            let idx = 0;
+            for (let i = 0; i < RANKS.length; i++) {
+                if (count >= RANKS[i].min) idx = i;
+            }
+            return { current: RANKS[idx], next: RANKS[idx + 1] || null };
+        }
+
+        // ---------- HOME RENDERING ----------
+        function renderHome() {
+            const user = currentUser();
+            const scans = user ? user.scans : [];
+
+            document.getElementById('welcome-name').textContent =
+                (user && user.firstName) ? user.firstName : (user && user.studentId !== 'guest' ? user.studentId : 'Cadet');
+
+            // Rank
+            const { current, next } = getRank(scans.length);
+            document.getElementById('rank-name').textContent = current.name;
+            document.getElementById('rank-ducks').textContent = scans.length;
+            const progress = next ? ((scans.length - current.min) / (next.min - current.min)) * 100 : 100;
+            document.getElementById('rank-progress').style.width = progress + '%';
+            document.getElementById('rank-next').textContent = next
+                ? `${next.min - scans.length} more to ${next.name}`
+                : 'Max rank achieved!';
+
+            // History
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            document.getElementById('history-count').textContent = `${scans.length} scan${scans.length === 1 ? '' : 's'}`;
+            document.getElementById('history-empty').classList.toggle('hidden', scans.length > 0);
+
+            scans.slice().reverse().forEach((scan, i) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center gap-3 py-3';
+
+                const icon = document.createElement('div');
+                icon.className = 'shrink-0 w-10 h-10 rounded-xl bg-[#ffe81f]/10 border border-[#ffe81f]/30 flex items-center justify-center font-tech font-bold text-[#ffe81f]';
+                icon.textContent = '#' + (scans.length - i);
+
+                const body = document.createElement('div');
+                body.className = 'flex-1 min-w-0';
+                const title = document.createElement('p');
+                title.className = 'text-[15px] text-white font-semibold truncate';
+                title.textContent = scan.label;
+                const time = document.createElement('p');
+                time.className = 'text-[12px] text-gray-400';
+                time.textContent = formatTime(scan.time);
+                body.append(title, time);
+
+                const check = document.createElement('span');
+                check.className = 'text-[#ffe81f]';
+                check.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>';
+
+                li.append(icon, body, check);
+                list.appendChild(li);
+            });
+        }
+
+        function formatTime(ts) {
+            const d = new Date(ts);
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · ' +
+                d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            clearTimeout(showToast.timer);
+            showToast.timer = setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+            }, 2500);
+        }
+
+        // ---------- QR SCANNER ----------
+        let qrScanner = null;
+        let scanning = false;
+
+        function setScanUI(active, message) {
+            scanning = active;
+            document.getElementById('scan-idle').classList.toggle('hidden', active);
+            document.getElementById('scan-line').classList.toggle('hidden', !active);
+            document.getElementById('scan-btn').textContent = active ? 'Stop Scanning' : 'Start Scanning';
+            const status = document.getElementById('scan-status');
+            status.textContent = active ? 'Live' : 'Idle';
+            status.classList.toggle('text-[#ffe81f]', active);
+            status.classList.toggle('border-[#ffe81f]/40', active);
+            if (message) document.getElementById('scan-idle-text').textContent = message;
+        }
+
+        async function startScanner() {
+            if (scanning) return;
+            if (typeof Html5Qrcode === 'undefined') {
+                setScanUI(false, 'Scanner failed to load. Check your connection and try again.');
+                return;
+            }
+            if (!qrScanner) qrScanner = new Html5Qrcode('qr-reader', { verbose: false });
+            setScanUI(true);
+            try {
+                await qrScanner.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, aspectRatio: 1 },
+                    onScanSuccess,
+                    () => {}
+                );
+            } catch (err) {
+                setScanUI(false, 'Camera unavailable. Allow camera access and make sure the page is served over HTTPS.');
+            }
+        }
+
+        async function stopScanner() {
+            if (!scanning || !qrScanner) return;
+            setScanUI(false);
+            try { await qrScanner.stop(); } catch (e) {}
+        }
+
+        function toggleScanner() {
+            scanning ? stopScanner() : startScanner();
+        }
+
+        function scanLabel(text) {
+            // Support QR codes like https://.../?duck=Name or plain text
+            try {
+                const url = new URL(text);
+                const duck = url.searchParams.get('duck');
+                if (duck) return duck;
+            } catch (e) {}
+            return text.length > 40 ? text.slice(0, 40) + '…' : text;
+        }
+
+        function onScanSuccess(decodedText) {
+            if (!scanning) return;
+            const user = currentUser();
+            stopScanner();
+            if (!user) return;
+
+            if (user.scans.some(s => s.code === decodedText)) {
+                showToast('You already rescued this duck!');
+                return;
+            }
+
+            const before = getRank(user.scans.length).current.name;
+            user.scans.push({ code: decodedText, label: scanLabel(decodedText), time: Date.now() });
+            saveStore(store);
+            renderHome();
+
+            const after = getRank(user.scans.length).current.name;
+            showToast(after !== before ? `Rank up! You're now a ${after}` : 'Duck rescued! 🦆');
+        }
+
+        // ---------- BOTTOM NAV ----------
+        function navTo(tab) {
+            const container = document.getElementById('home-view');
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.nav === tab);
+            });
+
+            if (tab === 'home') {
+                container.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (tab === 'rank') {
+                document.getElementById('rank-section').scrollIntoView({ behavior: 'smooth' });
+            } else if (tab === 'history') {
+                document.getElementById('history-section').scrollIntoView({ behavior: 'smooth' });
+            } else if (tab === 'scan') {
+                document.getElementById('scan-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                startScanner();
+            } else if (tab === 'profile') {
+                showToast('Profile coming soon');
+            }
+        }
+
         // Handle card transitions
         function navigate(fromTarget, toTarget) {
             const currentView = document.getElementById(fromTarget + '-view');
             const targetView = document.getElementById(toTarget + '-view');
             
+            if (fromTarget === 'home') stopScanner();
+            if (toTarget === 'home') renderHome();
+
             // 1. Fade out current view
             currentView.classList.remove('opacity-100');
             currentView.classList.add('opacity-0');
@@ -413,6 +855,15 @@
             resize();
             initStars();
             animate();
+
+            // Returning user: skip straight to home
+            if (currentUser()) {
+                document.getElementById('login-view').classList.add('hidden');
+                renderHome();
+                const home = document.getElementById('home-view');
+                home.classList.remove('hidden', 'opacity-0');
+                home.classList.add('opacity-100');
+            }
         };
     </script>
 </body>
