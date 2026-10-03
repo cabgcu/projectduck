@@ -185,11 +185,6 @@
             100% { top: 90%; }
         }
 
-        .rank-progress {
-            background: linear-gradient(90deg, #a38f00, #ffe81f);
-            box-shadow: 0 0 12px rgba(255, 232, 31, 0.5);
-            transition: width 0.8s ease;
-        }
 
         /* Bottom nav */
         .nav-glass {
@@ -336,28 +331,33 @@
                 <!-- Welcome -->
                 <section class="text-center -mt-1">
                     <p class="card-label">Welcome back</p>
-                    <h1 id="welcome-name" class="text-[34px] leading-tight font-bold font-tech tracking-wider text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.35)]">Cadet</h1>
+                    <h1 id="welcome-name" class="text-[34px] leading-tight font-bold font-tech tracking-wider text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.35)]">Rescuer</h1>
                 </section>
 
-                <!-- Rank -->
+                <!-- Rank / Leaderboard -->
                 <section id="rank-section" class="shimmer-wrapper w-full scroll-mt-6">
                     <div class="glass-inner w-full p-5">
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <p class="card-label">Leaderboard</p>
+                                <h2 class="text-xl font-bold font-tech tracking-wider text-white">Top Rescuers</h2>
+                            </div>
+                            <span id="rank-total" class="text-[12px] px-3 py-1 rounded-full bg-white/5 border border-white/15 text-gray-400">0 rescuers</span>
+                        </div>
+
+                        <!-- Your position -->
+                        <div class="flex items-center gap-4 p-4 rounded-xl bg-[#ffe81f]/[0.06] border border-[#ffe81f]/30 shadow-[0_0_20px_rgba(255,232,31,0.08)]">
                             <div class="shrink-0 w-16 h-16 rounded-2xl bg-[#ffe81f]/10 border border-[#ffe81f]/40 flex items-center justify-center shadow-[0_0_20px_rgba(255,232,31,0.2)]">
-                                <svg class="w-9 h-9 text-[#ffe81f]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.9 6.26L21.5 9l-4.9 4.52L17.8 20 12 16.77 6.2 20l1.2-6.48L2.5 9l6.6-.74L12 2z"/></svg>
+                                <span id="rank-position" class="text-[26px] font-bold font-tech text-[#ffe81f]">#–</span>
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="card-label">Current Rank</p>
-                                <h2 id="rank-name" class="text-2xl font-bold font-tech tracking-wider text-white truncate">Rookie Cadet</h2>
-                                <p class="text-[13px] text-gray-400"><span id="rank-ducks" class="text-[#ffe81f] font-semibold">0</span> ducks rescued</p>
+                                <p class="card-label">Your Rank</p>
+                                <p class="text-[15px] text-white"><span id="rank-ducks" class="text-[#ffe81f] font-semibold">0</span> ducks rescued</p>
+                                <p id="rank-next" class="text-[12px] text-gray-400 truncate"></p>
                             </div>
                         </div>
-                        <div class="mt-4">
-                            <div class="h-2 w-full rounded-full bg-white/10 overflow-hidden">
-                                <div id="rank-progress" class="rank-progress h-full rounded-full" style="width: 0%"></div>
-                            </div>
-                            <p id="rank-next" class="mt-2 text-[12px] text-gray-400 text-right">3 more to Duck Spotter</p>
-                        </div>
+
+                        <ol id="leaderboard-list" class="mt-3 flex flex-col gap-1.5"></ol>
                     </div>
                 </section>
 
@@ -639,22 +639,59 @@
             navigate('home', 'login');
         }
 
-        // ---------- RANKS ----------
-        const RANKS = [
-            { name: 'Rookie Cadet', min: 0 },
-            { name: 'Duck Spotter', min: 3 },
-            { name: 'Wing Pilot', min: 6 },
-            { name: 'Squadron Leader', min: 10 },
-            { name: 'Galactic Commander', min: 15 },
-            { name: 'Duck Master', min: 25 }
+        // ---------- LEADERBOARD ----------
+        const LEADERBOARD_SIZE = 5;
+
+        // Sample rescuers so the leaderboard isn't empty during development.
+        // Replace getRescuers() with a call to the real leaderboard API.
+        const SAMPLE_RESCUERS = [
+            { id: 'sample-1', name: 'Maverick Q.', ducks: 18 },
+            { id: 'sample-2', name: 'Luna W.', ducks: 14 },
+            { id: 'sample-3', name: 'Jett P.', ducks: 11 },
+            { id: 'sample-4', name: 'Nova R.', ducks: 9 },
+            { id: 'sample-5', name: 'Skye D.', ducks: 7 },
+            { id: 'sample-6', name: 'Orion T.', ducks: 5 },
+            { id: 'sample-7', name: 'Echo M.', ducks: 3 }
         ];
 
-        function getRank(count) {
-            let idx = 0;
-            for (let i = 0; i < RANKS.length; i++) {
-                if (count >= RANKS[i].min) idx = i;
-            }
-            return { current: RANKS[idx], next: RANKS[idx + 1] || null };
+        function displayName(user) {
+            if (user.firstName) return user.firstName + (user.lastName ? ' ' + user.lastName[0] + '.' : '');
+            return user.studentId !== 'guest' ? user.studentId : 'Rescuer';
+        }
+
+        function getRescuers() {
+            const me = currentUser();
+            const local = Object.values(store.users)
+                .filter(u => u.studentId !== 'guest' || u === me)
+                .map(u => ({ id: u.studentId, name: displayName(u), ducks: u.scans.length }));
+            // Stable sort: on ties, rescuers already on the board stay ahead
+            return SAMPLE_RESCUERS.concat(local).sort((a, b) => b.ducks - a.ducks);
+        }
+
+        function getPosition(rescuers, id) {
+            return rescuers.findIndex(r => r.id === id) + 1;
+        }
+
+        function leaderboardRow(rescuer, position, isMe) {
+            const medal = ['text-[#ffe81f]', 'text-slate-300', 'text-amber-600'][position - 1] || 'text-gray-500';
+            const li = document.createElement('li');
+            li.className = 'flex items-center gap-3 px-3 py-2.5 rounded-xl border ' +
+                (isMe ? 'bg-[#ffe81f]/10 border-[#ffe81f]/40' : 'bg-white/[0.03] border-white/10');
+
+            const pos = document.createElement('span');
+            pos.className = 'w-8 text-center font-tech font-bold text-[18px] ' + medal;
+            pos.textContent = position;
+
+            const name = document.createElement('span');
+            name.className = 'flex-1 min-w-0 truncate text-[15px] ' + (isMe ? 'text-white font-semibold' : 'text-gray-200');
+            name.textContent = isMe ? rescuer.name + ' (You)' : rescuer.name;
+
+            const ducks = document.createElement('span');
+            ducks.className = 'text-[14px] font-semibold ' + (isMe ? 'text-[#ffe81f]' : 'text-gray-300');
+            ducks.textContent = rescuer.ducks + ' 🦆';
+
+            li.append(pos, name, ducks);
+            return li;
         }
 
         // ---------- HOME RENDERING ----------
@@ -663,17 +700,32 @@
             const scans = user ? user.scans : [];
 
             document.getElementById('welcome-name').textContent =
-                (user && user.firstName) ? user.firstName : (user && user.studentId !== 'guest' ? user.studentId : 'Cadet');
+                (user && user.firstName) ? user.firstName : (user && user.studentId !== 'guest' ? user.studentId : 'Rescuer');
 
-            // Rank
-            const { current, next } = getRank(scans.length);
-            document.getElementById('rank-name').textContent = current.name;
+            // Leaderboard
+            const rescuers = getRescuers();
+            const myId = user ? user.studentId : null;
+            const myPos = getPosition(rescuers, myId);
+            document.getElementById('rank-total').textContent = `${rescuers.length} rescuers`;
+            document.getElementById('rank-position').textContent = myPos ? '#' + myPos : '#–';
             document.getElementById('rank-ducks').textContent = scans.length;
-            const progress = next ? ((scans.length - current.min) / (next.min - current.min)) * 100 : 100;
-            document.getElementById('rank-progress').style.width = progress + '%';
-            document.getElementById('rank-next').textContent = next
-                ? `${next.min - scans.length} more to ${next.name}`
-                : 'Max rank achieved!';
+            const ahead = myPos > 1 ? rescuers[myPos - 2] : null;
+            document.getElementById('rank-next').textContent = ahead
+                ? `${ahead.ducks - scans.length + 1} more to pass ${ahead.name}`
+                : 'You\'re the top rescuer!';
+
+            const board = document.getElementById('leaderboard-list');
+            board.innerHTML = '';
+            rescuers.slice(0, LEADERBOARD_SIZE).forEach((r, i) => {
+                board.appendChild(leaderboardRow(r, i + 1, r.id === myId));
+            });
+            if (myPos > LEADERBOARD_SIZE) {
+                const gap = document.createElement('li');
+                gap.className = 'text-center text-gray-500 leading-none py-0.5';
+                gap.textContent = '···';
+                board.appendChild(gap);
+                board.appendChild(leaderboardRow(rescuers[myPos - 1], myPos, true));
+            }
 
             // History
             const list = document.getElementById('history-list');
@@ -791,13 +843,13 @@
                 return;
             }
 
-            const before = getRank(user.scans.length).current.name;
+            const before = getPosition(getRescuers(), user.studentId);
             user.scans.push({ code: decodedText, label: scanLabel(decodedText), time: Date.now() });
             saveStore(store);
             renderHome();
 
-            const after = getRank(user.scans.length).current.name;
-            showToast(after !== before ? `Rank up! You're now a ${after}` : 'Duck rescued! 🦆');
+            const after = getPosition(getRescuers(), user.studentId);
+            showToast(after < before ? `Rank up! You're now #${after}` : 'Duck rescued! 🦆');
         }
 
         // ---------- BOTTOM NAV ----------
