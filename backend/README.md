@@ -1,135 +1,66 @@
-# Duck Hunt backend: Google Sheet ⇄ Supabase ⇄ App
+# Duck Hunt backend
+
+Everything runs on Supabase. There's no Google Sheet anymore.
 
 ```
- Google Sheet  ⇄  Apps Script  ⇄  Supabase  ⇄  App (index.html)
- (master list)    (sync)          (database)    (players scan here)
+ index.html  (students)  ──┐
+                           ├──  Supabase  (ducks, players, duck_log)
+ admin.html  (admins)    ──┘
 ```
 
-- **Supabase** is the live database. The app talks only to Supabase.
-- **The Google Sheet** is your master view. Scans and points show up there within seconds. Edits you make to **Master Ducks** or **Player** are pushed to Supabase.
-- **Duck Log** is written by the app. **Erasing a row undoes that scan**: the duck goes back to unclaimed and the player loses the points. Any other edits there are overwritten.
-- As a safety net, the sheet is fully refreshed from Supabase every 10 minutes.
+- **`index.html`** is the student app: register, sign in, scan ducks, leaderboard and history.
+- **`admin.html`** is the Command Center:
+  - **Live Scans:** a real-time feed of every claim. **Undo** removes a scan; the player loses the points and the duck can be found again. **Export CSV** downloads every scan.
+  - **Ducks:** add, edit and delete ducks, and generate random QR codes. You can view or download a single QR as a PNG, or **Print QR Codes** to get printable labels for every duck. **Re-open** makes a claimed duck findable again and takes its points back.
+  - **Rescuers:** search, edit names, email and points, delete a rescuer (their ducks re-open), and export to CSV.
+- **`supabase.sql`** creates the whole database. It's safe to re-run, and also removes the old Google Sheet sync if it was installed.
 
-| Sheet tab      | Supabase table | Direction | Columns |
-|----------------|----------------|-----------|---------|
-| `Master Ducks` | `ducks`        | ⇄ both    | Duck ID, Duck Type, Points, QR Code, Location, Claimed |
-| `Duck Log`     | `duck_log`     | → sheet, plus erasing rows | Duck ID, Student ID, Timestamp, Type, Log ID |
-| `Player`       | `players`      | ⇄ both    | First Name, Last Name, Student ID, Email, Points, Codes Scanned |
+## Game rules
 
-Headers are matched by name, so column order doesn't matter, and extra columns (like a Notes column) are left alone. If your tabs are named differently, change `SHEET_NAMES` at the top of `google-apps-script.gs`.
-
-## Game rules (as built)
-
-- **Each duck can be claimed once**: the first rescuer to scan it gets its points, and the duck is marked **Claimed**. Anyone who scans it later sees "already claimed".
-- **Erasing a Duck Log row** (deleting the row, or selecting it and pressing Delete) removes that scan from Supabase. The duck's **Claimed** goes back to unticked, the player loses the duck's **Points** and one **Codes Scanned**, and anyone can claim the duck again. Deleting a scan in Supabase's Table Editor does the same and removes the sheet row.
-  - Only scans the sheet has already shown count. A brand-new scan that hasn't reached the sheet yet is never deleted.
-  - Erasing more than 10 rows at once does nothing automatically. Use **Duck Hunt → Sync erased Duck Log rows**, which asks before deleting; otherwise the rows come back on the next pull.
-  - The **Log ID** column is how the script matches rows to Supabase. It's added automatically. Don't edit it.
-- **Unticking Claimed** on Master Ducks re-opens the duck, but **doesn't** take points back. To undo a scan completely, erase its Duck Log row instead.
-- **The leaderboard ranks by Points.** Players with the same points share a place.
-
-To let *every* rescuer claim *every* duck once instead, change the `if v_duck.claimed` check in `claim_duck` in `supabase.sql`.
-
----
+- **Each duck can be claimed once**, by the first rescuer to scan it.
+- **The leaderboard ranks by points.** Players with equal points share a place.
+- **Undoing a scan, or re-opening a duck,** takes the points back and lets anyone claim the duck again.
+- **Deleting a duck** retires it: its QR code stops working, but rescuers keep the points they already earned from it.
+- **Deleting a rescuer** removes their scans and re-opens the ducks they found.
 
 ## Setup
 
-### 1. Supabase: create the database
+### 1. Create or update the database
 
-1. Create a project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor**, paste all of [`supabase.sql`](./supabase.sql), and click **Run**.
-3. Open **Project Settings → API Keys** and note three values:
-   - **Project URL**: `https://<ref>.supabase.co`
-   - **Publishable key** (`sb_publishable_…`, or the legacy `anon` key). This goes in the app.
-   - **Secret key** (`sb_secret_…`, or the legacy `service_role` key). This goes in Apps Script **only**.
+In the Supabase dashboard, open **SQL Editor**, paste all of [`supabase.sql`](./supabase.sql) and click **Run**. Re-run it whenever this file changes.
 
-### 2. App: connect to Supabase
+### 2. Create your admin account
 
-In `index.html`, set:
+1. Go to **Authentication → Users → Add user → Create new user**. Enter your email and a strong password, and tick **Auto Confirm User**.
+2. In the **SQL Editor**, make that account an admin (use your email):
 
-```js
-const SUPABASE_URL = 'https://<ref>.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_…';
-```
+   ```sql
+   insert into private.admins (user_id)
+   select id from auth.users where email = 'you@example.com'
+   on conflict do nothing;
+   ```
 
-The publishable key is safe to put in the page. **Never put the secret key in `index.html`.**
+3. Recommended: go to **Authentication → Sign In / Providers** and turn off **Allow new users to sign up**. Admins are the only people who need Supabase accounts; students don't use Supabase Auth.
 
-### 3. Google Sheet: add the sync script
-
-1. In the spreadsheet, open **Extensions → Apps Script**.
-2. Replace `Code.gs` with the contents of [`google-apps-script.gs`](./google-apps-script.gs) and save.
-3. Open **Project Settings (⚙) → Script properties** and add:
-
-   | Property              | Value |
-   |-----------------------|-------|
-   | `SUPABASE_URL`        | your Project URL |
-   | `SUPABASE_SECRET_KEY` | your Secret key |
-   | `WEBHOOK_SECRET`      | a long random string you make up (e.g. 40 random letters/numbers) |
-
-4. Back in the editor, pick **`setupTriggers`** in the function dropdown and click **Run**. Approve the permissions prompt. This installs the on-edit push, the erased-row check and the 10-minute refresh. **Run it again after updating the script**, so new triggers get installed.
-5. Click **Deploy → New deployment → Select type: Web app**, then:
-   - **Execute as:** Me
-   - **Who has access:** Anyone
-
-   Click **Deploy** and copy the **Web app URL** (ends in `/exec`).
-
-### 4. Supabase: send live updates to the sheet
-
-In the Supabase **SQL Editor**, run this with your values filled in:
+Repeat step 2 for each extra admin. To remove one:
 
 ```sql
-insert into private.sheet_sync (webhook_url, secret)
-values ('https://script.google.com/macros/s/XXXX/exec', 'the same WEBHOOK_SECRET')
-on conflict (id) do update set webhook_url = excluded.webhook_url, secret = excluded.secret;
+delete from private.admins
+where user_id = (select id from auth.users where email = 'them@example.com');
 ```
 
-### 5. Load your existing data
+### 3. Open the admin page
 
-Reload the spreadsheet so the **Duck Hunt** menu appears, then:
+Open `admin.html` from the same place you host `index.html` (for example `https://<your-site>/admin.html`) and sign in. The **Live** dot in the corner lights up when real-time updates are connected. If they drop, the page still refreshes every 30 seconds.
 
-1. **Duck Hunt → Push Master Ducks & Players to Supabase**. This copies your current ducks and players up. Rows without a Duck ID or QR Code are skipped.
-2. **Duck Hunt → Pull everything from Supabase**. This rewrites the tabs from Supabase so everything matches, and fills in the **Log ID** column. Erasing Duck Log rows only takes effect after this first pull.
+### 4. Add ducks and print QR codes
 
-Existing rows in **Duck Log** are not pushed. Supabase becomes the record of scans from this point on.
+1. **Ducks → + Add Duck.** A random QR code is filled in for you.
+2. **Print QR Codes** prints a label for every duck, with its ID, type and points. Stick each label on its duck.
 
-### 6. Test it
+## Security notes
 
-1. Register in the app. A row should appear in **Player** within a few seconds.
-2. Scan a duck's QR code. **Duck Log** gets a row, the duck shows **Claimed**, and the player's **Points** and **Codes Scanned** go up.
-3. Change a duck's **Points** in the sheet. The change shows in Supabase's Table Editor (`ducks`).
-
----
-
-## Good to know
-
-- **QR codes:** the **QR Code** column must contain exactly the text encoded in the printed QR code. Use long random codes (for example `DUCK-7f3k9q2x`), not guessable ones like `1`, `2`, `3`.
-- **Deleting a duck:** delete it in Supabase (Table Editor → `ducks`) and the sheet row is removed automatically. Deleting a row in the sheet does **not** delete it in Supabase.
-- **Updating the script:** after editing the Apps Script, use **Deploy → Manage deployments → Edit → Version: New version** so the web app URL keeps working with the new code.
-- **Security:** sign-in is by Student ID only, with no password, so anyone who knows another student's ID could sign in as them. Before a real launch, add Supabase Auth (for example an email code sent to `@my.gcu.edu`).
-- **Troubleshooting live updates:** see below.
-
-## Live updates not showing up?
-
-If the sheet only changes when you run **Pull everything**, Supabase's live updates aren't reaching the sheet. Run this in the Supabase **SQL Editor**:
-
-```sql
-select * from private.sheet_sync;
-
-select created, status_code, error_msg, left(content::text, 120) as response
-from net._http_response
-order by created desc
-limit 10;
-```
-
-| What you see | Cause | Fix |
-|---|---|---|
-| First query returns **no rows** | Supabase doesn't know where to send updates | Run setup step 4 |
-| Second query returns **no rows**, even right after a scan | The triggers aren't installed | Re-run `supabase.sql` |
-| `error_msg` mentions **timeout** | The script took longer than Supabase waited | Re-run `supabase.sql`; it now waits 30 seconds |
-| **401 / 403**, or a response mentioning **Sign in** | The web app isn't public | Deploy → Manage deployments → Edit → **Who has access: Anyone** |
-| **404** | Wrong or deleted web app URL | Copy the current `/exec` URL into step 4 again |
-| **302** | Google received the update (this is normal) | Check **Apps Script → Executions** for `doPost` runs. The log says why an update was rejected, e.g. *secret does not match WEBHOOK_SECRET* |
-
-**Quick check:** open the `/exec` URL in a private or incognito window. You should see *"Duck Hunt sync is running."* If you get a Google sign-in page instead, the web app isn't set to **Anyone**.
-
-**After changing the script**, always use **Deploy → Manage deployments → Edit → Version: New version → Deploy**. Saving the code alone doesn't update the live web app.
+- The page only contains the **publishable** key. Admin powers come from signing in with an account listed in `private.admins`; every admin action is checked in the database. Never put the secret key in a page.
+- **Students sign in with their Student ID only**, with no password, so anyone who knows another student's ID can sign in as them. Before a real launch, add verification, for example an email code sent to their `@my.gcu.edu` address.
+- **Keep QR codes random**, as generated by the admin page, so nobody can guess them.
+- **Change your secret key.** It was pasted into a chat earlier, and nothing in this project needs it anymore. Create a new one in **Project Settings → API Keys** and delete the old one.

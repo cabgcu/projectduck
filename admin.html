@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Duck Hunt Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #000;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        #starfield {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .font-tech { font-family: 'Rajdhani', sans-serif; }
+
+        .shimmer-wrapper {
+            position: relative;
+            padding: 2px;
+            border-radius: 1.25rem;
+            background: linear-gradient(60deg, #000000 0%, #0a0a0a 25%, #171717 45%, #cbd5e1 50%, #171717 55%, #0a0a0a 75%, #000000 100%);
+            background-size: 300% 300%;
+            animation: glide-shimmer 7s ease-in-out infinite alternate;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+        }
+
+        @keyframes glide-shimmer {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        .glass-inner {
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: calc(1.25rem - 2px);
+            box-shadow:
+                inset 0 1px 1px rgba(255, 255, 255, 0.08),
+                inset 1px 0 1px rgba(255, 255, 255, 0.03),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.9),
+                inset -1px 0 2px rgba(0, 0, 0, 0.9),
+                0 25px 50px -12px rgba(0, 0, 0, 1);
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05), 0 4px 10px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.5);
+            outline: none;
+            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1), 0 0 15px rgba(255, 255, 255, 0.15);
+        }
+
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 30px #0a0a0a inset !important;
+            -webkit-text-fill-color: white !important;
+        }
+
+        .card-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 13px;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: rgba(203, 213, 225, 0.7);
+        }
+
+        @media (max-width: 640px) {
+            .card-label { font-size: 11px; letter-spacing: 0.15em; }
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .btn {
+            border-radius: 0.75rem;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.6; cursor: wait; }
+        .btn-ghost { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; }
+        .btn-ghost:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.4); box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
+        .btn-gold { background: rgba(255, 232, 31, 0.1); border: 1px solid rgba(255, 232, 31, 0.4); color: #fff; }
+        .btn-gold:hover { background: rgba(255, 232, 31, 0.2); border-color: rgba(255, 232, 31, 0.6); box-shadow: 0 0 15px rgba(255, 232, 31, 0.3); }
+        .btn-danger { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: #fff; }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.6); box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+
+        .chip {
+            font-size: 12px;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(156, 163, 175, 1);
+            white-space: nowrap;
+        }
+        .chip-gold { color: #ffe81f; border-color: rgba(255, 232, 31, 0.4); background: rgba(255, 232, 31, 0.08); }
+
+        .tab { color: rgba(156, 163, 175, 1); transition: all 0.25s ease; }
+        .tab:hover { color: #fff; }
+        .tab.active {
+            color: #000;
+            background: #ffe81f;
+            box-shadow: 0 0 20px rgba(255, 232, 31, 0.45);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 9999px;
+            background: #6b7280;
+        }
+        .live-dot.on {
+            background: #ffe81f;
+            box-shadow: 0 0 10px rgba(255, 232, 31, 0.9);
+            animation: pulse-dot 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+
+        .flash { animation: flash-row 2.4s ease-out; }
+        @keyframes flash-row {
+            0% { background: rgba(255, 232, 31, 0.25); }
+            100% { background: transparent; }
+        }
+
+        .toast { transition: opacity 0.3s ease, transform 0.3s ease; }
+
+        .qr-frame canvas, .qr-frame img { width: 100%; height: auto; image-rendering: pixelated; }
+
+        /* Printable QR labels */
+        #print-area { display: none; }
+        @media print {
+            @page { margin: 12mm; }
+            body { background: #fff !important; }
+            body > *:not(#print-area) { display: none !important; }
+            #print-area {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10mm;
+                color: #000;
+                font-family: 'Inter', sans-serif;
+            }
+            .print-label {
+                break-inside: avoid;
+                border: 1px dashed #999;
+                border-radius: 4mm;
+                padding: 5mm;
+                text-align: center;
+            }
+            .print-label canvas { display: none !important; }
+            .print-label img { width: 100%; height: auto; display: block !important; }
+        }
+    </style>
+</head>
+<body class="text-white antialiased selection:bg-gray-500/30">
+
+    <canvas id="starfield"></canvas>
+
+    <!-- LOGIN -->
+    <main id="login-view" class="hidden relative z-10 min-h-screen w-full px-4 flex justify-center items-center">
+        <div class="shimmer-wrapper w-full max-w-[380px]">
+            <div class="glass-inner w-full p-8 sm:p-10 flex flex-col items-center">
+                <img src="https://i.imgur.com/f4kE3Fg.png" alt="Duck Hunt Logo" class="h-32 w-auto max-w-full object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                <p class="card-label mt-2">Admin</p>
+                <h1 class="text-2xl font-bold font-tech tracking-wider text-white mb-6">Command Center</h1>
+
+                <form id="login-form" class="flex flex-col w-full gap-4">
+                    <input id="login-email" type="email" autocomplete="username" placeholder="Admin Email" class="glass-input w-full rounded-xl px-4 py-4 text-center text-[16px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
+                    <input id="login-password" type="password" autocomplete="current-password" placeholder="Password" class="glass-input w-full rounded-xl px-4 py-4 text-center text-[16px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
+                    <p id="login-error" class="hidden text-center text-[14px] text-[#ffe81f]"></p>
+                    <button id="login-btn" type="submit" class="btn btn-gold w-full text-[17px] py-4 mt-2">Sign In</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- DASHBOARD -->
+    <div id="admin-view" class="hidden relative z-10 min-h-screen">
+        <div class="w-full max-w-6xl mx-auto px-4 pt-6 pb-16 flex flex-col gap-5">
+
+            <!-- Header -->
+            <header class="flex items-center gap-4">
+                <img src="https://i.imgur.com/f4kE3Fg.png" alt="Duck Hunt" class="h-11 sm:h-14 w-auto max-w-[88px] sm:max-w-[160px] object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                <div class="flex-1 min-w-0">
+                    <p class="card-label">Admin</p>
+                    <h1 class="text-xl sm:text-3xl font-bold font-tech tracking-wider text-white leading-tight">Command Center</h1>
+                </div>
+                <span class="chip flex items-center gap-2"><span id="live-dot" class="live-dot"></span><span id="live-label" class="hidden sm:inline">Connecting</span></span>
+                <button type="button" data-action="sign-out" aria-label="Sign out" class="p-2 rounded-xl bg-white/5 border border-white/15 text-gray-400 hover:text-white hover:border-white/40 hover:bg-white/10 transition-all duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+                </button>
+            </header>
+
+            <!-- Stats -->
+            <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div class="shimmer-wrapper"><div class="glass-inner p-4 sm:p-5 h-full">
+                    <p class="card-label">Rescuers</p>
+                    <p id="stat-rescuers" class="text-3xl sm:text-4xl font-bold font-tech text-white">0</p>
+                </div></div>
+                <div class="shimmer-wrapper"><div class="glass-inner p-4 sm:p-5 h-full">
+                    <p class="card-label">Ducks Claimed</p>
+                    <p class="text-3xl sm:text-4xl font-bold font-tech text-white"><span id="stat-claimed" class="text-[#ffe81f]">0</span><span class="text-gray-500 text-2xl"> / <span id="stat-ducks">0</span></span></p>
+                </div></div>
+                <div class="shimmer-wrapper"><div class="glass-inner p-4 sm:p-5 h-full">
+                    <p class="card-label">Total Scans</p>
+                    <p id="stat-scans" class="text-3xl sm:text-4xl font-bold font-tech text-white">0</p>
+                </div></div>
+                <div class="shimmer-wrapper"><div class="glass-inner p-4 sm:p-5 h-full">
+                    <p class="card-label">Points Awarded</p>
+                    <p id="stat-points" class="text-3xl sm:text-4xl font-bold font-tech text-white">0</p>
+                </div></div>
+            </section>
+
+            <!-- Tabs -->
+            <nav class="flex gap-2 p-1.5 rounded-2xl bg-black/80 border border-white/10 overflow-x-auto no-scrollbar">
+                <button type="button" data-action="tab" data-tab="live" class="tab active flex-1 min-w-[110px] py-2.5 rounded-xl font-tech font-bold tracking-wider text-[16px]">Live Scans</button>
+                <button type="button" data-action="tab" data-tab="ducks" class="tab flex-1 min-w-[110px] py-2.5 rounded-xl font-tech font-bold tracking-wider text-[16px]">Ducks</button>
+                <button type="button" data-action="tab" data-tab="rescuers" class="tab flex-1 min-w-[110px] py-2.5 rounded-xl font-tech font-bold tracking-wider text-[16px]">Rescuers</button>
+            </nav>
+
+            <!-- Live Scans -->
+            <section id="panel-live" class="shimmer-wrapper">
+                <div class="glass-inner p-5">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                        <div>
+                            <p class="card-label">Feed</p>
+                            <h2 class="text-xl font-bold font-tech tracking-wider text-white">Live Scans</h2>
+                        </div>
+                        <button type="button" data-action="export-scans" class="btn btn-ghost text-[14px] px-4 py-2">Export CSV</button>
+                    </div>
+                    <ul id="scan-list" class="flex flex-col divide-y divide-white/10"></ul>
+                    <p id="scan-empty" class="hidden py-10 text-center text-gray-400">No scans yet. They'll appear here the moment a rescuer claims a duck.</p>
+                </div>
+            </section>
+
+            <!-- Ducks -->
+            <section id="panel-ducks" class="hidden shimmer-wrapper">
+                <div class="glass-inner p-5">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <div>
+                            <p class="card-label">Master List</p>
+                            <h2 class="text-xl font-bold font-tech tracking-wider text-white">Ducks</h2>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" data-action="print-qr" class="btn btn-ghost text-[14px] px-4 py-2">Print QR Codes</button>
+                            <button type="button" data-action="add-duck" class="btn btn-gold text-[14px] px-4 py-2">+ Add Duck</button>
+                        </div>
+                    </div>
+                    <input id="duck-search" type="search" placeholder="Search ducks by ID, type or location" class="glass-input w-full rounded-xl px-4 py-3 text-[15px] text-white placeholder-gray-400 mb-4">
+                    <div id="duck-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                    <p id="duck-empty" class="hidden py-10 text-center text-gray-400"></p>
+                </div>
+            </section>
+
+            <!-- Rescuers -->
+            <section id="panel-rescuers" class="hidden shimmer-wrapper">
+                <div class="glass-inner p-5">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <div>
+                            <p class="card-label">Leaderboard</p>
+                            <h2 class="text-xl font-bold font-tech tracking-wider text-white">Rescuers</h2>
+                        </div>
+                        <button type="button" data-action="export-rescuers" class="btn btn-ghost text-[14px] px-4 py-2">Export CSV</button>
+                    </div>
+                    <input id="rescuer-search" type="search" placeholder="Search by name, Student ID or email" class="glass-input w-full rounded-xl px-4 py-3 text-[15px] text-white placeholder-gray-400 mb-4">
+                    <ul id="rescuer-list" class="flex flex-col gap-2"></ul>
+                    <p id="rescuer-empty" class="hidden py-10 text-center text-gray-400"></p>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="overlay" class="hidden fixed inset-0 z-40 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="shimmer-wrapper w-full max-w-md my-auto">
+            <div id="modal" class="glass-inner w-full p-6"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast fixed left-1/2 -translate-x-1/2 bottom-6 z-50 opacity-0 translate-y-2 pointer-events-none px-5 py-3 rounded-xl bg-black/90 border border-[#ffe81f]/40 text-[14px] text-white shadow-[0_0_20px_rgba(255,232,31,0.25)] max-w-[calc(100vw-2rem)] text-center"></div>
+
+    <div id="print-area"></div>
+
+    <script>
+        // ---------- STARFIELD ----------
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let width, height, stars = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function makeStar(initial) {
+            const z = Math.random() * 2 + 0.1;
+            return {
+                x: Math.random() * width,
+                y: initial ? Math.random() * height : -10,
+                z,
+                radius: z * 0.7,
+                speed: z * 0.5 + 0.1,
+                baseAlpha: Math.random() * 0.5 + 0.3,
+                twinkle: Math.random() * 0.02 + 0.005,
+                phase: Math.random() * Math.PI * 2
+            };
+        }
+
+        function initStars() {
+            stars = Array.from({ length: 300 }, () => makeStar(true));
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, width, height);
+            stars.forEach((s, i) => {
+                s.y += s.speed;
+                s.phase += s.twinkle;
+                if (s.y > height + 10) stars[i] = makeStar(false);
+                const alpha = Math.max(0, Math.min(1, s.baseAlpha + Math.sin(s.phase) * 0.2));
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.fill();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => { resize(); initStars(); });
+
+        // ---------- SUPABASE ----------
+        // Same project as index.html. Admin access comes from signing in with
+        // an account listed in private.admins, never from a key in this page.
+        const SUPABASE_URL = 'https://cvfzoxlqozmopavmlaxt.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_VKivvEek6IsBq6GrsLp1bw_39zjVpbA';
+
+        const db = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+        async function rpc(name, params) {
+            const { data, error } = await db.rpc(name, params || {});
+            if (error) throw error;
+            return data;
+        }
+
+        // ---------- STATE ----------
+        const state = { ducks: [], players: [], scans: [], total_scans: 0 };
+        let activeTab = 'live';
+        let channel = null;
+        let reloadTimer = null;
+        let pollTimer = null;
+        let seenScanIds = null;
+
+        // ---------- HELPERS ----------
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.remove('opacity-0', 'translate-y-2');
+            clearTimeout(showToast.timer);
+            showToast.timer = setTimeout(() => toast.classList.add('opacity-0', 'translate-y-2'), 3000);
+        }
+
+        function timeAgo(ts) {
+            const seconds = Math.round((Date.now() - new Date(ts).getTime()) / 1000);
+            if (seconds < 45) return 'just now';
+            if (seconds < 3600) return `${Math.round(seconds / 60)} min ago`;
+            if (seconds < 86400) return `${Math.round(seconds / 3600)} hr ago`;
+            const d = new Date(ts);
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · ' +
+                d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        }
+
+        function fullName(p) {
+            return [p.first_name, p.last_name].filter(Boolean).join(' ') || p.student_id;
+        }
+
+        function duckName(type) {
+            return type ? `${type} Duck` : 'Duck';
+        }
+
+        function randomCode() {
+            const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            const bytes = crypto.getRandomValues(new Uint8Array(10));
+            return 'DUCK-' + Array.from(bytes, b => alphabet[b % alphabet.length]).join('');
+        }
+
+        function downloadCSV(filename, header, rows) {
+            const cell = v => {
+                const s = String(v ?? '');
+                return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+            };
+            const csv = [header, ...rows].map(r => r.map(cell).join(',')).join('\n');
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+            link.download = filename;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        }
+
+        async function busy(button, task) {
+            if (!button || button.disabled) return;
+            const label = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Working…';
+            try {
+                await task();
+            } finally {
+                button.disabled = false;
+                button.textContent = label;
+            }
+        }
+
+        // ---------- AUTH ----------
+        function showLogin(message) {
+            document.getElementById('admin-view').classList.add('hidden');
+            document.getElementById('login-view').classList.remove('hidden');
+            const error = document.getElementById('login-error');
+            error.textContent = message || '';
+            error.classList.toggle('hidden', !message);
+        }
+
+        async function enterAdmin() {
+            let isAdmin = false;
+            try {
+                isAdmin = await rpc('is_admin');
+            } catch (err) {
+                return showLogin(err.message);
+            }
+            if (!isAdmin) {
+                await db.auth.signOut();
+                return showLogin('This account isn\'t an admin.');
+            }
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('admin-view').classList.remove('hidden');
+            await load();
+            subscribe();
+        }
+
+        document.getElementById('login-form').addEventListener('submit', event => {
+            event.preventDefault();
+            const button = document.getElementById('login-btn');
+            busy(button, async () => {
+                const { error } = await db.auth.signInWithPassword({
+                    email: document.getElementById('login-email').value.trim(),
+                    password: document.getElementById('login-password').value
+                });
+                if (error) return showLogin(error.message);
+                await enterAdmin();
+            });
+        });
+
+        async function signOut() {
+            if (channel) db.removeChannel(channel);
+            channel = null;
+            clearInterval(pollTimer);
+            seenScanIds = null;
+            await db.auth.signOut();
+            showLogin();
+        }
+
+        // ---------- DATA ----------
+        async function load() {
+            try {
+                const data = await rpc('admin_overview');
+                Object.assign(state, data);
+                render();
+            } catch (err) {
+                showToast(err.message || 'Couldn\'t load data.');
+            }
+        }
+
+        function scheduleLoad() {
+            clearTimeout(reloadTimer);
+            reloadTimer = setTimeout(load, 300);
+        }
+
+        function setLive(on, label) {
+            document.getElementById('live-dot').classList.toggle('on', on);
+            document.getElementById('live-label').textContent = label;
+        }
+
+        function subscribe() {
+            if (channel) db.removeChannel(channel);
+            channel = db.channel('admin-live');
+            ['duck_log', 'players', 'ducks'].forEach(table => {
+                channel.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleLoad);
+            });
+            channel.subscribe(status => {
+                if (status === 'SUBSCRIBED') setLive(true, 'Live');
+                else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') setLive(false, 'Offline');
+            });
+            // Backup in case realtime drops; also keeps "x min ago" fresh
+            clearInterval(pollTimer);
+            pollTimer = setInterval(() => { if (!document.hidden) load(); }, 30000);
+        }
+
+        // ---------- RENDERING ----------
+        function render() {
+            renderStats();
+            renderScans();
+            renderDucks();
+            renderRescuers();
+        }
+
+        function renderStats() {
+            const claimed = state.ducks.filter(d => d.claimed).length;
+            document.getElementById('stat-rescuers').textContent = state.players.length;
+            document.getElementById('stat-claimed').textContent = claimed;
+            document.getElementById('stat-ducks').textContent = state.ducks.length;
+            document.getElementById('stat-scans').textContent = state.total_scans;
+            document.getElementById('stat-points').textContent =
+                state.players.reduce((sum, p) => sum + p.points, 0).toLocaleString();
+        }
+
+        function renderScans() {
+            const fresh = seenScanIds ? new Set(state.scans.filter(s => !seenScanIds.has(s.id)).map(s => s.id)) : new Set();
+            seenScanIds = new Set(state.scans.map(s => s.id));
+
+            document.getElementById('scan-empty').classList.toggle('hidden', state.scans.length > 0);
+            document.getElementById('scan-list').innerHTML = state.scans.map(s => `
+                <li class="flex items-center gap-3 py-3 px-2 -mx-2 rounded-xl ${fresh.has(s.id) ? 'flash' : ''}">
+                    <div class="shrink-0 w-10 h-10 rounded-xl bg-[#ffe81f]/10 border border-[#ffe81f]/30 flex items-center justify-center text-lg">🦆</div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[15px] text-white truncate"><span class="font-semibold">${esc(s.player_name || s.student_id)}</span> <span class="text-gray-400">rescued</span> <span class="font-semibold">${esc(duckName(s.duck_type))}</span></p>
+                        <p class="text-[12px] text-gray-400 truncate">${esc(s.duck_id || 'Retired duck')} · ID ${esc(s.student_id)} · ${esc(timeAgo(s.scanned_at))}</p>
+                    </div>
+                    <span class="text-[16px] font-bold font-tech text-[#ffe81f]">+${esc(s.points)}</span>
+                    <button type="button" data-action="undo-scan" data-id="${esc(s.id)}" class="btn btn-ghost text-[13px] px-3 py-1.5">Undo</button>
+                </li>`).join('');
+        }
+
+        function renderDucks() {
+            const term = document.getElementById('duck-search').value.trim().toLowerCase();
+            const ducks = state.ducks.filter(d => !term ||
+                [d.duck_id, d.duck_type, d.location, d.qr_code].some(v => String(v || '').toLowerCase().includes(term)));
+
+            const empty = document.getElementById('duck-empty');
+            empty.textContent = state.ducks.length ? 'No ducks match your search.' : 'No ducks yet. Add your first duck to start the hunt.';
+            empty.classList.toggle('hidden', ducks.length > 0);
+
+            document.getElementById('duck-list').innerHTML = ducks.map(d => `
+                <div class="rounded-xl border ${d.claimed ? 'border-[#ffe81f]/30 bg-[#ffe81f]/[0.04]' : 'border-white/10 bg-white/[0.03]'} p-4 flex flex-col gap-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-[17px] font-bold font-tech tracking-wider text-white truncate">${esc(d.duck_id)}</p>
+                            <p class="text-[14px] text-gray-300 truncate">${esc(duckName(d.duck_type))} · <span class="text-[#ffe81f] font-semibold">${esc(d.points)} pts</span></p>
+                        </div>
+                        <span class="chip ${d.claimed ? 'chip-gold' : ''}">${d.claimed ? 'Claimed' : 'Open'}</span>
+                    </div>
+                    <div class="text-[13px] text-gray-400 flex flex-col gap-1">
+                        <p class="truncate">📍 ${esc(d.location || 'No location set')}</p>
+                        ${d.claimed ? `<p class="truncate">Found by <span class="text-white">${esc(d.claimed_by_name || d.claimed_by || 'unknown')}</span>${d.claimed_at ? ' · ' + esc(timeAgo(d.claimed_at)) : ''}</p>` : ''}
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-auto">
+                        <button type="button" data-action="show-qr" data-id="${esc(d.duck_id)}" class="btn btn-ghost text-[13px] px-3 py-1.5">QR</button>
+                        <button type="button" data-action="edit-duck" data-id="${esc(d.duck_id)}" class="btn btn-ghost text-[13px] px-3 py-1.5">Edit</button>
+                        ${d.claimed ? `<button type="button" data-action="reopen-duck" data-id="${esc(d.duck_id)}" class="btn btn-gold text-[13px] px-3 py-1.5">Re-open</button>` : ''}
+                        <button type="button" data-action="delete-duck" data-id="${esc(d.duck_id)}" class="btn btn-danger text-[13px] px-3 py-1.5 ml-auto">Delete</button>
+                    </div>
+                </div>`).join('');
+        }
+
+        function renderRescuers() {
+            const term = document.getElementById('rescuer-search').value.trim().toLowerCase();
+            const players = state.players.filter(p => !term ||
+                [p.first_name, p.last_name, fullName(p), p.student_id, p.email].some(v => String(v || '').toLowerCase().includes(term)));
+
+            const empty = document.getElementById('rescuer-empty');
+            empty.textContent = state.players.length ? 'No rescuers match your search.' : 'No rescuers have registered yet.';
+            empty.classList.toggle('hidden', players.length > 0);
+
+            document.getElementById('rescuer-list').innerHTML = players.map(p => {
+                const medal = ['text-[#ffe81f]', 'text-slate-300', 'text-amber-600'][p.place - 1] || 'text-gray-500';
+                return `
+                <li class="flex flex-wrap sm:flex-nowrap items-center gap-3 px-3 py-3 rounded-xl border border-white/10 bg-white/[0.03]">
+                    <span class="w-8 text-center font-tech font-bold text-[18px] ${medal}">${esc(p.place)}</span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[15px] text-white font-semibold truncate">${esc(fullName(p))}</p>
+                        <p class="text-[12px] text-gray-400 truncate">ID ${esc(p.student_id)}${p.email ? ' · ' + esc(p.email) : ''}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[15px] font-bold text-[#ffe81f]">${esc(p.points)} pts</p>
+                        <p class="text-[12px] text-gray-400">${esc(p.codes_scanned)} duck${p.codes_scanned === 1 ? '' : 's'}</p>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto justify-end">
+                        <button type="button" data-action="edit-rescuer" data-id="${esc(p.student_id)}" class="btn btn-ghost text-[13px] px-3 py-1.5">Edit</button>
+                        <button type="button" data-action="delete-rescuer" data-id="${esc(p.student_id)}" class="btn btn-danger text-[13px] px-3 py-1.5">Delete</button>
+                    </div>
+                </li>`;
+            }).join('');
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('[data-action="tab"]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            ['live', 'ducks', 'rescuers'].forEach(t => document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab));
+        }
+
+        // ---------- MODALS ----------
+        let modalResolve = null;
+
+        function openModal(html) {
+            document.getElementById('modal').innerHTML = html;
+            document.getElementById('overlay').classList.remove('hidden');
+            const first = document.querySelector('#modal input:not([readonly])');
+            if (first) first.focus();
+        }
+
+        function closeModal(result) {
+            document.getElementById('overlay').classList.add('hidden');
+            document.getElementById('modal').innerHTML = '';
+            if (modalResolve) {
+                modalResolve(result);
+                modalResolve = null;
+            }
+        }
+
+        function confirmDialog(title, message, confirmLabel, danger) {
+            openModal(`
+                <h3 class="text-xl font-bold font-tech tracking-wider text-white mb-2">${esc(title)}</h3>
+                <p class="text-[15px] text-gray-300 mb-6">${esc(message)}</p>
+                <div class="flex gap-3">
+                    <button type="button" data-action="modal-cancel" class="btn btn-ghost flex-1 py-3">Cancel</button>
+                    <button type="button" data-action="modal-ok" class="btn ${danger ? 'btn-danger' : 'btn-gold'} flex-1 py-3">${esc(confirmLabel)}</button>
+                </div>`);
+            return new Promise(resolve => { modalResolve = resolve; });
+        }
+
+        function field(id, label, value, opts = {}) {
+            return `
+                <label class="flex flex-col gap-1.5">
+                    <span class="card-label">${esc(label)}</span>
+                    <input id="${id}" type="${opts.type || 'text'}" value="${esc(value)}" ${opts.readonly ? 'readonly' : ''} ${opts.min !== undefined ? `min="${opts.min}"` : ''}
+                        placeholder="${esc(opts.placeholder || '')}"
+                        class="glass-input w-full rounded-xl px-4 py-3 text-[15px] text-white placeholder-gray-500 ${opts.readonly ? 'opacity-60' : ''}">
+                </label>`;
+        }
+
+        function duckForm(duck) {
+            const editing = Boolean(duck);
+            duck = duck || { duck_id: '', duck_type: '', points: 10, location: '', qr_code: randomCode() };
+            openModal(`
+                <form id="duck-form" data-original="${esc(editing ? duck.duck_id : '')}" class="flex flex-col gap-4">
+                    <h3 class="text-xl font-bold font-tech tracking-wider text-white">${editing ? 'Edit Duck' : 'Add Duck'}</h3>
+                    ${field('f-duck-id', 'Duck ID', duck.duck_id, { placeholder: 'e.g. D-014' })}
+                    <div class="grid grid-cols-2 gap-3">
+                        ${field('f-duck-type', 'Duck Type', duck.duck_type, { placeholder: 'e.g. Golden' })}
+                        ${field('f-duck-points', 'Points', duck.points, { type: 'number', min: 0 })}
+                    </div>
+                    ${field('f-duck-location', 'Location', duck.location, { placeholder: 'e.g. Library, 2nd floor' })}
+                    <div class="flex flex-col gap-1.5">
+                        <span class="card-label">QR Code</span>
+                        <div class="flex gap-2">
+                            <input id="f-duck-qr" type="text" value="${esc(duck.qr_code)}" class="glass-input flex-1 min-w-0 rounded-xl px-4 py-3 text-[15px] text-white font-mono">
+                            <button type="button" data-action="new-code" class="btn btn-ghost text-[13px] px-3">New</button>
+                        </div>
+                        ${editing ? '<span class="text-[12px] text-gray-400">Changing the code means reprinting this duck\'s QR label.</span>' : ''}
+                    </div>
+                    <p id="form-error" class="hidden text-[14px] text-[#ffe81f]"></p>
+                    <div class="flex gap-3 mt-2">
+                        <button type="button" data-action="modal-cancel" class="btn btn-ghost flex-1 py-3">Cancel</button>
+                        <button type="submit" class="btn btn-gold flex-1 py-3">${editing ? 'Save' : 'Add Duck'}</button>
+                    </div>
+                </form>`);
+        }
+
+        function rescuerForm(p) {
+            openModal(`
+                <form id="rescuer-form" data-id="${esc(p.student_id)}" class="flex flex-col gap-4">
+                    <h3 class="text-xl font-bold font-tech tracking-wider text-white">Edit Rescuer</h3>
+                    ${field('f-student-id', 'Student ID', p.student_id, { readonly: true })}
+                    <div class="grid grid-cols-2 gap-3">
+                        ${field('f-first', 'First Name', p.first_name)}
+                        ${field('f-last', 'Last Name', p.last_name)}
+                    </div>
+                    ${field('f-email', 'Email', p.email, { type: 'email' })}
+                    ${field('f-points', 'Points', p.points, { type: 'number', min: 0 })}
+                    <p class="text-[12px] text-gray-400 -mt-2">Changing points here is a manual override. To undo a single scan, use Undo in Live Scans.</p>
+                    <p id="form-error" class="hidden text-[14px] text-[#ffe81f]"></p>
+                    <div class="flex gap-3 mt-2">
+                        <button type="button" data-action="modal-cancel" class="btn btn-ghost flex-1 py-3">Cancel</button>
+                        <button type="submit" class="btn btn-gold flex-1 py-3">Save</button>
+                    </div>
+                </form>`);
+        }
+
+        function renderQR(el, text, size) {
+            el.innerHTML = '';
+            new QRCode(el, { text, width: size, height: size, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+        }
+
+        function qrModal(duck) {
+            openModal(`
+                <div class="flex flex-col items-center gap-4">
+                    <div class="text-center">
+                        <p class="card-label">QR Code</p>
+                        <h3 class="text-xl font-bold font-tech tracking-wider text-white">${esc(duck.duck_id)} · ${esc(duckName(duck.duck_type))}</h3>
+                    </div>
+                    <div id="qr-box" class="qr-frame w-64 bg-white p-4 rounded-xl"></div>
+                    <p class="font-mono text-[14px] text-gray-300 break-all text-center">${esc(duck.qr_code)}</p>
+                    <div class="flex gap-3 w-full">
+                        <button type="button" data-action="modal-cancel" class="btn btn-ghost flex-1 py-3">Close</button>
+                        <button type="button" data-action="download-qr" data-id="${esc(duck.duck_id)}" class="btn btn-gold flex-1 py-3">Download PNG</button>
+                    </div>
+                </div>`);
+            renderQR(document.getElementById('qr-box'), duck.qr_code, 512);
+        }
+
+        function printQRCodes() {
+            if (!state.ducks.length) return showToast('Add some ducks first.');
+            const area = document.getElementById('print-area');
+            area.innerHTML = state.ducks.map((d, i) => `
+                <div class="print-label">
+                    <div id="print-qr-${i}"></div>
+                    <p style="margin:3mm 0 0;font-weight:700;font-size:13pt">${esc(d.duck_id)}</p>
+                    <p style="margin:1mm 0 0;font-size:10pt">${esc(duckName(d.duck_type))} · ${esc(d.points)} pts</p>
+                    <p style="margin:1mm 0 0;font-size:8pt;color:#555">Scan in the Duck Hunt app</p>
+                </div>`).join('');
+            state.ducks.forEach((d, i) => renderQR(document.getElementById('print-qr-' + i), d.qr_code, 400));
+            setTimeout(() => window.print(), 300);
+        }
+
+        // ---------- ACTIONS ----------
+        const findDuck = id => state.ducks.find(d => d.duck_id === id);
+        const findPlayer = id => state.players.find(p => p.student_id === id);
+
+        async function runAction(button, task, success) {
+            await busy(button, async () => {
+                try {
+                    await task();
+                    if (success) showToast(success);
+                    await load();
+                } catch (err) {
+                    showToast(err.message || 'Something went wrong.');
+                }
+            });
+        }
+
+        document.addEventListener('click', async event => {
+            const el = event.target.closest('[data-action]');
+            if (!el) {
+                if (event.target.id === 'overlay') closeModal(false);
+                return;
+            }
+            const id = el.dataset.id;
+
+            switch (el.dataset.action) {
+                case 'sign-out': return signOut();
+                case 'tab': return switchTab(el.dataset.tab);
+                case 'modal-cancel': return closeModal(false);
+                case 'modal-ok': return closeModal(true);
+                case 'new-code': document.getElementById('f-duck-qr').value = randomCode(); return;
+                case 'add-duck': return duckForm(null);
+                case 'edit-duck': return duckForm(findDuck(id));
+                case 'show-qr': return qrModal(findDuck(id));
+                case 'print-qr': return printQRCodes();
+                case 'edit-rescuer': return rescuerForm(findPlayer(id));
+
+                case 'download-qr': {
+                    const canvasEl = document.querySelector('#qr-box canvas');
+                    const img = document.querySelector('#qr-box img');
+                    const link = document.createElement('a');
+                    link.href = canvasEl ? canvasEl.toDataURL('image/png') : img.src;
+                    link.download = `${id}-qr.png`;
+                    link.click();
+                    return;
+                }
+
+                case 'undo-scan': {
+                    const scan = state.scans.find(s => String(s.id) === id);
+                    if (!scan) return;
+                    const ok = await confirmDialog('Undo this scan?',
+                        `${scan.player_name || scan.student_id} loses ${scan.points} pts and ${duckName(scan.duck_type)} (${scan.duck_id || 'retired'}) becomes findable again.`,
+                        'Undo Scan', true);
+                    if (ok) runAction(el, () => rpc('admin_undo_scan', { p_scan_id: scan.id }), 'Scan undone.');
+                    return;
+                }
+
+                case 'reopen-duck': {
+                    const duck = findDuck(id);
+                    const ok = await confirmDialog(`Re-open ${duck.duck_id}?`,
+                        `${duck.claimed_by_name || 'The rescuer who found it'} loses ${duck.points} pts and anyone can claim this duck again.`,
+                        'Re-open', false);
+                    if (ok) runAction(el, () => rpc('admin_reopen_duck', { p_duck_id: id }), `${id} is open again.`);
+                    return;
+                }
+
+                case 'delete-duck': {
+                    const duck = findDuck(id);
+                    const ok = await confirmDialog(`Delete ${duck.duck_id}?`,
+                        'Its QR code stops working. Rescuers who already found it keep their points.',
+                        'Delete Duck', true);
+                    if (ok) runAction(el, () => rpc('admin_delete_duck', { p_duck_id: id }), `${id} deleted.`);
+                    return;
+                }
+
+                case 'delete-rescuer': {
+                    const p = findPlayer(id);
+                    const ok = await confirmDialog(`Delete ${fullName(p)}?`,
+                        `Their ${p.codes_scanned} scan${p.codes_scanned === 1 ? '' : 's'} are removed and those ducks become findable again. They can register again later.`,
+                        'Delete Rescuer', true);
+                    if (ok) runAction(el, () => rpc('admin_delete_player', { p_student_id: id }), `${fullName(p)} deleted.`);
+                    return;
+                }
+
+                case 'export-rescuers':
+                    return downloadCSV('duck-hunt-rescuers.csv',
+                        ['Place', 'First Name', 'Last Name', 'Student ID', 'Email', 'Points', 'Codes Scanned', 'Registered'],
+                        state.players.map(p => [p.place, p.first_name, p.last_name, p.student_id, p.email, p.points, p.codes_scanned, p.created_at]));
+
+                case 'export-scans':
+                    return busy(el, async () => {
+                        try {
+                            let all = [];
+                            for (let from = 0; ; from += 1000) {
+                                const { data, error } = await db.from('duck_log').select('*').order('scanned_at').range(from, from + 999);
+                                if (error) throw error;
+                                all = all.concat(data);
+                                if (data.length < 1000) break;
+                            }
+                            const names = Object.fromEntries(state.players.map(p => [p.student_id, fullName(p)]));
+                            downloadCSV('duck-hunt-scans.csv',
+                                ['Timestamp', 'Duck ID', 'Duck Type', 'Points', 'Student ID', 'Rescuer'],
+                                all.map(s => [s.scanned_at, s.duck_id, s.duck_type, s.points, s.student_id, names[s.student_id] || '']));
+                        } catch (err) {
+                            showToast(err.message || 'Export failed.');
+                        }
+                    });
+            }
+        });
+
+        document.addEventListener('submit', event => {
+            const form = event.target;
+            if (form.id !== 'duck-form' && form.id !== 'rescuer-form') return;
+            event.preventDefault();
+            const button = form.querySelector('[type="submit"]');
+            const error = document.getElementById('form-error');
+            const value = id => document.getElementById(id).value;
+
+            busy(button, async () => {
+                try {
+                    if (form.id === 'duck-form') {
+                        const original = form.dataset.original || null;
+                        await rpc('admin_save_duck', {
+                            p_original_id: original,
+                            p_duck_id: value('f-duck-id'),
+                            p_duck_type: value('f-duck-type'),
+                            p_points: parseInt(value('f-duck-points'), 10) || 0,
+                            p_qr_code: value('f-duck-qr'),
+                            p_location: value('f-duck-location')
+                        });
+                        showToast(original ? 'Duck saved.' : 'Duck added.');
+                    } else {
+                        await rpc('admin_save_player', {
+                            p_student_id: form.dataset.id,
+                            p_first_name: value('f-first'),
+                            p_last_name: value('f-last'),
+                            p_email: value('f-email'),
+                            p_points: parseInt(value('f-points'), 10) || 0
+                        });
+                        showToast('Rescuer saved.');
+                    }
+                    closeModal(true);
+                    load();
+                } catch (err) {
+                    error.textContent = err.message || 'Couldn\'t save.';
+                    error.classList.remove('hidden');
+                }
+            });
+        });
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !document.getElementById('overlay').classList.contains('hidden')) closeModal(false);
+        });
+
+        document.getElementById('duck-search').addEventListener('input', renderDucks);
+        document.getElementById('rescuer-search').addEventListener('input', renderRescuers);
+
+        // ---------- START ----------
+        window.onload = async function() {
+            resize();
+            initStars();
+            animate();
+
+            if (!db) return showLogin('Couldn\'t load Supabase. Check your connection and reload.');
+            const { data } = await db.auth.getSession();
+            if (data && data.session) enterAdmin();
+            else showLogin();
+        };
+    </script>
+</body>
+</html>
