@@ -591,8 +591,8 @@
         // ---------- SUPABASE ----------
         // Project Settings → API in the Supabase dashboard. The publishable
         // (anon) key is safe to ship in the page; never put the secret key here.
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_PUBLISHABLE_KEY';
+        const SUPABASE_URL = 'https://cvfzoxlqozmopavmlaxt.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_VKivvEek6IsBq6GrsLp1bw_39zjVpbA';
 
         const db = (window.supabase && !SUPABASE_URL.startsWith('YOUR_'))
             ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
