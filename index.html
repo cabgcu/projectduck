@@ -80,6 +80,11 @@
             #scan-splash .icon svg path { animation: none; stroke-dashoffset: 0; }
         }
 
+        /* Report a broken code */
+        .report-kind { background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.15); color: #d1d5db; transition: all 0.2s; }
+        .report-kind.on { background: rgba(255, 232, 31, 0.15); border-color: rgba(255, 232, 31, 0.6); color: #fff; box-shadow: 0 0 15px rgba(255, 232, 31, 0.2); }
+        .report-kind:disabled { opacity: 0.4; }
+
         /* Golden duck found: banner for every other player */
         #duck-alert {
             position: fixed; top: max(12px, env(safe-area-inset-top)); left: 12px; right: 12px; z-index: 86;
@@ -663,6 +668,7 @@
                             <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>If a duck "isn't in play yet," it hasn't been activated. Check back later.</span></li>
                             <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>You can scan up to 10 hologram codes a day. The limit resets at midnight. Rebel ducks have no limit.</span></li>
                             <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>The leaderboard ranks rescuers by points. Rescuers with equal points share a place.</span></li>
+                            <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>Broken code? Report it from the Info page. Up to 5 Rebel duck and 10 hologram code reports are honored per rescuer.</span></li>
                             <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>Play fair: one account per student, using your own Student ID.</span></li>
                         </ul>
                     </div>
@@ -674,6 +680,18 @@
                         <p class="card-label">Rewards</p>
                         <h3 class="text-lg font-bold font-tech tracking-wider text-white mb-3">Prizes</h3>
                         <p class="text-[15px] text-gray-200 leading-snug">The top rescuers on the leaderboard win prizes. Prize details will come through as a transmission, so keep an eye out for the hologram.</p>
+                    </div>
+                </section>
+
+                <!-- Broken codes: report + my reports -->
+                <section class="shimmer-wrapper w-full">
+                    <div class="glass-inner w-full p-5">
+                        <p class="card-label">Damaged Intel</p>
+                        <h3 class="text-lg font-bold font-tech tracking-wider text-white mb-2">Broken Code?</h3>
+                        <p class="text-[15px] text-gray-200 leading-snug">If a duck's QR code won't scan or got damaged, report it and you'll get the duck's points automatically. You can have up to <b class="text-white">5 Rebel duck</b> and <b class="text-white">10 hologram code</b> reports honored.</p>
+                        <p id="report-left" class="mt-2 text-[13px] text-[#ffe81f]"></p>
+                        <button type="button" onclick="openReport()" class="mt-4 w-full bg-[#ffe81f]/10 border border-[#ffe81f]/40 hover:bg-[#ffe81f]/20 text-white font-bold text-[16px] py-3 rounded-xl transition-all duration-300 active:scale-[0.98]">Report a broken code</button>
+                        <ul id="my-reports" class="mt-4 flex flex-col gap-2"></ul>
                     </div>
                 </section>
 
@@ -801,6 +819,9 @@
                             class="mt-4 w-full bg-[#ffe81f]/10 border border-[#ffe81f]/40 backdrop-blur-md hover:bg-[#ffe81f]/20 hover:border-[#ffe81f]/60 hover:shadow-[0_0_15px_rgba(255,232,31,0.3)] text-white font-bold text-[17px] py-4 rounded-xl transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.8)] active:scale-[0.98]"
                         >
                             Start Scanning
+                        </button>
+                        <button type="button" onclick="openReport()" class="mt-3 w-full text-center text-[13px] text-gray-400 underline decoration-gray-600 underline-offset-4 hover:text-white">
+                            Code not working? Report it
                         </button>
                     </div>
                 </section>
@@ -1207,6 +1228,7 @@
                 refreshCoordinates();
                 refreshAnnouncements();
                 refreshHuntStatus();
+                refreshReports();
                 return me;
             } catch (err) {
                 showToast(err.message || 'Couldn\'t load your stats.');
@@ -1254,10 +1276,10 @@
             body.className = 'flex-1 min-w-0';
             const title = document.createElement('p');
             title.className = 'text-[15px] text-white font-semibold truncate';
-            title.textContent = scan.duck_type ? `${scan.duck_type} Duck` : 'Duck';
+            title.textContent = scan.source === 'report' ? `${scan.duck_type || 'Rebel'} code reported` : (scan.duck_type ? `${scan.duck_type} Duck` : 'Duck');
             const meta = document.createElement('p');
             meta.className = 'text-[12px] text-gray-400 truncate';
-            meta.textContent = `${scan.duck_id || "Retired duck"} · ${formatTime(scan.scanned_at)}`;
+            meta.textContent = `${scan.duck_id || (scan.source === 'report' ? 'Reported code' : 'Retired duck')} · ${formatTime(scan.scanned_at)}`;
             body.append(title, meta);
 
             const points = document.createElement('span');
@@ -1420,6 +1442,145 @@
             stage.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 800, fill: 'forwards' }).onfinish = () => stage.remove();
             document.body.classList.remove('in-galaxy');
         }
+
+        // ---------- BROKEN CODE REPORTS ----------
+        // Reports are resolved automatically by the database (report_code):
+        // the rescuer gets the duck they report (or one from the same spot),
+        // up to 5 Rebel duck and 10 hologram code reports.
+        let reportKind = 'rebel';
+        let reportInfo = null; // { rebel_left, hologram_left, reports: [...] }
+
+        async function refreshReports() {
+            if (!player) return;
+            try {
+                reportInfo = await rpc('get_my_reports', { p_student_id: player.student_id });
+            } catch (err) {
+                return; // database not updated yet
+            }
+            const left = `${reportInfo.rebel_left} of ${reportInfo.rebel_limit} Rebel duck reports left · ${reportInfo.hologram_left} of ${reportInfo.hologram_limit} hologram reports left`;
+            document.getElementById('report-left').textContent = left;
+            renderMyReports();
+            updateReportKindUI();
+        }
+
+        function renderMyReports() {
+            const list = document.getElementById('my-reports');
+            list.innerHTML = '';
+            (reportInfo && reportInfo.reports || []).slice(0, 10).forEach(r => {
+                const tone = r.status === 'honored' ? ['border-green-500/40 bg-green-500/10', 'text-green-300', 'Honored']
+                    : r.status === 'review' ? ['border-amber-400/40 bg-amber-400/10', 'text-amber-300', 'With an admin']
+                    : r.status === 'reversed' ? ['border-white/15 bg-white/[0.03]', 'text-gray-400', 'Undone']
+                    : ['border-red-500/40 bg-red-500/10', 'text-red-300', 'Not honored'];
+                const li = document.createElement('li');
+                li.className = 'rounded-xl border px-3 py-2.5 ' + tone[0];
+                const top = document.createElement('div');
+                top.className = 'flex items-center justify-between gap-2 text-[13px]';
+                const what = document.createElement('span');
+                what.className = 'font-semibold text-white';
+                what.textContent = (r.kind === 'hologram' ? 'Hologram code' : 'Rebel duck') + (r.location ? ` · ${r.location}` : '');
+                const status = document.createElement('span');
+                status.className = 'font-semibold ' + tone[1];
+                status.textContent = tone[2];
+                top.append(what, status);
+                const detail = document.createElement('p');
+                detail.className = 'mt-1 text-[12px] text-gray-300 leading-snug';
+                detail.textContent = r.outcome;
+                const when = document.createElement('p');
+                when.className = 'mt-1 text-[11px] text-gray-500';
+                when.textContent = formatTime(r.created_at);
+                li.append(top, detail, when);
+                list.appendChild(li);
+            });
+        }
+
+        function updateReportKindUI() {
+            document.querySelectorAll('[data-report-kind]').forEach(b => b.classList.toggle('on', b.dataset.reportKind === reportKind));
+            document.getElementById('report-location-field').classList.toggle('hidden', reportKind !== 'rebel');
+            const leftText = document.getElementById('report-kind-left');
+            if (reportInfo) {
+                const left = reportKind === 'hologram' ? reportInfo.hologram_left : reportInfo.rebel_left;
+                leftText.textContent = left > 0 ? `You have ${left} ${reportKind === 'hologram' ? 'hologram code' : 'Rebel duck'} report${left === 1 ? '' : 's'} left.`
+                    : `You've used all your ${reportKind === 'hologram' ? 'hologram code' : 'Rebel duck'} reports.`;
+                leftText.className = 'mt-2 text-[12px] ' + (left > 0 ? 'text-gray-400' : 'text-red-300');
+            }
+        }
+
+        function setReportKind(kind) {
+            reportKind = kind;
+            updateReportKindUI();
+        }
+
+        async function openReport() {
+            if (!player) return;
+            if (!huntOpen) return showToast('Duck Hunt is offline right now, so reports are paused.');
+            stopScanner();
+            document.getElementById('report-form').reset();
+            showFormError('report-error', '');
+            reportKind = 'rebel';
+            updateReportKindUI();
+            document.getElementById('report-overlay').classList.remove('hidden');
+            // Locations that still have Rebel ducks out (same list as Rebel Coordinates)
+            const select = document.getElementById('report-location');
+            select.innerHTML = '<option value="">I\'m not sure</option>';
+            try {
+                const rows = await rpc('get_rebel_coordinates');
+                (rows || []).filter(r => r.location).forEach(r => {
+                    const o = document.createElement('option');
+                    o.value = o.textContent = r.location;
+                    select.appendChild(o);
+                });
+            } catch (e) {}
+            refreshReports();
+        }
+
+        function closeReport() {
+            document.getElementById('report-overlay').classList.add('hidden');
+        }
+
+        async function submitReport() {
+            const button = document.getElementById('report-submit');
+            if (button.disabled) return;
+            button.disabled = true;
+            button.textContent = 'Checking…';
+            try {
+                const result = await rpc('report_code', {
+                    p_student_id: player.student_id,
+                    p_kind: reportKind,
+                    p_location: reportKind === 'rebel' ? document.getElementById('report-location').value : null,
+                    p_code_ref: duckCodeFrom(document.getElementById('report-code').value),
+                    p_issue: document.getElementById('report-issue').value,
+                    p_note: document.getElementById('report-note').value
+                });
+                if (result.status === 'unknown_player') {
+                    closeReport();
+                    showToast('Your rescuer profile wasn\'t found. Please sign in again.');
+                    return signOut();
+                }
+                if (result.status === 'closed' || result.status === 'invalid') {
+                    return showFormError('report-error', result.message);
+                }
+                closeReport();
+                if (result.status === 'honored') {
+                    if (result.duck_id) myGoldenClaims.add(result.duck_id);
+                    scanFeedback('ok', 'Report honored!', `+${result.points} pts`, 'Added to your score. Thanks for letting us know!');
+                    refreshHome();
+                } else if (result.status === 'review') {
+                    scanFeedback('warn', 'Sent to an admin', null, result.message);
+                } else {
+                    scanFeedback('err', 'Not honored', null, result.message);
+                }
+                refreshReports();
+            } catch (err) {
+                showFormError('report-error', (err.message || 'Couldn\'t send your report') + '. Try again.');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Send report';
+            }
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !document.getElementById('report-overlay').classList.contains('hidden')) closeReport();
+        });
 
         // ---------- GOLDEN DUCK ALERTS ----------
         // Someone else rescued a golden duck: a banner drops in for everyone.
@@ -2276,6 +2437,64 @@
             }, 30000);
         };
     </script>
+    <!-- Report a broken code -->
+    <div id="report-overlay" class="hidden fixed inset-0 z-[88] overflow-y-auto bg-black/85 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="report-title">
+        <div class="min-h-full w-full max-w-md mx-auto px-5 py-8 flex flex-col justify-center">
+            <form id="report-form" class="shimmer-wrapper w-full" onsubmit="event.preventDefault(); submitReport();">
+                <div class="glass-inner w-full p-5 flex flex-col gap-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="card-label">Damaged Intel</p>
+                            <h2 id="report-title" class="text-xl font-bold font-tech tracking-wider text-white">Report a Broken Code</h2>
+                        </div>
+                        <button type="button" onclick="closeReport()" aria-label="Close" class="p-2 rounded-xl bg-white/5 border border-white/15 text-gray-300 hover:text-white">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <div>
+                        <p class="text-[13px] text-gray-400 mb-2">What kind of code?</p>
+                        <div class="grid grid-cols-2 gap-2" role="radiogroup">
+                            <button type="button" data-report-kind="rebel" onclick="setReportKind('rebel')" class="report-kind py-3 rounded-xl border text-[15px] font-semibold">🦆 Rebel duck</button>
+                            <button type="button" data-report-kind="hologram" onclick="setReportKind('hologram')" class="report-kind py-3 rounded-xl border text-[15px] font-semibold">💠 Hologram code</button>
+                        </div>
+                        <p id="report-kind-left" class="mt-2 text-[12px] text-gray-400"></p>
+                    </div>
+
+                    <label id="report-location-field" class="flex flex-col gap-2">
+                        <span class="text-[13px] text-gray-400">Where was it?</span>
+                        <select id="report-location" class="glass-input w-full rounded-xl px-4 py-3 text-[15px] text-white bg-black/60"></select>
+                    </label>
+
+                    <label class="flex flex-col gap-2">
+                        <span class="text-[13px] text-gray-400">What's wrong?</span>
+                        <select id="report-issue" class="glass-input w-full rounded-xl px-4 py-3 text-[15px] text-white bg-black/60">
+                            <option>Won't scan</option>
+                            <option>Label is damaged or torn</option>
+                            <option>Says it's not a Duck Hunt code</option>
+                            <option>Something else</option>
+                        </select>
+                    </label>
+
+                    <label class="flex flex-col gap-2">
+                        <span class="text-[13px] text-gray-400">Duck ID or code <span class="text-gray-500">(optional, if you can read one)</span></span>
+                        <input id="report-code" type="text" autocomplete="off" placeholder="e.g. D-042" class="glass-input w-full rounded-xl px-4 py-3 text-[15px] text-white placeholder-gray-500">
+                    </label>
+
+                    <label class="flex flex-col gap-2">
+                        <span class="text-[13px] text-gray-400">Anything else? <span class="text-gray-500">(optional)</span></span>
+                        <textarea id="report-note" rows="2" maxlength="500" class="glass-input w-full rounded-xl px-4 py-3 text-[15px] text-white placeholder-gray-500" placeholder="e.g. Label is half peeled off"></textarea>
+                    </label>
+
+                    <p id="report-error" class="hidden text-[14px] text-[#ffe81f]"></p>
+
+                    <button id="report-submit" type="submit" class="w-full bg-[#ffe81f]/15 border border-[#ffe81f]/50 hover:bg-[#ffe81f]/25 text-white font-bold text-[17px] py-4 rounded-xl transition-all duration-300 active:scale-[0.98]">Send report</button>
+                    <p class="text-[12px] text-gray-500 text-center leading-snug">Reports are checked automatically. If you're awarded a duck, its points are added right away.</p>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Hologram transmission (admin announcements) -->
     <div id="holo-overlay" class="hidden fixed inset-0 z-[90] overflow-y-auto bg-black/85 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="holo-title">
         <div class="min-h-full w-full max-w-md mx-auto px-5 py-10 flex flex-col items-center justify-center gap-4">
