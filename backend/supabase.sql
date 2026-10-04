@@ -576,7 +576,8 @@ $$;
 -- code that matches an available duck, they get that duck (and it's
 -- flagged for reprinting). Otherwise they get the standard points for
 -- that kind of duck, without using up any other duck. Each rescuer can
--- have at most 5 Rebel duck and 10 hologram code reports honored.
+-- have 5 Rebel duck and 10 hologram code reports honored automatically;
+-- after that, reports go to review for an admin to approve or deny.
 -- ---------------------------------------------------------------------
 
 create or replace function private.report_limit(p_kind text)
@@ -613,7 +614,50 @@ as $$
     where r.student_id = p_student_id and r.kind = p_kind and r.status = 'honored';
 $$;
 
--- status: honored | denied | closed | unknown_player | invalid
+-- Award a report: the named duck if it's still available (its label gets
+-- flagged), otherwise the standard points for that kind of duck without
+-- using up any other duck. Callers lock the player row first.
+create or replace function private.honor_report(p_player public.players, p_kind text, p_location text, p_duck_id text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_duck   public.ducks;
+    v_award  jsonb;
+    v_points integer;
+    v_log_id bigint;
+begin
+    if p_duck_id is not null then
+        select * into v_duck from public.ducks
+        where duck_id = p_duck_id and active and not claimed
+        for update;
+    end if;
+
+    if v_duck.duck_id is not null then
+        v_award := private.award_duck(p_player, v_duck);
+        update public.ducks set broken_reports = broken_reports + 1 where duck_id = v_duck.duck_id;
+        return jsonb_build_object('duck_id', v_duck.duck_id, 'duck_type', v_duck.duck_type, 'points', v_duck.points,
+                                  'log_id', v_award->'log_id',
+                                  'outcome', format('%s (+%s pts) added to your score.', v_duck.duck_id, v_duck.points));
+    end if;
+
+    v_points := private.report_points(p_kind);
+    insert into public.duck_log (duck_id, student_id, duck_type, points, source)
+    values (null, p_player.student_id, case when p_kind = 'hologram' then 'Hologram' else 'Rebel' end, v_points, 'report')
+    returning id into v_log_id;
+    update public.players
+    set points = points + v_points, codes_scanned = codes_scanned + 1
+    where student_id = p_player.student_id;
+    return jsonb_build_object('duck_id', null, 'points', v_points, 'log_id', v_log_id,
+                              'outcome', format('+%s pts for a %s%s.', v_points,
+                                  case when p_kind = 'hologram' then 'hologram code' else 'Rebel duck' end,
+                                  case when p_location is not null and p_kind = 'rebel' then ' at ' || p_location else '' end));
+end;
+$$;
+
+-- status: honored | review | denied | closed | unknown_player | invalid
 create or replace function public.report_code(
     p_student_id text,
     p_kind       text,
@@ -639,7 +683,6 @@ declare
     v_award    jsonb;
     v_report   bigint;
     v_points   integer;
-    v_log_id   bigint;
 begin
     if not coalesce((select g.hunt_open from public.game_settings g where g.id), true) then
         return jsonb_build_object('status', 'closed', 'message', 'Duck Hunt is offline right now, so reports are paused.');
@@ -678,12 +721,10 @@ begin
         end if;
     end if;
 
-    -- 2. Out of honored reports for this kind
+    -- 2. Past their honored-report cap: an admin approves or denies it
     if v_status is null and private.reports_left(v_player.student_id, v_kind) <= 0 then
-        v_status := 'denied';
-        -- Players aren't told the cap, just that this one can't be honored
-        v_outcome := format('We can''t honor any more %s reports for you.',
-                            case when v_kind = 'hologram' then 'hologram code' else 'Rebel duck' end);
+        v_status := 'review';
+        v_outcome := 'Under review: an admin will take a look.';
     end if;
 
     -- Hologram codes still count toward the daily hologram limit
@@ -695,27 +736,11 @@ begin
     end if;
 
     -- 3. Honor it
-    if v_status is null and v_matched then
-        -- The duck they named: it's theirs now, and its label gets flagged
-        v_award := private.award_duck(v_player, v_duck);
-        update public.ducks set broken_reports = broken_reports + 1 where duck_id = v_duck.duck_id;
-        v_points := v_duck.points;
+    if v_status is null then
+        v_award := private.honor_report(v_player, v_kind, v_location, case when v_matched then v_duck.duck_id end);
+        v_points := (v_award->>'points')::integer;
         v_status := 'honored';
-        v_outcome := format('Honored: %s (+%s pts) added to your score.', v_duck.duck_id, v_points);
-    elsif v_status is null then
-        -- No duck named: standard points, no other duck is used up
-        v_points := private.report_points(v_kind);
-        insert into public.duck_log (duck_id, student_id, duck_type, points, source)
-        values (null, v_player.student_id, case when v_kind = 'hologram' then 'Hologram' else 'Rebel' end, v_points, 'report')
-        returning id into v_log_id;
-        update public.players
-        set points = points + v_points, codes_scanned = codes_scanned + 1
-        where student_id = v_player.student_id;
-        v_award := jsonb_build_object('log_id', v_log_id);
-        v_status := 'honored';
-        v_outcome := format('Honored: +%s pts for a %s%s.', v_points,
-                            case when v_kind = 'hologram' then 'hologram code' else 'Rebel duck' end,
-                            case when v_location is not null and v_kind = 'rebel' then ' at ' || v_location else '' end);
+        v_outcome := 'Honored: ' || (v_award->>'outcome');
     end if;
 
     insert into public.code_reports (student_id, kind, location, code_ref, issue, note, status, outcome, duck_id, points, log_id)
@@ -729,8 +754,8 @@ begin
     return jsonb_build_object(
         'status', v_status,
         'message', v_outcome,
-        'duck_id', case when v_status = 'honored' and v_matched then v_duck.duck_id end,
-        'duck_type', case when v_status = 'honored' and v_matched then v_duck.duck_type end,
+        'duck_id', v_award->>'duck_id',
+        'duck_type', v_award->>'duck_type',
         'points', coalesce(v_points, 0)
     );
 end;
@@ -1269,6 +1294,58 @@ begin
 end;
 $$;
 
+-- Approve a report that went to review (the rescuer was past their cap):
+-- they get the duck they named if it's still available, otherwise the
+-- standard points. The cap doesn't apply to approvals.
+create or replace function public.admin_approve_report(p_id bigint)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_report public.code_reports;
+    v_player public.players;
+    v_award  jsonb;
+begin
+    perform private.require_admin();
+    select * into v_report from public.code_reports where id = p_id for update;
+    if not found or v_report.status <> 'review' then
+        raise exception 'Only reports under review can be approved';
+    end if;
+    select * into v_player from public.players where student_id = v_report.student_id for update;
+    if not found then
+        raise exception 'That rescuer no longer exists';
+    end if;
+    v_award := private.honor_report(v_player, v_report.kind, v_report.location, v_report.duck_id);
+    update public.code_reports
+    set status = 'honored',
+        outcome = 'Approved by an admin: ' || (v_award->>'outcome'),
+        duck_id = coalesce(v_award->>'duck_id', duck_id),
+        points = (v_award->>'points')::integer,
+        log_id = (v_award->>'log_id')::bigint
+    where id = p_id;
+    return v_award;
+end;
+$$;
+
+create or replace function public.admin_deny_report(p_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    perform private.require_admin();
+    update public.code_reports
+    set status = 'denied', outcome = 'Not approved by an admin.'
+    where id = p_id and status = 'review';
+    if not found then
+        raise exception 'Only reports under review can be denied';
+    end if;
+end;
+$$;
+
 -- The duck's label has been fixed or reprinted.
 create or replace function public.admin_clear_duck_reports(p_duck_id text)
 returns void
@@ -1394,7 +1471,9 @@ revoke execute on function
     public.admin_set_hunt_open(boolean, text, text),
     public.admin_unfreeze_player(text),
     public.admin_reverse_report(bigint),
-    public.admin_clear_duck_reports(text)
+    public.admin_clear_duck_reports(text),
+    public.admin_approve_report(bigint),
+    public.admin_deny_report(bigint)
 from public, anon;
 grant execute on function
     public.is_admin(),
@@ -1418,5 +1497,7 @@ grant execute on function
     public.admin_set_hunt_open(boolean, text, text),
     public.admin_unfreeze_player(text),
     public.admin_reverse_report(bigint),
-    public.admin_clear_duck_reports(text)
+    public.admin_clear_duck_reports(text),
+    public.admin_approve_report(bigint),
+    public.admin_deny_report(bigint)
 to authenticated;
