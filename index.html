@@ -495,6 +495,13 @@
                     <h1 id="welcome-name" class="text-[34px] leading-tight font-bold font-tech tracking-wider text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.35)]">Rescuer</h1>
                 </section>
 
+                <!-- Shown while an admin has the hunt switched off -->
+                <section id="hunt-offline" class="hidden w-full rounded-2xl border border-red-500/50 bg-red-500/10 px-5 py-4 text-center shadow-[0_0_25px_rgba(239,68,68,0.25)]">
+                    <p class="card-label text-red-300">Signal Lost</p>
+                    <h2 class="text-xl font-bold font-tech tracking-wider text-white">Duck Hunt Is Offline</h2>
+                    <p class="mt-1 text-[14px] text-gray-300 leading-snug">The hunt is paused right now, so ducks can't be rescued. Stand by for the next transmission.</p>
+                </section>
+
                 <!-- Rank / Leaderboard -->
                 <section id="rank-section" class="shimmer-wrapper w-full scroll-mt-6">
                     <div class="glass-inner w-full p-5">
@@ -662,63 +669,72 @@
             initStars();
         });
 
+        // 3D starfield: stars start far away near the center of the screen and
+        // fly out toward the viewer. Hyperspeed stretches them into streaks.
+        const STAR_DEPTH = 4;       // how far away new stars start
+
         class Star {
             constructor() {
                 this.reset(true);
             }
 
             reset(initial = false) {
-                this.x = Math.random() * width;
-                this.y = initial ? Math.random() * height : -100; // Spawn higher up in case of warp
-                this.z = Math.random() * 2 + 0.1; 
-                this.radius = this.z * 0.7; 
-                this.speed = (this.z * 0.5) + 0.1; 
-                this.baseAlpha = (Math.random() * 0.5) + 0.3; 
+                // Spread so stars cover the whole screen at the back of the field
+                const m = Math.min(width, height);
+                this.x = (Math.random() * 2 - 1) * (width / m) * STAR_DEPTH;
+                this.y = (Math.random() * 2 - 1) * (height / m) * STAR_DEPTH;
+                this.z = initial ? 0.2 + Math.random() * (STAR_DEPTH - 0.2) : STAR_DEPTH;
+                this.baseAlpha = (Math.random() * 0.5) + 0.4;
                 this.twinkleSpeed = (Math.random() * 0.02) + 0.005;
                 this.alphaPhase = Math.random() * Math.PI * 2;
             }
 
-            update() {
-                // Incorporate hyperspeed multiplier (up to 80x speed based on depth)
-                let currentSpeed = this.speed + (hyperspeedFactor * 80 * this.z);
-                this.y += currentSpeed;
+            // Screen position for this star at depth z
+            project(z) {
+                const scale = Math.min(width, height) * 0.5 / z;
+                return [width / 2 + this.x * scale, height / 2 + this.y * scale];
+            }
 
-                // Normal twinkling when not in max hyperspeed
+            update() {
+                // Slow drift forward normally; up to ~50x faster in hyperspeed
+                this.speed = 0.004 + hyperspeedFactor * 0.2;
+                this.z -= this.speed;
+
                 if (hyperspeedFactor < 0.2) {
                     this.alphaPhase += this.twinkleSpeed;
-                    this.currentAlpha = this.baseAlpha + (Math.sin(this.alphaPhase) * 0.2);
-                    this.currentAlpha = Math.max(0, Math.min(1, this.currentAlpha));
+                    this.currentAlpha = Math.max(0, Math.min(1, this.baseAlpha + Math.sin(this.alphaPhase) * 0.2));
                 } else {
-                    this.currentAlpha = 1; // Full brightness during warp
+                    this.currentAlpha = 1; // full brightness during warp
                 }
 
-                if (this.y > height + 10) {
+                const [sx, sy] = this.project(Math.max(this.z, 0.01));
+                if (this.z <= 0.05 || sx < -50 || sx > width + 50 || sy < -50 || sy > height + 50) {
                     this.reset();
-                    // Spawn further back if warping to prevent blank gaps
-                    if (hyperspeedFactor > 0.5) {
-                        this.y = - (Math.random() * height);
-                    }
                 }
             }
 
             draw() {
-                // Calculate stretch length for hyperspeed
-                let stretch = hyperspeedFactor * 150 * this.z;
+                const [sx, sy] = this.project(this.z);
+                // Closer stars are bigger and brighter
+                const near = 1 - this.z / STAR_DEPTH;
+                const radius = 0.5 + near * 1.7;
+                const alpha = this.currentAlpha * (0.55 + near * 0.45);
 
-                if (stretch > 2) {
-                    // Draw lines for hyperspeed effect
+                if (hyperspeedFactor > 0.05) {
+                    // Streak back toward where the star came from
+                    const tailZ = Math.min(this.z + this.speed * (2 + hyperspeedFactor * 10), STAR_DEPTH);
+                    const [tx, ty] = this.project(tailZ);
                     ctx.beginPath();
-                    ctx.moveTo(this.x, this.y);
-                    ctx.lineTo(this.x, this.y - stretch);
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${this.currentAlpha})`;
-                    ctx.lineWidth = this.radius * 1.5;
-                    ctx.lineCap = "round";
+                    ctx.moveTo(tx, ty);
+                    ctx.lineTo(sx, sy);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.lineWidth = radius * 1.2;
+                    ctx.lineCap = 'round';
                     ctx.stroke();
                 } else {
-                    // Draw standard dots
                     ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(255, 255, 255, ${this.currentAlpha})`;
+                    ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
                     ctx.fill();
                 }
             }
@@ -951,6 +967,7 @@
                 renderHistory(history || []);
                 refreshCoordinates();
                 refreshAnnouncements();
+                refreshHuntStatus();
                 return me;
             } catch (err) {
                 showToast(err.message || 'Couldn\'t load your stats.');
@@ -1077,6 +1094,22 @@
             }
         });
 
+        // ---------- HUNT ON / OFF ----------
+        // Admins can switch the hunt off; claims are refused while it's off.
+        let huntOpen = true;
+
+        async function refreshHuntStatus() {
+            try {
+                const status = await rpc('get_game_status');
+                huntOpen = !status || status.hunt_open !== false;
+            } catch (err) {
+                return; // database not updated yet, or offline: leave as is
+            }
+            document.getElementById('hunt-offline').classList.toggle('hidden', huntOpen);
+            if (!huntOpen && scanning) stopScanner();
+            setScanUI(scanning);
+        }
+
         // ---------- TRANSMISSIONS (admin announcements) ----------
         // New messages pop up full screen once per device; the antenna button
         // in the header opens them again any time.
@@ -1179,11 +1212,17 @@
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
                     if (player) refreshAnnouncements();
                 })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'game_settings' }, () => {
+                    if (player) refreshHuntStatus();
+                })
                 .subscribe();
         }
 
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && player) refreshAnnouncements();
+            if (!document.hidden && player) {
+                refreshAnnouncements();
+                refreshHuntStatus();
+            }
         });
 
         function renderHolo() {
@@ -1329,10 +1368,15 @@
             status.classList.toggle('text-[#ffe81f]', active);
             status.classList.toggle('border-[#ffe81f]/40', active);
             if (message) document.getElementById('scan-idle-text').textContent = message;
+            const button = document.getElementById('scan-btn');
+            button.disabled = !huntOpen;
+            button.classList.toggle('opacity-50', !huntOpen);
+            if (!huntOpen) button.textContent = 'Hunt Offline';
         }
 
         async function startScanner() {
             if (scanning) return;
+            if (!huntOpen) return showToast('Duck Hunt is offline right now.');
             if (typeof Html5Qrcode === 'undefined') {
                 setScanUI(false, 'Scanner failed to load. Check your connection and try again.');
                 return;
@@ -1391,6 +1435,9 @@
                     showToast(`You already rescued ${name}!`);
                 } else if (result.status === 'already_claimed') {
                     showToast(`Another rescuer already claimed ${name}.`);
+                } else if (result.status === 'closed') {
+                    showToast('Duck Hunt is offline right now. Stand by!');
+                    refreshHuntStatus();
                 } else if (result.status === 'inactive') {
                     showToast(`${name === 'this duck' ? 'This duck' : name} isn't in play yet. Check back soon!`);
                 } else if (result.status === 'unknown_player') {

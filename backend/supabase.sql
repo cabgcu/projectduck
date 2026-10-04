@@ -7,6 +7,7 @@
 --   ducks     the hunt's ducks and their QR codes (managed on admin.html)
 --   duck_locations  location tags admins assign ducks to
 --   announcements   messages admins send to every player
+--   game_settings   one row: whether the hunt is on
 --   players   registered rescuers and their points
 --   duck_log  every claimed scan
 --
@@ -74,6 +75,14 @@ create table if not exists public.announcements (
     created_at timestamptz not null default now()
 );
 
+-- A single row. While hunt_open is false nobody can claim ducks.
+create table if not exists public.game_settings (
+    id         boolean primary key default true check (id),
+    hunt_open  boolean not null default true,
+    updated_at timestamptz not null default now()
+);
+insert into public.game_settings (id) values (true) on conflict (id) do nothing;
+
 -- Deleting a duck keeps the scans (and the points they earned); renaming
 -- a duck's ID carries its scans along
 alter table public.duck_log alter column duck_id drop not null;
@@ -89,9 +98,10 @@ alter table public.ducks    enable row level security;
 alter table public.duck_log enable row level security;
 alter table public.duck_locations enable row level security;
 alter table public.announcements enable row level security;
+alter table public.game_settings enable row level security;
 
-revoke all on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements from anon, authenticated;
-grant all on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements to service_role;
+revoke all on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements, public.game_settings from anon, authenticated;
+grant all on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements, public.game_settings to service_role;
 grant usage, select on all sequences in schema public to service_role;
 
 -- Remove the old Google Sheet sync, if it was installed
@@ -243,7 +253,7 @@ $$;
 -- Claim a duck by its QR code. Each duck can be claimed once, by the
 -- first rescuer to scan it.
 --
--- status: claimed | already_yours | already_claimed | inactive | invalid | unknown_player
+-- status: claimed | already_yours | already_claimed | inactive | invalid | unknown_player | closed
 create or replace function public.claim_duck(p_student_id text, p_qr_code text)
 returns jsonb
 language plpgsql
@@ -254,6 +264,11 @@ declare
     v_player public.players;
     v_duck   public.ducks;
 begin
+    -- The hunt is switched off on the admin page
+    if not coalesce((select g.hunt_open from public.game_settings g where g.id), true) then
+        return jsonb_build_object('status', 'closed');
+    end if;
+
     select * into v_player from public.players
     where student_id = trim(p_student_id)
     for update;
@@ -388,6 +403,17 @@ as $$
     order by d.location is null, count(*) desc, lower(d.location);
 $$;
 
+-- Whether the hunt is on.
+create or replace function public.get_game_status()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+    select jsonb_build_object('hunt_open', coalesce((select g.hunt_open from public.game_settings g where g.id), true));
+$$;
+
 -- Messages from the admins, newest first.
 create or replace function public.get_announcements(p_limit integer default 20)
 returns table (id bigint, title text, message text, created_at timestamptz)
@@ -411,7 +437,8 @@ grant execute on function
     public.get_leaderboard(text, integer),
     public.get_scan_history(text),
     public.get_rebel_coordinates(),
-    public.get_announcements(integer)
+    public.get_announcements(integer),
+    public.get_game_status()
 to anon, authenticated;
 
 
@@ -478,12 +505,17 @@ grant select on public.announcements to anon;
 drop policy if exists players_read on public.announcements;
 create policy players_read on public.announcements for select to anon using (true);
 
+-- Same for the on/off switch, so players see it flip instantly.
+grant select on public.game_settings to anon, authenticated;
+drop policy if exists everyone_read on public.game_settings;
+create policy everyone_read on public.game_settings for select to anon, authenticated using (true);
+
 do $$
 declare
     t text;
 begin
     if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
-        foreach t in array array['players', 'ducks', 'duck_log', 'duck_locations', 'announcements'] loop
+        foreach t in array array['players', 'ducks', 'duck_log', 'duck_locations', 'announcements', 'game_settings'] loop
             if not exists (
                 select 1 from pg_publication_tables
                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
@@ -536,6 +568,7 @@ begin
             select jsonb_agg(to_jsonb(l) order by lower(l.name))
             from public.duck_locations l
         ), '[]'::jsonb),
+        'hunt_open', coalesce((select g.hunt_open from public.game_settings g where g.id), true),
         'announcements', coalesce((
             select jsonb_agg(to_jsonb(a) order by a.id desc)
             from public.announcements a
@@ -843,6 +876,22 @@ begin
 end;
 $$;
 
+-- Turn the hunt on or off for everyone.
+create or replace function public.admin_set_hunt_open(p_open boolean)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    perform private.require_admin();
+    insert into public.game_settings (id, hunt_open, updated_at)
+    values (true, coalesce(p_open, false), now())
+    on conflict (id) do update set hunt_open = excluded.hunt_open, updated_at = now();
+    return coalesce(p_open, false);
+end;
+$$;
+
 -- Send a message to every player. They see it as a pop-up next time the
 -- app checks in (within 30 seconds while it's open).
 create or replace function public.admin_post_announcement(p_title text, p_message text)
@@ -929,7 +978,8 @@ revoke execute on function
     public.admin_add_location(text),
     public.admin_delete_location(text),
     public.admin_post_announcement(text, text),
-    public.admin_delete_announcement(bigint)
+    public.admin_delete_announcement(bigint),
+    public.admin_set_hunt_open(boolean)
 from public, anon;
 grant execute on function
     public.is_admin(),
@@ -949,5 +999,6 @@ grant execute on function
     public.admin_add_location(text),
     public.admin_delete_location(text),
     public.admin_post_announcement(text, text),
-    public.admin_delete_announcement(bigint)
+    public.admin_delete_announcement(bigint),
+    public.admin_set_hunt_open(boolean)
 to authenticated;
