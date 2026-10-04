@@ -6,6 +6,7 @@
 --
 --   ducks     the hunt's ducks and their QR codes (managed on admin.html)
 --   duck_locations  location tags admins assign ducks to
+--   announcements   messages admins send to every player
 --   players   registered rescuers and their points
 --   duck_log  every claimed scan
 --
@@ -66,6 +67,13 @@ create table if not exists public.duck_locations (
     created_at timestamptz not null default now()
 );
 
+create table if not exists public.announcements (
+    id         bigint generated always as identity primary key,
+    title      text not null default '',
+    message    text not null,
+    created_at timestamptz not null default now()
+);
+
 -- Deleting a duck keeps the scans (and the points they earned); renaming
 -- a duck's ID carries its scans along
 alter table public.duck_log alter column duck_id drop not null;
@@ -80,9 +88,10 @@ alter table public.players  enable row level security;
 alter table public.ducks    enable row level security;
 alter table public.duck_log enable row level security;
 alter table public.duck_locations enable row level security;
+alter table public.announcements enable row level security;
 
-revoke all on public.players, public.ducks, public.duck_log, public.duck_locations from anon, authenticated;
-grant all on public.players, public.ducks, public.duck_log, public.duck_locations to service_role;
+revoke all on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements from anon, authenticated;
+grant all on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements to service_role;
 grant usage, select on all sequences in schema public to service_role;
 
 -- Remove the old Google Sheet sync, if it was installed
@@ -379,6 +388,20 @@ as $$
     order by d.location is null, count(*) desc, lower(d.location);
 $$;
 
+-- Messages from the admins, newest first.
+create or replace function public.get_announcements(p_limit integer default 20)
+returns table (id bigint, title text, message text, created_at timestamptz)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+    select a.id, a.title, a.message, a.created_at
+    from public.announcements a
+    order by a.id desc
+    limit least(greatest(coalesce(p_limit, 20), 1), 100);
+$$;
+
 revoke execute on all functions in schema public from public, anon, authenticated;
 grant execute on function
     public.register_player(text, text, text, text),
@@ -387,7 +410,8 @@ grant execute on function
     public.get_rescuer_rank(text),
     public.get_leaderboard(text, integer),
     public.get_scan_history(text),
-    public.get_rebel_coordinates()
+    public.get_rebel_coordinates(),
+    public.get_announcements(integer)
 to anon, authenticated;
 
 
@@ -435,7 +459,7 @@ $$;
 
 -- Admins can read the tables, which is what Supabase Realtime needs to
 -- stream changes to admin.html. All writes go through admin_* functions.
-grant select on public.players, public.ducks, public.duck_log, public.duck_locations to authenticated;
+grant select on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements to authenticated;
 
 drop policy if exists admins_read on public.players;
 create policy admins_read on public.players for select to authenticated using (public.is_admin());
@@ -445,13 +469,15 @@ drop policy if exists admins_read on public.duck_log;
 create policy admins_read on public.duck_log for select to authenticated using (public.is_admin());
 drop policy if exists admins_read on public.duck_locations;
 create policy admins_read on public.duck_locations for select to authenticated using (public.is_admin());
+drop policy if exists admins_read on public.announcements;
+create policy admins_read on public.announcements for select to authenticated using (public.is_admin());
 
 do $$
 declare
     t text;
 begin
     if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
-        foreach t in array array['players', 'ducks', 'duck_log', 'duck_locations'] loop
+        foreach t in array array['players', 'ducks', 'duck_log', 'duck_locations', 'announcements'] loop
             if not exists (
                 select 1 from pg_publication_tables
                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
@@ -503,6 +529,10 @@ begin
         'locations', coalesce((
             select jsonb_agg(to_jsonb(l) order by lower(l.name))
             from public.duck_locations l
+        ), '[]'::jsonb),
+        'announcements', coalesce((
+            select jsonb_agg(to_jsonb(a) order by a.id desc)
+            from public.announcements a
         ), '[]'::jsonb)
     );
 end;
@@ -807,6 +837,40 @@ begin
 end;
 $$;
 
+-- Send a message to every player. They see it as a pop-up next time the
+-- app checks in (within 30 seconds while it's open).
+create or replace function public.admin_post_announcement(p_title text, p_message text)
+returns bigint
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_id bigint;
+begin
+    perform private.require_admin();
+    if coalesce(trim(p_message), '') = '' then
+        raise exception 'Write a message first';
+    end if;
+    insert into public.announcements (title, message)
+    values (coalesce(trim(p_title), ''), trim(p_message))
+    returning id into v_id;
+    return v_id;
+end;
+$$;
+
+create or replace function public.admin_delete_announcement(p_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    perform private.require_admin();
+    delete from public.announcements where id = p_id;
+end;
+$$;
+
 -- Location tags.
 create or replace function public.admin_add_location(p_name text)
 returns void
@@ -857,7 +921,9 @@ revoke execute on function
     public.admin_set_ducks_location(text[], text),
     public.admin_scan_duck(text, text, text),
     public.admin_add_location(text),
-    public.admin_delete_location(text)
+    public.admin_delete_location(text),
+    public.admin_post_announcement(text, text),
+    public.admin_delete_announcement(bigint)
 from public, anon;
 grant execute on function
     public.is_admin(),
@@ -875,5 +941,7 @@ grant execute on function
     public.admin_set_ducks_location(text[], text),
     public.admin_scan_duck(text, text, text),
     public.admin_add_location(text),
-    public.admin_delete_location(text)
+    public.admin_delete_location(text),
+    public.admin_post_announcement(text, text),
+    public.admin_delete_announcement(bigint)
 to authenticated;
