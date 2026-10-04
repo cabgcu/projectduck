@@ -828,6 +828,10 @@
         // ---------- QR SCANNER ----------
         let qrScanner = null;
         let scanning = false;
+        let claimInFlight = false;
+        let lastCode = null;
+        let lastCodeAt = 0;
+        const SAME_CODE_COOLDOWN_MS = 4000;
 
         function setScanUI(active, message) {
             scanning = active;
@@ -872,9 +876,12 @@
         }
 
         async function onScanSuccess(decodedText) {
-            if (!scanning) return;
-            stopScanner();
-            if (!player) return;
+            if (!scanning || claimInFlight || !player) return;
+            // Keep the camera running; just ignore the same code while it stays in frame.
+            const now = Date.now();
+            if (decodedText === lastCode && now - lastCodeAt < SAME_CODE_COOLDOWN_MS) return;
+            lastCode = decodedText;
+            claimInFlight = true;
 
             try {
                 const before = document.getElementById('rank-position').textContent;
@@ -898,6 +905,9 @@
                 }
             } catch (err) {
                 showToast(err.message || 'Couldn\'t claim that duck. Try again.');
+            } finally {
+                lastCodeAt = Date.now();
+                claimInFlight = false;
             }
         }
 
