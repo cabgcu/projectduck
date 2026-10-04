@@ -681,7 +681,8 @@ begin
     -- 2. Out of honored reports for this kind
     if v_status is null and private.reports_left(v_player.student_id, v_kind) <= 0 then
         v_status := 'denied';
-        v_outcome := format('You''ve used all %s of your %s reports.', private.report_limit(v_kind),
+        -- Players aren't told the cap, just that this one can't be honored
+        v_outcome := format('We can''t honor any more %s reports for you.',
                             case when v_kind = 'hologram' then 'hologram code' else 'Rebel duck' end);
     end if;
 
@@ -730,14 +731,12 @@ begin
         'message', v_outcome,
         'duck_id', case when v_status = 'honored' and v_matched then v_duck.duck_id end,
         'duck_type', case when v_status = 'honored' and v_matched then v_duck.duck_type end,
-        'points', coalesce(v_points, 0),
-        'rebel_left', private.reports_left(v_player.student_id, 'rebel'),
-        'hologram_left', private.reports_left(v_player.student_id, 'hologram')
+        'points', coalesce(v_points, 0)
     );
 end;
 $$;
 
--- A rescuer's own reports and how many they have left.
+-- A rescuer's own reports (their caps aren't shown to them).
 create or replace function public.get_my_reports(p_student_id text)
 returns jsonb
 language sql
@@ -746,10 +745,6 @@ security definer
 set search_path = ''
 as $$
     select jsonb_build_object(
-        'rebel_left', private.reports_left(trim(p_student_id), 'rebel'),
-        'hologram_left', private.reports_left(trim(p_student_id), 'hologram'),
-        'rebel_limit', private.report_limit('rebel'),
-        'hologram_limit', private.report_limit('hologram'),
         'reports', coalesce((
             select jsonb_agg(jsonb_build_object('id', r.id, 'kind', r.kind, 'location', r.location, 'issue', r.issue,
                                                 'status', r.status, 'outcome', r.outcome, 'duck_id', r.duck_id,
