@@ -4,12 +4,73 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Duck Hunt</title>
+    <script>
+        // ---------- PHONE ONLY + DETERRENTS ----------
+        // Duck Hunt is played on phones. Computers get a "use your phone" screen,
+        // and common ways of poking at the page are blocked. These are speed
+        // bumps, not security: the real protection is in the database (locked
+        // tables, codes and student data never sent to the app).
+        (function () {
+            var ua = navigator.userAgent || '';
+            var mobile = (navigator.userAgentData && navigator.userAgentData.mobile) ||
+                /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|Opera Mini|IEMobile/i.test(ua) ||
+                (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); // iPadOS reports as a Mac
+            window.DUCK_DESKTOP = !mobile;
+            if (window.DUCK_DESKTOP) {
+                document.documentElement.classList.add('desktop-blocked');
+                document.addEventListener('DOMContentLoaded', function () {
+                    var url = location.origin + location.pathname;
+                    document.body.innerHTML =
+                        '<div id="desktop-gate">' +
+                        '<img src="https://i.imgur.com/f4kE3Fg.png" alt="Duck Hunt">' +
+                        '<h1>Grab your phone, rescuer</h1>' +
+                        '<p>Duck Hunt only works on a phone. Open this page on your phone, or scan a duck\'s QR code with your camera.</p>' +
+                        '<p class="url"></p></div>';
+                    document.querySelector('#desktop-gate .url').textContent = url.replace(/^https?:\/\//, '');
+                });
+            }
+
+            // No right-click / long-press menus, dragging images, or dev-tool shortcuts
+            document.addEventListener('contextmenu', function (e) {
+                if (!(e.target.closest && e.target.closest('input, textarea'))) e.preventDefault();
+            });
+            document.addEventListener('dragstart', function (e) { e.preventDefault(); });
+            document.addEventListener('keydown', function (e) {
+                var k = (e.key || '').toLowerCase();
+                var mod = e.ctrlKey || e.metaKey;
+                if (k === 'f12' ||
+                    (mod && e.shiftKey && (k === 'i' || k === 'j' || k === 'c')) ||
+                    (mod && e.altKey && (k === 'i' || k === 'j' || k === 'c')) ||
+                    (mod && (k === 'u' || k === 's'))) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }, true);
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
+        /* Phone-only screen for computers */
+        html.desktop-blocked body { background: #000; }
+        #desktop-gate {
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 14px; padding: 32px; text-align: center; color: #fff; font-family: 'Inter', sans-serif;
+            background: radial-gradient(ellipse at center, #0b1020, #000 70%);
+        }
+        #desktop-gate img { height: 160px; width: auto; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.2)); }
+        #desktop-gate h1 { margin: 0; font-family: 'Rajdhani', sans-serif; font-size: 34px; letter-spacing: 0.06em; color: #ffe81f; }
+        #desktop-gate p { margin: 0; max-width: 420px; color: #cbd5e1; font-size: 16px; line-height: 1.5; }
+        #desktop-gate .url { margin-top: 6px; font-family: monospace; font-size: 15px; color: #ffe81f; }
+
+        /* No selecting text, callouts or dragging (forms still work normally) */
+        body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+        input, textarea, select { -webkit-user-select: text; user-select: text; }
+        img { -webkit-user-drag: none; }
+
         body {
             background-color: #000;
             overflow: hidden;
@@ -2413,6 +2474,7 @@
         }
 
         window.onload = function() {
+            if (window.DUCK_DESKTOP) return; // computers just see the phone-only screen
             resize();
             initStars();
             animate();
