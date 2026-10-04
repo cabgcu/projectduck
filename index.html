@@ -1451,11 +1451,24 @@
 
         async function refreshReports() {
             if (!player) return;
+            const before = reportInfo;
             try {
                 reportInfo = await rpc('get_my_reports', { p_student_id: player.student_id });
             } catch (err) {
                 return; // database not updated yet
             }
+            // An admin just approved or denied a report that was under review
+            if (before && before.student_id === player.student_id) {
+                const wasReview = new Set((before.reports || []).filter(r => r.status === 'review').map(r => r.id));
+                const decided = (reportInfo.reports || []).find(r => wasReview.has(r.id) && r.status !== 'review');
+                if (decided && decided.status === 'honored') {
+                    scanFeedback('ok', 'Report approved!', `+${decided.points} pts`, 'An admin approved your broken-code report.');
+                    refreshHome();
+                } else if (decided && decided.status === 'denied') {
+                    scanFeedback('warn', 'Report not approved', null, 'An admin reviewed your broken-code report.');
+                }
+            }
+            reportInfo.student_id = player.student_id;
             renderMyReports();
             updateReportKindUI();
         }
@@ -1465,7 +1478,7 @@
             list.innerHTML = '';
             (reportInfo && reportInfo.reports || []).slice(0, 10).forEach(r => {
                 const tone = r.status === 'honored' ? ['border-green-500/40 bg-green-500/10', 'text-green-300', 'Honored']
-                    : r.status === 'review' ? ['border-amber-400/40 bg-amber-400/10', 'text-amber-300', 'With an admin']
+                    : r.status === 'review' ? ['border-amber-400/40 bg-amber-400/10', 'text-amber-300', 'Under review']
                     : r.status === 'reversed' ? ['border-white/15 bg-white/[0.03]', 'text-gray-400', 'Undone']
                     : ['border-red-500/40 bg-red-500/10', 'text-red-300', 'Not honored'];
                 const li = document.createElement('li');
@@ -1555,7 +1568,7 @@
                     scanFeedback('ok', 'Report honored!', `+${result.points} pts`, 'Added to your score. Thanks for letting us know!');
                     refreshHome();
                 } else if (result.status === 'review') {
-                    scanFeedback('warn', 'Sent to an admin', null, result.message);
+                    scanFeedback('warn', 'Under review', null, 'Thanks! An admin will take a look and you\'ll see the result here.');
                 } else {
                     scanFeedback('err', 'Not honored', null, result.message);
                 }
