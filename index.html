@@ -797,7 +797,7 @@
                 title.textContent = scan.duck_type ? `${scan.duck_type} Duck` : 'Duck';
                 const meta = document.createElement('p');
                 meta.className = 'text-[12px] text-gray-400 truncate';
-                meta.textContent = `${scan.duck_id} · ${formatTime(scan.scanned_at)}`;
+                meta.textContent = `${scan.duck_id || "Retired duck"} · ${formatTime(scan.scanned_at)}`;
                 body.append(title, meta);
 
                 const points = document.createElement('span');

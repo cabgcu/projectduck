@@ -1,20 +1,20 @@
 -- =====================================================================
 -- Duck Hunt — Supabase schema
 --
--- Run this whole file in Supabase Dashboard → SQL Editor. Safe to re-run.
+-- Run this whole file in Supabase Dashboard → SQL Editor. Safe to re-run,
+-- including on a project set up with the old Google Sheet sync.
 --
--- Tables mirror the Google Sheet:
---   ducks     ⇄  "Master Ducks"  (Duck ID, Duck Type, Points, QR Code, Location, Claimed)
---   duck_log  →  "Duck Log"      (Duck ID, Student ID, Timestamp, Type)
---   players   ⇄  "Player"        (First Name, Last Name, Student ID, Email, Points, Codes Scanned)
+--   ducks     the hunt's ducks and their QR codes (managed on admin.html)
+--   players   registered rescuers and their points
+--   duck_log  every claimed scan
 --
--- The browser never touches these tables directly (RLS is on with no
--- policies). It only calls the security-definer functions below, so the
--- QR codes and player emails can't be read from the public API.
--- The Apps Script uses the secret (service_role) key, which bypasses RLS.
+-- Students (anon key) never touch these tables directly: RLS is on and
+-- they only call the security-definer functions below, so QR codes and
+-- emails can't be read from the public API.
+-- Admins (signed in with Supabase Auth and listed in private.admins) use
+-- the admin_* functions, and can read the tables for live updates.
 -- =====================================================================
 
-create extension if not exists pg_net;
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
 
@@ -48,12 +48,19 @@ create table if not exists public.ducks (
 
 create table if not exists public.duck_log (
     id         bigint generated always as identity primary key,
-    duck_id    text not null references public.ducks (duck_id) on delete cascade,
+    duck_id    text,
     student_id text not null references public.players (student_id) on delete cascade,
     scanned_at timestamptz not null default now(),
     duck_type  text,
     points     integer not null default 0
 );
+
+-- Deleting a duck keeps the scans (and the points they earned); renaming
+-- a duck's ID carries its scans along
+alter table public.duck_log alter column duck_id drop not null;
+alter table public.duck_log drop constraint if exists duck_log_duck_id_fkey;
+alter table public.duck_log add constraint duck_log_duck_id_fkey
+    foreign key (duck_id) references public.ducks (duck_id) on delete set null on update cascade;
 
 create index if not exists duck_log_student_idx on public.duck_log (student_id, scanned_at desc);
 create index if not exists players_points_idx on public.players (points desc);
@@ -65,6 +72,10 @@ alter table public.duck_log enable row level security;
 revoke all on public.players, public.ducks, public.duck_log from anon, authenticated;
 grant all on public.players, public.ducks, public.duck_log to service_role;
 grant usage, select on all sequences in schema public to service_role;
+
+-- Remove the old Google Sheet sync, if it was installed
+drop function if exists private.notify_sheet() cascade;
+drop table if exists private.sheet_sync;
 
 
 -- ---------------------------------------------------------------------
@@ -89,7 +100,7 @@ set search_path = ''
 as $$
 begin
     new.updated_at := now();
-    -- Unchecking "Claimed" in the sheet re-opens the duck
+    -- Setting claimed = false re-opens the duck
     if not new.claimed then
         new.claimed_by := null;
         new.claimed_at := null;
@@ -105,6 +116,32 @@ create trigger players_touch before update on public.players
 drop trigger if exists ducks_touch on public.ducks;
 create trigger ducks_touch before insert or update on public.ducks
     for each row execute function private.touch_duck();
+
+
+-- Deleting a scan undoes it: the duck is un-claimed and the player loses
+-- its points.
+create or replace function private.undo_claim()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    update public.ducks
+    set claimed = false
+    where duck_id = old.duck_id and claimed_by = old.student_id;
+
+    update public.players
+    set points = greatest(points - old.points, 0),
+        codes_scanned = greatest(codes_scanned - 1, 0)
+    where student_id = old.student_id;
+    return old;
+end;
+$$;
+
+drop trigger if exists duck_log_undo on public.duck_log;
+create trigger duck_log_undo after delete on public.duck_log
+    for each row execute function private.undo_claim();
 
 
 -- ---------------------------------------------------------------------
@@ -320,61 +357,264 @@ grant execute on function
 to anon, authenticated;
 
 
+
+
 -- ---------------------------------------------------------------------
--- Live updates → Google Sheet
+-- Admins
 --
--- Every change to ducks / players and every new scan is POSTed to the
--- Apps Script web app. Fill in the config row once the web app is
--- deployed (see backend/README.md):
---
---   insert into private.sheet_sync (webhook_url, secret)
---   values ('https://script.google.com/macros/s/XXXX/exec', 'your-webhook-secret')
---   on conflict (id) do update set webhook_url = excluded.webhook_url, secret = excluded.secret;
+-- 1. Supabase Dashboard → Authentication → Users → Add user (email +
+--    password, tick "Auto Confirm User").
+-- 2. Make that account an admin:
+--      insert into private.admins (user_id)
+--      select id from auth.users where email = 'you@example.com'
+--      on conflict do nothing;
 -- ---------------------------------------------------------------------
 
-create table if not exists private.sheet_sync (
-    id          integer primary key default 1 check (id = 1),
-    webhook_url text not null,
-    secret      text not null
+create table if not exists private.admins (
+    user_id    uuid primary key references auth.users (id) on delete cascade,
+    created_at timestamptz not null default now()
 );
 
-create or replace function private.notify_sheet()
-returns trigger
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+    select exists (select 1 from private.admins a where a.user_id = auth.uid());
+$$;
+
+create or replace function private.require_admin()
+returns void
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+    if not public.is_admin() then
+        raise exception 'Admins only' using errcode = '42501';
+    end if;
+end;
+$$;
+
+-- Admins can read the tables, which is what Supabase Realtime needs to
+-- stream changes to admin.html. All writes go through admin_* functions.
+grant select on public.players, public.ducks, public.duck_log to authenticated;
+
+drop policy if exists admins_read on public.players;
+create policy admins_read on public.players for select to authenticated using (public.is_admin());
+drop policy if exists admins_read on public.ducks;
+create policy admins_read on public.ducks for select to authenticated using (public.is_admin());
+drop policy if exists admins_read on public.duck_log;
+create policy admins_read on public.duck_log for select to authenticated using (public.is_admin());
+
+do $$
+declare
+    t text;
+begin
+    if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+        foreach t in array array['players', 'ducks', 'duck_log'] loop
+            if not exists (
+                select 1 from pg_publication_tables
+                where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
+            ) then
+                execute format('alter publication supabase_realtime add table public.%I', t);
+            end if;
+        end loop;
+    end if;
+end;
+$$;
+
+-- Everything the admin page shows, in one call.
+create or replace function public.admin_overview()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+    perform private.require_admin();
+    return jsonb_build_object(
+        'ducks', coalesce((
+            select jsonb_agg(to_jsonb(d) order by d.duck_id)
+            from (
+                select d.*, concat_ws(' ', p.first_name, p.last_name) as claimed_by_name
+                from public.ducks d
+                left join public.players p on p.student_id = d.claimed_by
+            ) d
+        ), '[]'::jsonb),
+        'players', coalesce((
+            select jsonb_agg(to_jsonb(p) order by p.points desc, p.created_at)
+            from (
+                select p.*, rank() over (order by p.points desc) as place
+                from public.players p
+            ) p
+        ), '[]'::jsonb),
+        'scans', coalesce((
+            select jsonb_agg(to_jsonb(l) order by l.scanned_at desc, l.id desc)
+            from (
+                select l.*, concat_ws(' ', p.first_name, p.last_name) as player_name
+                from public.duck_log l
+                left join public.players p on p.student_id = l.student_id
+                order by l.scanned_at desc, l.id desc
+                limit 200
+            ) l
+        ), '[]'::jsonb),
+        'total_scans', (select count(*) from public.duck_log)
+    );
+end;
+$$;
+
+-- Add a duck (p_original_id null) or update one, including renaming it.
+create or replace function public.admin_save_duck(
+    p_original_id text,
+    p_duck_id     text,
+    p_duck_type   text,
+    p_points      integer,
+    p_qr_code     text,
+    p_location    text
+)
+returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
-declare
-    v_cfg private.sheet_sync;
 begin
-    select * into v_cfg from private.sheet_sync where id = 1;
-    if v_cfg is null then
-        return null;
+    perform private.require_admin();
+    if coalesce(trim(p_duck_id), '') = '' or coalesce(trim(p_qr_code), '') = '' then
+        raise exception 'Duck ID and QR code are required';
+    end if;
+    if coalesce(p_points, 0) < 0 then
+        raise exception 'Points can''t be negative';
     end if;
 
-    -- Apps Script can't read request headers, so the secret rides in the body
-    perform net.http_post(
-        url     := v_cfg.webhook_url,
-        body    := jsonb_build_object(
-            'secret', v_cfg.secret,
-            'table',  tg_table_name,
-            'op',     tg_op,
-            'record', case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end
-        ),
-        headers := '{"Content-Type": "application/json"}'::jsonb
-    );
-    return null;
+    if p_original_id is null then
+        insert into public.ducks (duck_id, duck_type, points, qr_code, location)
+        values (trim(p_duck_id), nullif(trim(p_duck_type), ''), coalesce(p_points, 0), trim(p_qr_code), nullif(trim(p_location), ''));
+    else
+        update public.ducks
+        set duck_id = trim(p_duck_id),
+            duck_type = nullif(trim(p_duck_type), ''),
+            points = coalesce(p_points, 0),
+            qr_code = trim(p_qr_code),
+            location = nullif(trim(p_location), '')
+        where duck_id = p_original_id;
+        if not found then
+            raise exception 'Duck % no longer exists', p_original_id;
+        end if;
+    end if;
+exception
+    when unique_violation then
+        raise exception 'That Duck ID or QR code is already used by another duck';
 end;
 $$;
 
-drop trigger if exists ducks_to_sheet on public.ducks;
-create trigger ducks_to_sheet after insert or update or delete on public.ducks
-    for each row execute function private.notify_sheet();
+-- Retire a duck. Its scans and the points they earned are kept.
+create or replace function public.admin_delete_duck(p_duck_id text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    perform private.require_admin();
+    delete from public.ducks where duck_id = p_duck_id;
+end;
+$$;
 
-drop trigger if exists players_to_sheet on public.players;
-create trigger players_to_sheet after insert or update or delete on public.players
-    for each row execute function private.notify_sheet();
+-- Make a claimed duck findable again and take its points back.
+create or replace function public.admin_reopen_duck(p_duck_id text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    perform private.require_admin();
+    -- Deleting the claim's scan runs private.undo_claim
+    delete from public.duck_log l
+    using public.ducks d
+    where d.duck_id = p_duck_id and l.duck_id = d.duck_id and l.student_id = d.claimed_by;
+    update public.ducks set claimed = false where duck_id = p_duck_id;
+end;
+$$;
 
-drop trigger if exists duck_log_to_sheet on public.duck_log;
-create trigger duck_log_to_sheet after insert on public.duck_log
-    for each row execute function private.notify_sheet();
+-- Undo one scan: re-opens the duck and takes the points back.
+create or replace function public.admin_undo_scan(p_scan_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    perform private.require_admin();
+    delete from public.duck_log where id = p_scan_id;
+end;
+$$;
+
+create or replace function public.admin_save_player(
+    p_student_id text,
+    p_first_name text,
+    p_last_name  text,
+    p_email      text,
+    p_points     integer
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    perform private.require_admin();
+    if coalesce(trim(p_first_name), '') = '' then
+        raise exception 'First name is required';
+    end if;
+    update public.players
+    set first_name = trim(p_first_name),
+        last_name = coalesce(trim(p_last_name), ''),
+        email = nullif(lower(trim(p_email)), ''),
+        points = greatest(coalesce(p_points, 0), 0)
+    where student_id = p_student_id;
+    if not found then
+        raise exception 'Rescuer % no longer exists', p_student_id;
+    end if;
+end;
+$$;
+
+-- Remove a rescuer. Their ducks become findable again.
+create or replace function public.admin_delete_player(p_student_id text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    perform private.require_admin();
+    delete from public.duck_log where student_id = p_student_id;
+    update public.ducks set claimed = false where claimed_by = p_student_id;
+    delete from public.players where student_id = p_student_id;
+end;
+$$;
+
+revoke execute on function
+    public.admin_overview(),
+    public.admin_save_duck(text, text, text, integer, text, text),
+    public.admin_delete_duck(text),
+    public.admin_reopen_duck(text),
+    public.admin_undo_scan(bigint),
+    public.admin_save_player(text, text, text, text, integer),
+    public.admin_delete_player(text)
+from public, anon;
+grant execute on function
+    public.is_admin(),
+    public.admin_overview(),
+    public.admin_save_duck(text, text, text, integer, text, text),
+    public.admin_delete_duck(text),
+    public.admin_reopen_duck(text),
+    public.admin_undo_scan(bigint),
+    public.admin_save_player(text, text, text, text, integer),
+    public.admin_delete_player(text)
+to authenticated;
