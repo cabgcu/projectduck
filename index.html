@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
@@ -81,43 +80,36 @@
             #scan-splash .icon svg path { animation: none; stroke-dashoffset: 0; }
         }
 
-        /* Duck Vader: Force grip, screen crumbles, Duck Vader revealed */
-        .force-grip { animation: force-shake 0.9s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes force-shake {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            10% { transform: translate(-4px, 2px) scale(1.005); }
-            20% { transform: translate(5px, -3px) scale(0.995); }
-            30% { transform: translate(-7px, 4px) scale(1.01); }
-            40% { transform: translate(8px, -2px) scale(0.99); }
-            50% { transform: translate(-9px, -5px) scale(1.015); }
-            60% { transform: translate(10px, 5px) scale(0.985); }
-            70% { transform: translate(-10px, 3px) scale(1.02); }
-            80% { transform: translate(9px, -6px) scale(0.98); }
-            90% { transform: translate(-6px, 4px) scale(1.01); }
+        /* Duck Vader: screen goes black, a red lightsaber ignites up the full screen, then retracts */
+        #vader-stage { position: fixed; inset: 0; z-index: 95; background: #000; overflow: hidden; }
+        #vader-stage .flood {
+            position: absolute; inset: 0; opacity: 0;
+            background: radial-gradient(ellipse 60% 90% at 50% 60%, rgba(255, 30, 30, 0.45), rgba(120, 0, 0, 0.25) 45%, transparent 75%);
         }
-        #force-vignette {
-            position: fixed; inset: 0; z-index: 94; pointer-events: none;
-            background: radial-gradient(ellipse at center, transparent 35%, rgba(150, 0, 0, 0.75) 100%);
-            animation: force-pulse 0.9s ease-in-out both;
+        #vader-stage .hilt {
+            position: absolute; left: 50%; bottom: 0; width: 46px; height: 130px; margin-left: -23px; opacity: 0;
+            border-radius: 6px 6px 0 0;
+            background:
+                repeating-linear-gradient(to bottom, transparent 0 14px, rgba(0, 0, 0, 0.55) 14px 18px) 0 34px / 100% 60px no-repeat,
+                linear-gradient(to right, #3a3a3a, #d9d9d9 30%, #8a8a8a 55%, #e8e8e8 75%, #2e2e2e);
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.8);
         }
-        @keyframes force-pulse { 0% { opacity: 0; } 30% { opacity: 1; } 55% { opacity: 0.5; } 80%, 100% { opacity: 1; } }
-        #force-stage { position: fixed; inset: 0; z-index: 95; background: #000; display: flex; align-items: center; justify-content: center; }
-        #force-stage { cursor: pointer; overflow: hidden; }
-        #force-stage img {
-            width: 100%; height: 100%; object-fit: contain;
-            animation: vader-reveal 6s ease-out both;
+        #vader-stage .hilt::before {
+            content: ''; position: absolute; left: -5px; right: -5px; top: -8px; height: 12px; border-radius: 3px;
+            background: linear-gradient(to right, #222, #9a9a9a 40%, #555 70%, #1a1a1a);
         }
-        @keyframes vader-reveal {
-            0% { transform: scale(1.15); filter: brightness(0.3) saturate(1.4) drop-shadow(0 0 0 rgba(255, 0, 0, 0)); }
-            25% { filter: brightness(1.1) saturate(1.2) drop-shadow(0 0 40px rgba(255, 0, 0, 0.6)); }
-            100% { transform: scale(1); filter: brightness(1) saturate(1) drop-shadow(0 0 25px rgba(255, 0, 0, 0.35)); }
+        #vader-stage .hilt::after {
+            content: ''; position: absolute; left: 10px; top: 58px; width: 8px; height: 8px; border-radius: 50%;
+            background: #ff2a2a; box-shadow: 0 0 6px #ff2a2a;
         }
-        #force-stage::after {
-            content: ''; position: absolute; inset: 0; pointer-events: none;
-            background: radial-gradient(ellipse at center, transparent 55%, rgba(120, 0, 0, 0.55) 100%);
+        #vader-stage .blade {
+            position: absolute; left: 50%; bottom: 130px; width: 26px; margin-left: -13px; height: calc(100% - 130px);
+            border-radius: 13px 13px 4px 4px; transform-origin: bottom; transform: scaleY(0);
+            background: linear-gradient(to right, #ffb3b3, #fff 35%, #fff 65%, #ffb3b3);
+            box-shadow: 0 0 6px 2px #fff, 0 0 18px 6px #ff2020, 0 0 45px 16px #ff0000, 0 0 110px 40px rgba(255, 0, 0, 0.7), 0 0 220px 90px rgba(200, 0, 0, 0.45);
         }
-        @media (prefers-reduced-motion: reduce) { #force-stage img { animation: none; } }
-        .force-shard { position: fixed; z-index: 96; pointer-events: none; background-repeat: no-repeat; will-change: transform, opacity; }
+        #vader-stage .blade.lit { animation: saber-flicker 0.12s infinite alternate; }
+        @keyframes saber-flicker { from { filter: brightness(1); } to { filter: brightness(1.18); } }
 
         /* Hologram limit: the screen freezes over */
         #freeze-overlay { position: fixed; inset: 0; z-index: 93; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 24px; }
@@ -1484,124 +1476,93 @@
         }
 
         // ---------- DUCK VADER ----------
-        // Claiming a "Vader" duck: the screen is Force-gripped, crumbles away and
-        // Duck Vader is revealed full screen until the player taps to close.
-        const VADER_IMAGE_SRC = 'https://i.imgur.com/fXdWOhK.jpeg';
-        new Image().src = VADER_IMAGE_SRC; // preload so it's ready when the screen crumbles
-        let forceRunning = false;
+        // Claiming a "Vader" duck: the screen goes black, a red lightsaber ignites
+        // from the bottom up the full height of the screen, hums, then retracts.
+        let vaderRunning = false;
 
         function isVaderDuck(type) {
             return /vader/i.test(String(type || ''));
         }
 
-        // Picture of the current screen, or null if it can't be taken
-        async function snapshotScreen() {
-            if (typeof html2canvas === 'undefined') return null;
-            try {
-                const shot = html2canvas(document.body, {
-                    backgroundColor: '#000', useCORS: true, logging: false,
-                    ignoreElements: el => el.id === 'force-vignette',
-                    scale: Math.min(window.devicePixelRatio || 1, 1.5),
-                    x: window.scrollX, y: window.scrollY, width: window.innerWidth, height: window.innerHeight,
-                    windowWidth: window.innerWidth, windowHeight: window.innerHeight
-                });
-                const timeout = new Promise(resolve => setTimeout(() => resolve(null), 2500));
-                return await Promise.race([shot, timeout]);
-            } catch (e) {
-                return null;
+        // Ignition / hum / retract, synthesized (needs audio unlocked by a tap)
+        function saberSound(kind) {
+            if (!audioCtx || audioCtx.state !== 'running') return;
+            const now = audioCtx.currentTime;
+            const out = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 900;
+            filter.connect(out).connect(audioCtx.destination);
+            const tone = (type, from, to, start, dur, vol) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(from, now + start);
+                osc.frequency.exponentialRampToValueAtTime(to, now + start + dur);
+                gain.gain.setValueAtTime(0.0001, now + start);
+                gain.gain.exponentialRampToValueAtTime(vol, now + start + 0.04);
+                gain.gain.setValueAtTime(vol, now + start + dur - 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+                osc.connect(gain).connect(filter);
+                osc.start(now + start);
+                osc.stop(now + start + dur + 0.05);
+            };
+            if (kind === 'ignite') {
+                tone('sawtooth', 60, 180, 0, 0.45, 0.22);
+                tone('sawtooth', 90, 92, 0.35, 1.6, 0.12);   // hum
+                tone('sine', 140, 141, 0.35, 1.6, 0.08);
+            } else {
+                tone('sawtooth', 180, 50, 0, 0.4, 0.2);
             }
         }
 
-        // Break the screenshot into pieces that crack apart and fall
-        function crumble(shot) {
-            const w = window.innerWidth, h = window.innerHeight;
-            const url = shot.toDataURL('image/jpeg', 0.85);
-            const cols = w < 600 ? 7 : 12;
-            const size = w / cols;
-            const rows = Math.ceil(h / size);
-            const shards = [];
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    const el = document.createElement('div');
-                    el.className = 'force-shard';
-                    el.style.left = c * size + 'px';
-                    el.style.top = r * size + 'px';
-                    el.style.width = el.style.height = Math.ceil(size) + 1 + 'px';
-                    el.style.backgroundImage = `url(${url})`;
-                    el.style.backgroundSize = `${w}px ${h}px`;
-                    el.style.backgroundPosition = `${-c * size}px ${-r * size}px`;
-                    document.body.appendChild(el);
-                    shards.push(el);
-
-                    // Pieces nearest the middle break first; everything falls with gravity
-                    const dx = (c + 0.5) * size - w / 2, dy = (r + 0.5) * size - h / 2;
-                    const dist = Math.hypot(dx, dy) / Math.hypot(w / 2, h / 2);
-                    const crack = `translate(${(Math.random() - 0.5) * 6}px, ${(Math.random() - 0.5) * 6}px) rotate(${(Math.random() - 0.5) * 4}deg)`;
-                    const fall = `translate(${dx * 0.4 + (Math.random() - 0.5) * 160}px, ${h * (0.9 + Math.random() * 0.5)}px) ` +
-                        `rotate(${(Math.random() - 0.5) * 540}deg) scale(${0.4 + Math.random() * 0.4})`;
-                    el.animate([
-                        { transform: 'none', opacity: 1 },
-                        { transform: crack, opacity: 1, offset: 0.15 },
-                        { transform: fall, opacity: 0 }
-                    ], {
-                        duration: 1400 + Math.random() * 700,
-                        delay: dist * 500 + Math.random() * 200,
-                        easing: 'cubic-bezier(.5, 0, .9, .5)',
-                        fill: 'forwards'
-                    });
-                }
-            }
-            setTimeout(() => shards.forEach(el => el.remove()), 3200);
-        }
-
-        function showVader() {
-            const stage = document.createElement('div');
-            stage.id = 'force-stage';
-            stage.setAttribute('role', 'dialog');
-            stage.setAttribute('aria-label', 'Duck Vader');
-            stage.innerHTML = `
-                <img src="${VADER_IMAGE_SRC}" alt="Duck Vader">
-                <button type="button" aria-label="Close" class="absolute right-4 top-4 z-[97] p-2 rounded-xl bg-black/60 border border-white/20 text-gray-200 hover:text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-                <p class="absolute bottom-8 inset-x-0 z-[97] text-center font-tech tracking-[0.3em] uppercase text-[13px] text-red-200/80">Tap to continue</p>`;
-            document.body.appendChild(stage);
-            // Tap anywhere (after a moment, so the scan tap doesn't skip it)
-            setTimeout(() => stage.addEventListener('click', () => endForce(stage)), 600);
-            return stage;
-        }
-
-        let forceResumeScanner = false;
-        function endForce(stage) {
-            if (!stage.isConnected) return;
-            stage.remove();
-            forceRunning = false;
-            if (forceResumeScanner) startScanner();
-        }
-
-        async function forceCrumble() {
-            if (forceRunning) return;
-            forceRunning = true;
-            forceResumeScanner = scanning;
+        function vaderSaber(onDone) {
+            if (vaderRunning) return;
+            vaderRunning = true;
+            const resumeScanner = scanning;
             if (scanning) stopScanner();
-            if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 600]);
+            if (navigator.vibrate) navigator.vibrate([0, 700, 80, 250, 60, 250]);
 
-            const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (reduceMotion) return showVader();
+            const stage = document.createElement('div');
+            stage.id = 'vader-stage';
+            stage.setAttribute('aria-hidden', 'true');
+            stage.innerHTML = '<div class="flood"></div><div class="blade"></div><div class="hilt"></div>';
+            document.body.appendChild(stage);
+            const flood = stage.querySelector('.flood');
+            const blade = stage.querySelector('.blade');
+            const hilt = stage.querySelector('.hilt');
+            const at = (ms, fn) => setTimeout(fn, ms);
+            const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const ease = 'cubic-bezier(.2, .8, .2, 1)';
 
-            // 1. Force grip: shake and darken while the screenshot is taken
-            const home = document.getElementById('home-view');
-            const vignette = document.createElement('div');
-            vignette.id = 'force-vignette';
-            document.body.appendChild(vignette);
-            home.classList.add('force-grip');
-            const [shot] = await Promise.all([snapshotScreen(), new Promise(r => setTimeout(r, 900))]);
-            home.classList.remove('force-grip');
-
-            // 2. Duck Vader appears behind the screen as it crumbles away
-            showVader();
-            if (shot) crumble(shot);
-            vignette.remove();
+            // 1. Black out
+            stage.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 450, fill: 'forwards' });
+            // 2. Hilt appears
+            at(500, () => hilt.animate([{ opacity: 0, transform: 'translateY(20px)' }, { opacity: 1, transform: 'none' }], { duration: 300, fill: 'forwards' }));
+            // 3. Ignite: the blade shoots up the whole screen
+            at(950, () => {
+                saberSound('ignite');
+                blade.animate([{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], { duration: reduce ? 1 : 380, easing: ease, fill: 'forwards' });
+                flood.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 380, fill: 'forwards' });
+                blade.classList.add('lit');
+            });
+            // 4. Retract back into the hilt
+            at(2700, () => {
+                saberSound('retract');
+                blade.classList.remove('lit');
+                blade.animate([{ transform: 'scaleY(1)' }, { transform: 'scaleY(0)' }], { duration: reduce ? 1 : 420, easing: 'cubic-bezier(.6, 0, .9, .4)', fill: 'forwards' });
+                flood.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 420, fill: 'forwards' });
+            });
+            // 5. Hilt fades, black lifts
+            at(3250, () => hilt.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: 'forwards' }));
+            at(3500, () => {
+                stage.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, fill: 'forwards' }).onfinish = () => {
+                    stage.remove();
+                    vaderRunning = false;
+                    if (resumeScanner) startScanner();
+                    if (onDone) onDone();
+                };
+            });
         }
 
         // ---------- HOLOGRAM LIMIT ----------
@@ -1736,9 +1697,13 @@
                 setChecking(false);
 
                 if (result.status === 'claimed') {
-                    scanFeedback('ok', `${name || 'Duck'} rescued!`, `+${result.points} pts`, 'Added to your score 🦆');
-                    if (isVaderDuck(result.duck_type)) forceCrumble();
-                    else if (isNormalDuck(result.duck_type)) saberDuckBurst();
+                    const celebrate = () => scanFeedback('ok', `${name || 'Duck'} rescued!`, `+${result.points} pts`, 'Added to your score 🦆');
+                    if (isVaderDuck(result.duck_type)) {
+                        vaderSaber(celebrate); // show the points once the saber is gone
+                    } else {
+                        celebrate();
+                        if (isNormalDuck(result.duck_type)) saberDuckBurst();
+                    }
                     const me = await refreshHome();
                     const rankUp = me && before.startsWith('#') && me.place < parseInt(before.slice(1), 10);
                     if (rankUp) setTimeout(() => showToast(`You moved up to #${me.place}! 🚀`), 1800);
