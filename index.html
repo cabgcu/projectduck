@@ -7,48 +7,36 @@
     <link rel="icon" type="image/png" href="https://i.imgur.com/Srn2y30.png">
     <link rel="apple-touch-icon" href="https://i.imgur.com/Srn2y30.png">
     <script>
-        // ---------- PHONE ONLY + TAMPER LOCKOUT ----------
-        // Duck Hunt is played on phones. Computers (and Chrome's fake-phone
-        // device mode) get a "use your phone" screen. Trying to inspect the
-        // page wipes it and reloads to an "Access denied" screen for a minute.
+        // ---------- TAMPER LOCKOUT ----------
+        // Trying to inspect the page wipes it and reloads to an "Access denied"
+        // screen for a minute.
         // These are deterrents; the real protection is in the database (locked
         // tables, codes and student data never sent to the app).
         (function () {
             var LOCK_KEY = 'duckhunt.locked';
             var LOCK_MS = 60 * 1000;
             var ua = navigator.userAgent || '';
-            var platform = navigator.platform || '';
-            var touch = navigator.maxTouchPoints || 0;
             var claimsMobile = (navigator.userAgentData && navigator.userAgentData.mobile) ||
                 /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|Opera Mini|IEMobile/i.test(ua) ||
-                (/Macintosh/.test(ua) && touch > 1); // iPadOS reports as a Mac
-            // Chrome device mode fakes a phone's name but not the computer underneath
-            var computerUnderneath = /^Win/.test(platform) || /x86_64|i686/.test(platform) ||
-                (/^Mac/.test(platform) && touch <= 1 && /iPhone|Android/i.test(ua));
+                (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); // iPadOS reports as a Mac
 
             function lockedUntil() {
                 try { return Number(localStorage.getItem(LOCK_KEY)) || 0; } catch (e) { return 0; }
             }
 
-            function showScreen(kind) {
-                var html = kind === 'locked'
-                    ? '<div id="desktop-gate" class="locked"><div class="icon">⚠</div><h1>Access denied</h1>' +
-                      '<p>Inspecting Duck Hunt isn\'t allowed. The app is locked on this device for a minute.</p>' +
-                      '<p class="url" id="lock-count"></p></div>'
-                    : '<div id="desktop-gate"><img src="https://i.imgur.com/f4kE3Fg.png" alt="Duck Hunt"><h1>Grab your phone, rescuer</h1>' +
-                      '<p>Duck Hunt only works on a phone. Open this page on your phone, or scan a duck\'s QR code with your camera.</p>' +
-                      '<p class="url">' + (location.host + location.pathname) + '</p></div>';
-                document.body.innerHTML = html;
-                if (kind === 'locked') {
-                    (function tick() {
-                        var left = Math.ceil((lockedUntil() - Date.now()) / 1000);
-                        var el = document.getElementById('lock-count');
-                        if (!el) return;
-                        if (left <= 0) { location.reload(); return; }
-                        el.textContent = 'Try again in ' + left + 's';
-                        setTimeout(tick, 1000);
-                    })();
-                }
+            function showLockedScreen() {
+                document.body.innerHTML =
+                    '<div id="desktop-gate" class="locked"><div class="icon">⚠</div><h1>Access denied</h1>' +
+                    '<p>Inspecting Duck Hunt isn\'t allowed. The app is locked on this device for a minute.</p>' +
+                    '<p class="url" id="lock-count"></p></div>';
+                (function tick() {
+                    var left = Math.ceil((lockedUntil() - Date.now()) / 1000);
+                    var el = document.getElementById('lock-count');
+                    if (!el) return;
+                    if (left <= 0) { location.reload(); return; }
+                    el.textContent = 'Try again in ' + left + 's';
+                    setTimeout(tick, 1000);
+                })();
             }
 
             // Wipe the page, stop the camera, and reload to the locked screen
@@ -67,11 +55,11 @@
             }
             window.DUCK_LOCKOUT = lockout;
 
-            var locked = lockedUntil() > Date.now();
-            window.DUCK_DESKTOP = locked || !claimsMobile || computerUnderneath;
-            if (window.DUCK_DESKTOP) {
+            // While locked, the app doesn't start
+            window.DUCK_LOCKED = lockedUntil() > Date.now();
+            if (window.DUCK_LOCKED) {
                 document.documentElement.classList.add('desktop-blocked');
-                document.addEventListener('DOMContentLoaded', function () { showScreen(locked ? 'locked' : 'desktop'); });
+                document.addEventListener('DOMContentLoaded', showLockedScreen);
             }
 
             // Shortcuts for dev tools / view source / save page trip the lockout
@@ -111,7 +99,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
-        /* Phone-only screen for computers */
+        /* Full-screen "Access denied" lock screen */
         html.desktop-blocked body { background: #000; }
         #desktop-gate {
             min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -2534,7 +2522,7 @@
         }
 
         window.onload = function() {
-            if (window.DUCK_DESKTOP) return; // computers just see the phone-only screen
+            if (window.DUCK_LOCKED) return; // locked after an inspect attempt
             resize();
             initStars();
             animate();
