@@ -5,356 +5,461 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex">
     <title>Duck Hunt Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --blue: #1a73e8;
+            --blue-hover: #1765cc;
+            --blue-soft: #e8f0fe;
+            --text: #202124;
+            --muted: #5f6368;
+            --line: #dadce0;
+            --line-soft: #f1f3f4;
+            --red: #d93025;
+            --green: #188038;
+            --green-soft: #e6f4ea;
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            background-color: #000;
-            font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 0;
+            font-family: 'Roboto', Arial, sans-serif;
+            font-size: 14px;
+            color: var(--text);
+            background: #fff;
         }
 
-        #starfield {
-            position: fixed;
-            inset: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 0;
-            pointer-events: none;
-        }
+        [hidden] { display: none !important; }
 
-        .font-tech { font-family: 'Rajdhani', sans-serif; }
+        button, input, select { font: inherit; color: inherit; }
 
-        .shimmer-wrapper {
-            position: relative;
-            padding: 2px;
-            border-radius: 1.25rem;
-            background: linear-gradient(60deg, #000000 0%, #0a0a0a 25%, #171717 45%, #cbd5e1 50%, #171717 55%, #0a0a0a 75%, #000000 100%);
-            background-size: 300% 300%;
-            animation: glide-shimmer 7s ease-in-out infinite alternate;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
-        }
-
-        @keyframes glide-shimmer {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 100% 50%; }
-        }
-
-        .glass-inner {
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-radius: calc(1.25rem - 2px);
-            box-shadow:
-                inset 0 1px 1px rgba(255, 255, 255, 0.08),
-                inset 1px 0 1px rgba(255, 255, 255, 0.03),
-                inset 0 -1px 2px rgba(0, 0, 0, 0.9),
-                inset -1px 0 2px rgba(0, 0, 0, 0.9),
-                0 25px 50px -12px rgba(0, 0, 0, 1);
-        }
-
-        .glass-input {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05), 0 4px 10px rgba(0, 0, 0, 0.5);
-            transition: all 0.3s ease;
-        }
-
-        .glass-input:focus {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(255, 255, 255, 0.5);
-            outline: none;
-            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1), 0 0 15px rgba(255, 255, 255, 0.15);
-        }
-
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover,
-        input:-webkit-autofill:focus {
-            -webkit-box-shadow: 0 0 0 30px #0a0a0a inset !important;
-            -webkit-text-fill-color: white !important;
-        }
-
-        .card-label {
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 13px;
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            color: rgba(203, 213, 225, 0.7);
-        }
-
-        @media (max-width: 640px) {
-            .card-label { font-size: 11px; letter-spacing: 0.15em; }
-        }
-
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
+        /* Buttons */
         .btn {
-            border-radius: 0.75rem;
-            font-weight: 700;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
-        }
-        .btn:active { transform: scale(0.98); }
-        .btn:disabled { opacity: 0.6; cursor: wait; }
-        .btn-ghost { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; }
-        .btn-ghost:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.4); box-shadow: 0 0 15px rgba(255, 255, 255, 0.1); }
-        .btn-gold { background: rgba(255, 232, 31, 0.1); border: 1px solid rgba(255, 232, 31, 0.4); color: #fff; }
-        .btn-gold:hover { background: rgba(255, 232, 31, 0.2); border-color: rgba(255, 232, 31, 0.6); box-shadow: 0 0 15px rgba(255, 232, 31, 0.3); }
-        .btn-danger { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: #fff; }
-        .btn-danger:hover { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.6); box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
-
-        .chip {
-            font-size: 12px;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: rgba(156, 163, 175, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 36px;
+            padding: 0 16px;
+            border-radius: 4px;
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--blue);
+            font-weight: 500;
+            cursor: pointer;
             white-space: nowrap;
         }
-        .chip-gold { color: #ffe81f; border-color: rgba(255, 232, 31, 0.4); background: rgba(255, 232, 31, 0.08); }
+        .btn:hover { background: #f8fbff; border-color: #d2e3fc; }
+        .btn:disabled { opacity: 0.5; cursor: default; }
+        .btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+        .btn-primary:hover { background: var(--blue-hover); border-color: var(--blue-hover); }
+        .btn-danger { color: var(--red); }
+        .btn-danger:hover { background: #fce8e6; border-color: #f6aea9; }
+        .btn-sm { height: 28px; padding: 0 10px; font-size: 13px; }
+        .link { background: none; border: none; color: var(--blue); cursor: pointer; padding: 0 4px; font-weight: 500; }
+        .link:hover { text-decoration: underline; }
+        .link-danger { color: var(--red); }
 
-        .tab { color: rgba(156, 163, 175, 1); transition: all 0.25s ease; }
-        .tab:hover { color: #fff; }
-        .tab.active {
-            color: #000;
-            background: #ffe81f;
-            box-shadow: 0 0 20px rgba(255, 232, 31, 0.45);
+        input[type=text], input[type=email], input[type=password], input[type=number], input[type=search] {
+            height: 36px;
+            padding: 0 10px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            background: #fff;
+            outline: none;
         }
+        input:focus { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
 
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 9999px;
-            background: #6b7280;
-        }
-        .live-dot.on {
-            background: #ffe81f;
-            box-shadow: 0 0 10px rgba(255, 232, 31, 0.9);
-            animation: pulse-dot 1.6s ease-in-out infinite;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.35; }
-        }
+        /* Login */
+        .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .login-card { width: 100%; max-width: 400px; border: 1px solid var(--line); border-radius: 8px; padding: 40px 32px; }
+        .login-card h1 { font-size: 24px; font-weight: 400; margin: 0 0 4px; text-align: center; }
+        .login-card p.sub { color: var(--muted); text-align: center; margin: 0 0 24px; }
+        .login-card input { width: 100%; height: 44px; margin-bottom: 12px; }
+        .error { color: var(--red); font-size: 13px; margin: 4px 0 12px; }
 
-        .flash { animation: flash-row 2.4s ease-out; }
-        @keyframes flash-row {
-            0% { background: rgba(255, 232, 31, 0.25); }
-            100% { background: transparent; }
+        /* App bar */
+        .appbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            height: 64px;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--line);
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
         }
+        .appbar h1 { font-size: 22px; font-weight: 400; margin: 0; flex: 1; color: var(--muted); }
+        .appbar h1 b { color: var(--text); font-weight: 500; }
+        .live { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+        .live i { width: 8px; height: 8px; border-radius: 50%; background: #bdc1c6; }
+        .live.on i { background: var(--green); }
+        .who { color: var(--muted); font-size: 13px; }
 
-        .toast { transition: opacity 0.3s ease, transform 0.3s ease; }
+        /* Tabs */
+        .tabs { display: flex; gap: 8px; padding: 0 24px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+        .tab {
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 14px 16px 11px;
+            color: var(--muted);
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .tab:hover { color: var(--text); background: var(--line-soft); }
+        .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+        .tab .count { color: var(--muted); font-weight: 400; margin-left: 4px; }
 
-        .qr-frame canvas, .qr-frame img { width: 100%; height: auto; image-rendering: pixelated; }
+        main { padding: 16px 24px 48px; }
+
+        .summary { color: var(--muted); margin: 0 0 12px; }
+        .summary b { color: var(--text); font-weight: 500; }
+
+        .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .toolbar input[type=search] { width: 280px; max-width: 100%; }
+        .toolbar .spacer { flex: 1; }
+
+        .selection-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            background: var(--blue-soft);
+            border-radius: 4px;
+        }
+        .selection-bar input[type=number] { width: 90px; height: 30px; }
+
+        /* Tables */
+        .table-wrap { border: 1px solid var(--line); border-radius: 4px; overflow: auto; max-height: calc(100vh - 260px); }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { padding: 0 12px; height: 40px; text-align: left; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
+        th {
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            color: var(--muted);
+            font-weight: 500;
+            font-size: 13px;
+            border-bottom: 1px solid var(--line);
+            z-index: 1;
+            user-select: none;
+        }
+        th.sortable { cursor: pointer; }
+        th.sortable:hover { color: var(--text); }
+        th .arrow { font-size: 11px; margin-left: 2px; }
+        tbody tr:hover { background: #f8f9fa; }
+        tbody tr.selected { background: var(--blue-soft); }
+        tbody tr.fresh { animation: fresh 2.5s ease-out; }
+        @keyframes fresh { from { background: #fef7e0; } to { background: transparent; } }
+        td.num, th.num { text-align: right; }
+        td.mono { font-family: 'Roboto Mono', Consolas, monospace; font-size: 13px; }
+        td.muted { color: var(--muted); }
+        td.actions { text-align: right; }
+        td.check, th.check { width: 40px; padding-right: 0; }
+        td.empty { text-align: center; color: var(--muted); height: 80px; }
+
+        input.cell-num {
+            width: 80px;
+            height: 30px;
+            text-align: right;
+            border-color: transparent;
+            background: transparent;
+        }
+        input.cell-num:hover { border-color: var(--line); }
+        input.cell-num:focus { background: #fff; }
+
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 500; }
+        .badge-open { background: var(--line-soft); color: var(--muted); }
+        .badge-claimed { background: var(--green-soft); color: var(--green); }
+
+        /* Dialogs */
+        dialog {
+            border: none;
+            border-radius: 8px;
+            padding: 24px;
+            width: min(480px, calc(100vw - 32px));
+            box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+        }
+        dialog::backdrop { background: rgba(32, 33, 36, 0.6); }
+        dialog h2 { font-size: 20px; font-weight: 400; margin: 0 0 16px; }
+        dialog p { color: var(--muted); margin: 0 0 16px; line-height: 1.5; }
+        .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+        .field label { font-size: 12px; color: var(--muted); font-weight: 500; }
+        .field input { width: 100%; }
+        .field .hint { font-size: 12px; color: var(--muted); }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+        .qr-box { width: 240px; margin: 0 auto 12px; }
+        .qr-box canvas, .qr-box img { width: 100%; height: auto; image-rendering: pixelated; }
+        .preview { background: #f8f9fa; border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; color: var(--muted); font-size: 13px; }
+
+        /* Snackbar */
+        .snackbar {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%) translateY(20px);
+            background: #323232;
+            color: #fff;
+            padding: 14px 24px;
+            border-radius: 4px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            z-index: 100;
+            max-width: calc(100vw - 32px);
+        }
+        .snackbar.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        @media (max-width: 640px) {
+            .appbar { padding: 0 16px; }
+            .appbar h1 { font-size: 18px; }
+            .who { display: none; }
+            .tabs { padding: 0 8px; }
+            main { padding: 12px 16px 48px; }
+            .table-wrap { max-height: none; }
+        }
 
         /* Printable QR labels */
         #print-area { display: none; }
         @media print {
             @page { margin: 12mm; }
-            body { background: #fff !important; }
             body > *:not(#print-area) { display: none !important; }
-            #print-area {
-                display: grid !important;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 10mm;
-                color: #000;
-                font-family: 'Inter', sans-serif;
-            }
-            .print-label {
-                break-inside: avoid;
-                border: 1px dashed #999;
-                border-radius: 4mm;
-                padding: 5mm;
-                text-align: center;
-            }
-            .print-label canvas { display: none !important; }
-            .print-label img { width: 100%; height: auto; display: block !important; }
+            #print-area { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 8mm; }
+            .label { break-inside: avoid; border: 1px dashed #999; border-radius: 3mm; padding: 4mm; text-align: center; }
+            .label canvas { display: none !important; }
+            .label img { width: 100%; height: auto; display: block !important; }
+            .label b { display: block; margin-top: 2mm; font-size: 12pt; }
+            .label span { display: block; font-size: 9pt; color: #444; }
         }
     </style>
 </head>
-<body class="text-white antialiased selection:bg-gray-500/30">
+<body>
 
-    <canvas id="starfield"></canvas>
+    <!-- Login -->
+    <div id="login-view" class="login-wrap" hidden>
+        <form id="login-form" class="login-card">
+            <h1>Duck Hunt Admin</h1>
+            <p class="sub">Sign in to continue</p>
+            <input id="login-email" type="email" autocomplete="username" placeholder="Email" required>
+            <input id="login-password" type="password" autocomplete="current-password" placeholder="Password" required>
+            <p id="login-error" class="error" hidden></p>
+            <button id="login-btn" type="submit" class="btn btn-primary" style="width:100%;justify-content:center;height:40px">Sign in</button>
+        </form>
+    </div>
 
-    <!-- LOGIN -->
-    <main id="login-view" class="hidden relative z-10 min-h-screen w-full px-4 flex justify-center items-center">
-        <div class="shimmer-wrapper w-full max-w-[380px]">
-            <div class="glass-inner w-full p-8 sm:p-10 flex flex-col items-center">
-                <img src="https://i.imgur.com/f4kE3Fg.png" alt="Duck Hunt Logo" class="h-32 w-auto max-w-full object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                <p class="card-label mt-2">Admin</p>
-                <h1 class="text-2xl font-bold font-tech tracking-wider text-white mb-6">Command Center</h1>
+    <!-- App -->
+    <div id="app-view" hidden>
+        <header class="appbar">
+            <h1><b>Duck Hunt</b> Admin</h1>
+            <span id="live" class="live"><i></i><span id="live-label">Connecting</span></span>
+            <span id="who" class="who"></span>
+            <button type="button" class="btn btn-sm" data-action="sign-out">Sign out</button>
+        </header>
 
-                <form id="login-form" class="flex flex-col w-full gap-4">
-                    <input id="login-email" type="email" autocomplete="username" placeholder="Admin Email" class="glass-input w-full rounded-xl px-4 py-4 text-center text-[16px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
-                    <input id="login-password" type="password" autocomplete="current-password" placeholder="Password" class="glass-input w-full rounded-xl px-4 py-4 text-center text-[16px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
-                    <p id="login-error" class="hidden text-center text-[14px] text-[#ffe81f]"></p>
-                    <button id="login-btn" type="submit" class="btn btn-gold w-full text-[17px] py-4 mt-2">Sign In</button>
-                </form>
-            </div>
-        </div>
-    </main>
+        <nav class="tabs">
+            <button type="button" class="tab active" data-action="tab" data-tab="ducks">Ducks<span id="count-ducks" class="count"></span></button>
+            <button type="button" class="tab" data-action="tab" data-tab="rescuers">Rescuers<span id="count-rescuers" class="count"></span></button>
+            <button type="button" class="tab" data-action="tab" data-tab="scans">Scans<span id="count-scans" class="count"></span></button>
+        </nav>
 
-    <!-- DASHBOARD -->
-    <div id="admin-view" class="hidden relative z-10 min-h-screen">
-        <div class="w-full max-w-6xl mx-auto px-4 pt-6 pb-16 flex flex-col gap-5">
-
-            <!-- Header -->
-            <header class="flex items-center gap-4">
-                <img src="https://i.imgur.com/f4kE3Fg.png" alt="Duck Hunt" class="h-11 sm:h-14 w-auto max-w-[88px] sm:max-w-[160px] object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                <div class="flex-1 min-w-0">
-                    <p class="card-label">Admin</p>
-                    <h1 class="text-xl sm:text-3xl font-bold font-tech tracking-wider text-white leading-tight">Command Center</h1>
-                </div>
-                <span class="chip flex items-center gap-2"><span id="live-dot" class="live-dot"></span><span id="live-label" class="hidden sm:inline">Connecting</span></span>
-                <button type="button" data-action="sign-out" aria-label="Sign out" class="p-2 rounded-xl bg-white/5 border border-white/15 text-gray-400 hover:text-white hover:border-white/40 hover:bg-white/10 transition-all duration-300">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
-                </button>
-            </header>
-
-            <!-- Stats -->
-            <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div class="shimmer-wrapper"><div class="glass-inner p-4 sm:p-5 h-full">
-                    <p class="card-label">Rescuers</p>
-                    <p id="stat-rescuers" class="text-3xl sm:text-4xl font-bold font-tech text-white">0</p>
-                </div></div>
-                <div class="shimmer-wrapper"><div class="glass-inner p-4 sm:p-5 h-full">
-                    <p class="card-label">Ducks Claimed</p>
-                    <p class="text-3xl sm:text-4xl font-bold font-tech text-white"><span id="stat-claimed" class="text-[#ffe81f]">0</span><span class="text-gray-500 text-2xl"> / <span id="stat-ducks">0</span></span></p>
-                </div></div>
-                <div class="shimmer-wrapper"><div class="glass-inner p-4 sm:p-5 h-full">
-                    <p class="card-label">Total Scans</p>
-                    <p id="stat-scans" class="text-3xl sm:text-4xl font-bold font-tech text-white">0</p>
-                </div></div>
-                <div class="shimmer-wrapper"><div class="glass-inner p-4 sm:p-5 h-full">
-                    <p class="card-label">Points Awarded</p>
-                    <p id="stat-points" class="text-3xl sm:text-4xl font-bold font-tech text-white">0</p>
-                </div></div>
-            </section>
-
-            <!-- Tabs -->
-            <nav class="flex gap-2 p-1.5 rounded-2xl bg-black/80 border border-white/10 overflow-x-auto no-scrollbar">
-                <button type="button" data-action="tab" data-tab="live" class="tab active flex-1 min-w-[110px] py-2.5 rounded-xl font-tech font-bold tracking-wider text-[16px]">Live Scans</button>
-                <button type="button" data-action="tab" data-tab="ducks" class="tab flex-1 min-w-[110px] py-2.5 rounded-xl font-tech font-bold tracking-wider text-[16px]">Ducks</button>
-                <button type="button" data-action="tab" data-tab="rescuers" class="tab flex-1 min-w-[110px] py-2.5 rounded-xl font-tech font-bold tracking-wider text-[16px]">Rescuers</button>
-            </nav>
-
-            <!-- Live Scans -->
-            <section id="panel-live" class="shimmer-wrapper">
-                <div class="glass-inner p-5">
-                    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-                        <div>
-                            <p class="card-label">Feed</p>
-                            <h2 class="text-xl font-bold font-tech tracking-wider text-white">Live Scans</h2>
-                        </div>
-                        <button type="button" data-action="export-scans" class="btn btn-ghost text-[14px] px-4 py-2">Export CSV</button>
-                    </div>
-                    <ul id="scan-list" class="flex flex-col divide-y divide-white/10"></ul>
-                    <p id="scan-empty" class="hidden py-10 text-center text-gray-400">No scans yet. They'll appear here the moment a rescuer claims a duck.</p>
-                </div>
-            </section>
+        <main>
+            <p id="summary" class="summary"></p>
 
             <!-- Ducks -->
-            <section id="panel-ducks" class="hidden shimmer-wrapper">
-                <div class="glass-inner p-5">
-                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                        <div>
-                            <p class="card-label">Master List</p>
-                            <h2 class="text-xl font-bold font-tech tracking-wider text-white">Ducks</h2>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" data-action="print-qr" class="btn btn-ghost text-[14px] px-4 py-2">Print QR Codes</button>
-                            <button type="button" data-action="add-duck" class="btn btn-gold text-[14px] px-4 py-2">+ Add Duck</button>
-                        </div>
-                    </div>
-                    <input id="duck-search" type="search" placeholder="Search ducks by ID, type or location" class="glass-input w-full rounded-xl px-4 py-3 text-[15px] text-white placeholder-gray-400 mb-4">
-                    <div id="duck-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-                    <p id="duck-empty" class="hidden py-10 text-center text-gray-400"></p>
+            <section id="panel-ducks">
+                <div class="toolbar">
+                    <input id="duck-search" type="search" placeholder="Search ducks">
+                    <span class="spacer"></span>
+                    <button type="button" class="btn" data-action="download-ducks">Download CSV</button>
+                    <button type="button" class="btn" data-action="print-all">Print QR codes</button>
+                    <button type="button" class="btn" data-action="bulk-create">Bulk create</button>
+                    <button type="button" class="btn btn-primary" data-action="add-duck">Add duck</button>
+                </div>
+                <div id="duck-selection" class="selection-bar" hidden>
+                    <b id="duck-selected-count"></b>
+                    <span class="spacer" style="flex:1"></span>
+                    <label>Set points to <input id="bulk-points" type="number" min="0" value="10"></label>
+                    <button type="button" class="btn btn-sm" data-action="bulk-points">Apply</button>
+                    <button type="button" class="btn btn-sm" data-action="print-selected">Print QR codes</button>
+                    <button type="button" class="btn btn-sm" data-action="download-selected">Download CSV</button>
+                    <button type="button" class="btn btn-sm btn-danger" data-action="bulk-delete">Delete</button>
+                    <button type="button" class="link" data-action="clear-selection">Clear</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="check"><input id="select-all" type="checkbox" aria-label="Select all"></th>
+                                <th class="sortable" data-sort="ducks" data-key="duck_id">Duck ID</th>
+                                <th class="sortable" data-sort="ducks" data-key="duck_type">Type</th>
+                                <th class="sortable num" data-sort="ducks" data-key="points">Points</th>
+                                <th class="sortable" data-sort="ducks" data-key="location">Location</th>
+                                <th class="sortable" data-sort="ducks" data-key="qr_code">QR code</th>
+                                <th class="sortable" data-sort="ducks" data-key="claimed">Status</th>
+                                <th class="sortable" data-sort="ducks" data-key="claimed_by_name">Found by</th>
+                                <th class="sortable" data-sort="ducks" data-key="claimed_at">Found at</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="duck-rows"></tbody>
+                    </table>
                 </div>
             </section>
 
             <!-- Rescuers -->
-            <section id="panel-rescuers" class="hidden shimmer-wrapper">
-                <div class="glass-inner p-5">
-                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                        <div>
-                            <p class="card-label">Leaderboard</p>
-                            <h2 class="text-xl font-bold font-tech tracking-wider text-white">Rescuers</h2>
-                        </div>
-                        <button type="button" data-action="export-rescuers" class="btn btn-ghost text-[14px] px-4 py-2">Export CSV</button>
-                    </div>
-                    <input id="rescuer-search" type="search" placeholder="Search by name, Student ID or email" class="glass-input w-full rounded-xl px-4 py-3 text-[15px] text-white placeholder-gray-400 mb-4">
-                    <ul id="rescuer-list" class="flex flex-col gap-2"></ul>
-                    <p id="rescuer-empty" class="hidden py-10 text-center text-gray-400"></p>
+            <section id="panel-rescuers" hidden>
+                <div class="toolbar">
+                    <input id="rescuer-search" type="search" placeholder="Search rescuers">
+                    <span class="spacer"></span>
+                    <button type="button" class="btn" data-action="download-rescuers">Download CSV</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="sortable num" data-sort="players" data-key="place">Rank</th>
+                                <th class="sortable" data-sort="players" data-key="first_name">First name</th>
+                                <th class="sortable" data-sort="players" data-key="last_name">Last name</th>
+                                <th class="sortable" data-sort="players" data-key="student_id">Student ID</th>
+                                <th class="sortable" data-sort="players" data-key="email">Email</th>
+                                <th class="sortable num" data-sort="players" data-key="points">Points</th>
+                                <th class="sortable num" data-sort="players" data-key="codes_scanned">Ducks</th>
+                                <th class="sortable" data-sort="players" data-key="created_at">Registered</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="rescuer-rows"></tbody>
+                    </table>
                 </div>
             </section>
-        </div>
+
+            <!-- Scans -->
+            <section id="panel-scans" hidden>
+                <div class="toolbar">
+                    <input id="scan-search" type="search" placeholder="Search scans">
+                    <span class="spacer"></span>
+                    <button type="button" class="btn" data-action="download-scans">Download CSV</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Rescuer</th>
+                                <th>Student ID</th>
+                                <th>Duck ID</th>
+                                <th>Type</th>
+                                <th class="num">Points</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="scan-rows"></tbody>
+                    </table>
+                </div>
+                <p class="summary" style="margin-top:8px">Showing the latest 200 scans. Download CSV for all of them.</p>
+            </section>
+        </main>
     </div>
 
-    <!-- Modal -->
-    <div id="overlay" class="hidden fixed inset-0 z-40 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-        <div class="shimmer-wrapper w-full max-w-md my-auto">
-            <div id="modal" class="glass-inner w-full p-6"></div>
+    <!-- Dialogs -->
+    <dialog id="duck-dialog">
+        <form id="duck-form" method="dialog">
+            <h2 id="duck-dialog-title">Add duck</h2>
+            <div class="field"><label for="f-duck-id">Duck ID</label><input id="f-duck-id" type="text" required></div>
+            <div class="row">
+                <div class="field"><label for="f-duck-type">Type</label><input id="f-duck-type" type="text"></div>
+                <div class="field"><label for="f-duck-points">Points</label><input id="f-duck-points" type="number" min="0" required></div>
+            </div>
+            <div class="field"><label for="f-duck-location">Location</label><input id="f-duck-location" type="text"></div>
+            <div class="field">
+                <label for="f-duck-qr">QR code</label>
+                <div style="display:flex;gap:8px"><input id="f-duck-qr" type="text" required style="flex:1"><button type="button" class="btn" data-action="new-code">New code</button></div>
+                <span id="f-duck-qr-hint" class="hint" hidden>Changing the code means reprinting this duck's label.</span>
+            </div>
+            <p id="duck-error" class="error" hidden></p>
+            <div class="dialog-actions">
+                <button type="button" class="btn" data-action="close-dialog">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="bulk-dialog">
+        <form id="bulk-form" method="dialog">
+            <h2>Bulk create ducks</h2>
+            <p>Each duck gets its own random QR code. You can edit any of them afterwards.</p>
+            <div class="row">
+                <div class="field"><label for="b-count">How many</label><input id="b-count" type="number" min="1" max="1000" value="10" required></div>
+                <div class="field"><label for="b-points">Points each</label><input id="b-points" type="number" min="0" value="10" required></div>
+            </div>
+            <div class="row">
+                <div class="field"><label for="b-prefix">ID prefix</label><input id="b-prefix" type="text" value="D-"></div>
+                <div class="field"><label for="b-start">Start at number</label><input id="b-start" type="number" min="0" value="1" required></div>
+            </div>
+            <div class="row">
+                <div class="field"><label for="b-type">Type</label><input id="b-type" type="text" placeholder="e.g. Rubber"></div>
+                <div class="field"><label for="b-location">Location</label><input id="b-location" type="text" placeholder="Optional"></div>
+            </div>
+            <div id="bulk-preview" class="preview"></div>
+            <p id="bulk-error" class="error" hidden></p>
+            <div class="dialog-actions">
+                <button type="button" class="btn" data-action="close-dialog">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create ducks</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="rescuer-dialog">
+        <form id="rescuer-form" method="dialog">
+            <h2>Edit rescuer</h2>
+            <div class="field"><label>Student ID</label><input id="f-student-id" type="text" readonly style="background:#f8f9fa"></div>
+            <div class="row">
+                <div class="field"><label for="f-first">First name</label><input id="f-first" type="text" required></div>
+                <div class="field"><label for="f-last">Last name</label><input id="f-last" type="text"></div>
+            </div>
+            <div class="field"><label for="f-email">Email</label><input id="f-email" type="email"></div>
+            <div class="field"><label for="f-points">Points</label><input id="f-points" type="number" min="0" required></div>
+            <p id="rescuer-error" class="error" hidden></p>
+            <div class="dialog-actions">
+                <button type="button" class="btn" data-action="close-dialog">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="qr-dialog">
+        <h2 id="qr-title"></h2>
+        <div id="qr-box" class="qr-box"></div>
+        <p id="qr-text" style="text-align:center;font-family:monospace;color:var(--text)"></p>
+        <div class="dialog-actions">
+            <button type="button" class="btn" data-action="close-dialog">Close</button>
+            <button type="button" class="btn btn-primary" data-action="download-qr">Download PNG</button>
         </div>
-    </div>
+    </dialog>
 
-    <!-- Toast -->
-    <div id="toast" class="toast fixed left-1/2 -translate-x-1/2 bottom-6 z-50 opacity-0 translate-y-2 pointer-events-none px-5 py-3 rounded-xl bg-black/90 border border-[#ffe81f]/40 text-[14px] text-white shadow-[0_0_20px_rgba(255,232,31,0.25)] max-w-[calc(100vw-2rem)] text-center"></div>
+    <dialog id="confirm-dialog">
+        <h2 id="confirm-title"></h2>
+        <p id="confirm-message"></p>
+        <div class="dialog-actions">
+            <button type="button" class="btn" data-action="confirm-no">Cancel</button>
+            <button type="button" id="confirm-yes" class="btn btn-primary" data-action="confirm-yes">OK</button>
+        </div>
+    </dialog>
 
+    <div id="snackbar" class="snackbar"></div>
     <div id="print-area"></div>
 
     <script>
-        // ---------- STARFIELD ----------
-        const canvas = document.getElementById('starfield');
-        const ctx = canvas.getContext('2d');
-        let width, height, stars = [];
-
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
-
-        function makeStar(initial) {
-            const z = Math.random() * 2 + 0.1;
-            return {
-                x: Math.random() * width,
-                y: initial ? Math.random() * height : -10,
-                z,
-                radius: z * 0.7,
-                speed: z * 0.5 + 0.1,
-                baseAlpha: Math.random() * 0.5 + 0.3,
-                twinkle: Math.random() * 0.02 + 0.005,
-                phase: Math.random() * Math.PI * 2
-            };
-        }
-
-        function initStars() {
-            stars = Array.from({ length: 300 }, () => makeStar(true));
-        }
-
-        function animate() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-            ctx.fillRect(0, 0, width, height);
-            stars.forEach((s, i) => {
-                s.y += s.speed;
-                s.phase += s.twinkle;
-                if (s.y > height + 10) stars[i] = makeStar(false);
-                const alpha = Math.max(0, Math.min(1, s.baseAlpha + Math.sin(s.phase) * 0.2));
-                ctx.beginPath();
-                ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-                ctx.fill();
-            });
-            requestAnimationFrame(animate);
-        }
-
-        window.addEventListener('resize', () => { resize(); initStars(); });
-
         // ---------- SUPABASE ----------
         // Same project as index.html. Admin access comes from signing in with
         // an account listed in private.admins, never from a key in this page.
@@ -371,41 +476,39 @@
 
         // ---------- STATE ----------
         const state = { ducks: [], players: [], scans: [], total_scans: 0 };
-        let activeTab = 'live';
+        const sort = { ducks: { key: 'duck_id', dir: 1 }, players: { key: 'place', dir: 1 } };
+        const selected = new Set();
+        let activeTab = 'ducks';
         let channel = null;
         let reloadTimer = null;
         let pollTimer = null;
         let seenScanIds = null;
+        let renderPending = false;
+
+        const $ = id => document.getElementById(id);
 
         // ---------- HELPERS ----------
         function esc(value) {
             return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
         }
 
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.remove('opacity-0', 'translate-y-2');
-            clearTimeout(showToast.timer);
-            showToast.timer = setTimeout(() => toast.classList.add('opacity-0', 'translate-y-2'), 3000);
+        function snackbar(message) {
+            const el = $('snackbar');
+            el.textContent = message;
+            el.classList.add('show');
+            clearTimeout(snackbar.timer);
+            snackbar.timer = setTimeout(() => el.classList.remove('show'), 3000);
         }
 
-        function timeAgo(ts) {
-            const seconds = Math.round((Date.now() - new Date(ts).getTime()) / 1000);
-            if (seconds < 45) return 'just now';
-            if (seconds < 3600) return `${Math.round(seconds / 60)} min ago`;
-            if (seconds < 86400) return `${Math.round(seconds / 3600)} hr ago`;
+        function formatDate(ts) {
+            if (!ts) return '';
             const d = new Date(ts);
-            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · ' +
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ', ' +
                 d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
         }
 
         function fullName(p) {
-            return [p.first_name, p.last_name].filter(Boolean).join(' ') || p.student_id;
-        }
-
-        function duckName(type) {
-            return type ? `${type} Duck` : 'Duck';
+            return [p.first_name, p.last_name].filter(Boolean).join(' ');
         }
 
         function randomCode() {
@@ -419,63 +522,85 @@
                 const s = String(v ?? '');
                 return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
             };
-            const csv = [header, ...rows].map(r => r.map(cell).join(',')).join('\n');
+            const csv = [header, ...rows].map(r => r.map(cell).join(',')).join('\r\n');
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+            link.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
             link.download = filename;
             link.click();
             setTimeout(() => URL.revokeObjectURL(link.href), 1000);
         }
 
+        function today() {
+            return new Date().toISOString().slice(0, 10);
+        }
+
         async function busy(button, task) {
-            if (!button || button.disabled) return;
-            const label = button.textContent;
-            button.disabled = true;
-            button.textContent = 'Working…';
+            if (button && button.disabled) return;
+            if (button) button.disabled = true;
             try {
                 await task();
+            } catch (err) {
+                snackbar(err.message || 'Something went wrong.');
             } finally {
-                button.disabled = false;
-                button.textContent = label;
+                if (button) button.disabled = false;
             }
+        }
+
+        function confirmDialog(title, message, okLabel, danger) {
+            $('confirm-title').textContent = title;
+            $('confirm-message').textContent = message;
+            const yes = $('confirm-yes');
+            yes.textContent = okLabel;
+            yes.className = 'btn btn-primary';
+            yes.style.background = danger ? 'var(--red)' : '';
+            yes.style.borderColor = danger ? 'var(--red)' : '';
+            $('confirm-dialog').showModal();
+            return new Promise(resolve => { confirmDialog.resolve = resolve; });
+        }
+
+        // Escape, the backdrop or Cancel all count as "no"
+        $('confirm-dialog').addEventListener('close', () => {
+            if (confirmDialog.resolve) confirmDialog.resolve(false);
+            confirmDialog.resolve = null;
+        });
+
+        function showError(id, message) {
+            $(id).textContent = message || '';
+            $(id).hidden = !message;
         }
 
         // ---------- AUTH ----------
         function showLogin(message) {
-            document.getElementById('admin-view').classList.add('hidden');
-            document.getElementById('login-view').classList.remove('hidden');
-            const error = document.getElementById('login-error');
-            error.textContent = message || '';
-            error.classList.toggle('hidden', !message);
+            $('app-view').hidden = true;
+            $('login-view').hidden = false;
+            showError('login-error', message);
         }
 
-        async function enterAdmin() {
-            let isAdmin = false;
+        async function enterAdmin(email) {
             try {
-                isAdmin = await rpc('is_admin');
+                if (!(await rpc('is_admin'))) {
+                    await db.auth.signOut();
+                    return showLogin('This account isn\'t an admin.');
+                }
             } catch (err) {
                 return showLogin(err.message);
             }
-            if (!isAdmin) {
-                await db.auth.signOut();
-                return showLogin('This account isn\'t an admin.');
-            }
-            document.getElementById('login-view').classList.add('hidden');
-            document.getElementById('admin-view').classList.remove('hidden');
+            $('login-view').hidden = true;
+            $('app-view').hidden = false;
+            $('who').textContent = email || '';
             await load();
             subscribe();
         }
 
-        document.getElementById('login-form').addEventListener('submit', event => {
+        $('login-form').addEventListener('submit', event => {
             event.preventDefault();
-            const button = document.getElementById('login-btn');
-            busy(button, async () => {
-                const { error } = await db.auth.signInWithPassword({
-                    email: document.getElementById('login-email').value.trim(),
-                    password: document.getElementById('login-password').value
+            busy($('login-btn'), async () => {
+                const { data, error } = await db.auth.signInWithPassword({
+                    email: $('login-email').value.trim(),
+                    password: $('login-password').value
                 });
                 if (error) return showLogin(error.message);
-                await enterAdmin();
+                await enterAdmin(data && data.user && data.user.email);
             });
         });
 
@@ -484,6 +609,7 @@
             channel = null;
             clearInterval(pollTimer);
             seenScanIds = null;
+            selected.clear();
             await db.auth.signOut();
             showLogin();
         }
@@ -491,11 +617,13 @@
         // ---------- DATA ----------
         async function load() {
             try {
-                const data = await rpc('admin_overview');
-                Object.assign(state, data);
+                Object.assign(state, await rpc('admin_overview'));
+                // Forget selections for ducks that no longer exist
+                const ids = new Set(state.ducks.map(d => d.duck_id));
+                [...selected].forEach(id => { if (!ids.has(id)) selected.delete(id); });
                 render();
             } catch (err) {
-                showToast(err.message || 'Couldn\'t load data.');
+                snackbar(err.message || 'Couldn\'t load data.');
             }
         }
 
@@ -505,8 +633,8 @@
         }
 
         function setLive(on, label) {
-            document.getElementById('live-dot').classList.toggle('on', on);
-            document.getElementById('live-label').textContent = label;
+            $('live').classList.toggle('on', on);
+            $('live-label').textContent = label;
         }
 
         function subscribe() {
@@ -517,404 +645,556 @@
             });
             channel.subscribe(status => {
                 if (status === 'SUBSCRIBED') setLive(true, 'Live');
-                else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') setLive(false, 'Offline');
+                else if (['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) setLive(false, 'Offline');
             });
-            // Backup in case realtime drops; also keeps "x min ago" fresh
             clearInterval(pollTimer);
             pollTimer = setInterval(() => { if (!document.hidden) load(); }, 30000);
         }
 
         // ---------- RENDERING ----------
-        function render() {
-            renderStats();
-            renderScans();
-            renderDucks();
-            renderRescuers();
+        function editingCell() {
+            const el = document.activeElement;
+            return el && el.classList && el.classList.contains('cell-num');
         }
 
-        function renderStats() {
+        function render() {
+            // Don't wipe out a points cell someone is typing in
+            if (editingCell()) {
+                renderPending = true;
+                return;
+            }
+            renderPending = false;
+            renderSummary();
+            renderDucks();
+            renderRescuers();
+            renderScans();
+            renderSortArrows();
+        }
+
+        function renderSummary() {
             const claimed = state.ducks.filter(d => d.claimed).length;
-            document.getElementById('stat-rescuers').textContent = state.players.length;
-            document.getElementById('stat-claimed').textContent = claimed;
-            document.getElementById('stat-ducks').textContent = state.ducks.length;
-            document.getElementById('stat-scans').textContent = state.total_scans;
-            document.getElementById('stat-points').textContent =
-                state.players.reduce((sum, p) => sum + p.points, 0).toLocaleString();
+            const points = state.players.reduce((sum, p) => sum + p.points, 0);
+            $('summary').innerHTML =
+                `<b>${claimed}</b> of <b>${state.ducks.length}</b> ducks claimed · ` +
+                `<b>${state.players.length}</b> rescuers · <b>${state.total_scans}</b> scans · ` +
+                `<b>${points.toLocaleString()}</b> points awarded`;
+            $('count-ducks').textContent = state.ducks.length;
+            $('count-rescuers').textContent = state.players.length;
+            $('count-scans').textContent = state.total_scans;
+        }
+
+        function sorted(list, kind) {
+            const { key, dir } = sort[kind];
+            return list.slice().sort((a, b) => {
+                let x = a[key], y = b[key];
+                if (typeof x === 'boolean') { x = +x; y = +y; }
+                if (x == null || x === '') return 1;
+                if (y == null || y === '') return -1;
+                if (typeof x === 'number' && typeof y === 'number') return (x - y) * dir;
+                return String(x).localeCompare(String(y), undefined, { numeric: true, sensitivity: 'base' }) * dir;
+            });
+        }
+
+        function matches(row, fields, term) {
+            return !term || fields.some(f => String(row[f] ?? '').toLowerCase().includes(term));
+        }
+
+        function visibleDucks() {
+            const term = $('duck-search').value.trim().toLowerCase();
+            return sorted(state.ducks.filter(d =>
+                matches(d, ['duck_id', 'duck_type', 'location', 'qr_code', 'claimed_by_name', 'claimed_by'], term)), 'ducks');
+        }
+
+        function renderDucks() {
+            const ducks = visibleDucks();
+            $('duck-rows').innerHTML = ducks.length ? ducks.map(d => `
+                <tr class="${selected.has(d.duck_id) ? 'selected' : ''}">
+                    <td class="check"><input type="checkbox" data-select="${esc(d.duck_id)}" ${selected.has(d.duck_id) ? 'checked' : ''} aria-label="Select ${esc(d.duck_id)}"></td>
+                    <td><b>${esc(d.duck_id)}</b></td>
+                    <td>${esc(d.duck_type)}</td>
+                    <td class="num"><input class="cell-num" type="number" min="0" value="${esc(d.points)}" data-points-duck="${esc(d.duck_id)}" aria-label="Points for ${esc(d.duck_id)}"></td>
+                    <td>${esc(d.location)}</td>
+                    <td class="mono">${esc(d.qr_code)}</td>
+                    <td><span class="badge ${d.claimed ? 'badge-claimed' : 'badge-open'}">${d.claimed ? 'Claimed' : 'Open'}</span></td>
+                    <td>${esc(d.claimed_by_name || d.claimed_by || '')}</td>
+                    <td class="muted">${esc(formatDate(d.claimed_at))}</td>
+                    <td class="actions">
+                        <button type="button" class="link" data-action="show-qr" data-id="${esc(d.duck_id)}">QR</button>
+                        <button type="button" class="link" data-action="edit-duck" data-id="${esc(d.duck_id)}">Edit</button>
+                        ${d.claimed ? `<button type="button" class="link" data-action="reopen-duck" data-id="${esc(d.duck_id)}">Re-open</button>` : ''}
+                        <button type="button" class="link link-danger" data-action="delete-duck" data-id="${esc(d.duck_id)}">Delete</button>
+                    </td>
+                </tr>`).join('') :
+                `<tr><td class="empty" colspan="10">${state.ducks.length ? 'No ducks match your search.' : 'No ducks yet. Use Add duck or Bulk create.'}</td></tr>`;
+
+            const allVisibleSelected = ducks.length > 0 && ducks.every(d => selected.has(d.duck_id));
+            $('select-all').checked = allVisibleSelected;
+            $('select-all').indeterminate = !allVisibleSelected && ducks.some(d => selected.has(d.duck_id));
+            $('duck-selection').hidden = selected.size === 0;
+            $('duck-selected-count').textContent = `${selected.size} selected`;
+        }
+
+        function renderRescuers() {
+            const term = $('rescuer-search').value.trim().toLowerCase();
+            const players = sorted(state.players.filter(p =>
+                matches(p, ['first_name', 'last_name', 'student_id', 'email'], term) || fullName(p).toLowerCase().includes(term)), 'players');
+            $('rescuer-rows').innerHTML = players.length ? players.map(p => `
+                <tr>
+                    <td class="num">${esc(p.place)}</td>
+                    <td>${esc(p.first_name)}</td>
+                    <td>${esc(p.last_name)}</td>
+                    <td class="mono">${esc(p.student_id)}</td>
+                    <td>${esc(p.email)}</td>
+                    <td class="num"><input class="cell-num" type="number" min="0" value="${esc(p.points)}" data-points-player="${esc(p.student_id)}" aria-label="Points for ${esc(fullName(p))}"></td>
+                    <td class="num">${esc(p.codes_scanned)}</td>
+                    <td class="muted">${esc(formatDate(p.created_at))}</td>
+                    <td class="actions">
+                        <button type="button" class="link" data-action="edit-rescuer" data-id="${esc(p.student_id)}">Edit</button>
+                        <button type="button" class="link link-danger" data-action="delete-rescuer" data-id="${esc(p.student_id)}">Delete</button>
+                    </td>
+                </tr>`).join('') :
+                `<tr><td class="empty" colspan="9">${state.players.length ? 'No rescuers match your search.' : 'No rescuers have registered yet.'}</td></tr>`;
         }
 
         function renderScans() {
             const fresh = seenScanIds ? new Set(state.scans.filter(s => !seenScanIds.has(s.id)).map(s => s.id)) : new Set();
             seenScanIds = new Set(state.scans.map(s => s.id));
-
-            document.getElementById('scan-empty').classList.toggle('hidden', state.scans.length > 0);
-            document.getElementById('scan-list').innerHTML = state.scans.map(s => `
-                <li class="flex items-center gap-3 py-3 px-2 -mx-2 rounded-xl ${fresh.has(s.id) ? 'flash' : ''}">
-                    <div class="shrink-0 w-10 h-10 rounded-xl bg-[#ffe81f]/10 border border-[#ffe81f]/30 flex items-center justify-center text-lg">🦆</div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[15px] text-white truncate"><span class="font-semibold">${esc(s.player_name || s.student_id)}</span> <span class="text-gray-400">rescued</span> <span class="font-semibold">${esc(duckName(s.duck_type))}</span></p>
-                        <p class="text-[12px] text-gray-400 truncate">${esc(s.duck_id || 'Retired duck')} · ID ${esc(s.student_id)} · ${esc(timeAgo(s.scanned_at))}</p>
-                    </div>
-                    <span class="text-[16px] font-bold font-tech text-[#ffe81f]">+${esc(s.points)}</span>
-                    <button type="button" data-action="undo-scan" data-id="${esc(s.id)}" class="btn btn-ghost text-[13px] px-3 py-1.5">Undo</button>
-                </li>`).join('');
+            const term = $('scan-search').value.trim().toLowerCase();
+            const scans = state.scans.filter(s => matches(s, ['player_name', 'student_id', 'duck_id', 'duck_type'], term));
+            $('scan-rows').innerHTML = scans.length ? scans.map(s => `
+                <tr class="${fresh.has(s.id) ? 'fresh' : ''}">
+                    <td class="muted">${esc(formatDate(s.scanned_at))}</td>
+                    <td>${esc(s.player_name)}</td>
+                    <td class="mono">${esc(s.student_id)}</td>
+                    <td>${s.duck_id ? esc(s.duck_id) : '<span class="muted">Deleted duck</span>'}</td>
+                    <td>${esc(s.duck_type)}</td>
+                    <td class="num">${esc(s.points)}</td>
+                    <td class="actions"><button type="button" class="link link-danger" data-action="undo-scan" data-id="${esc(s.id)}">Undo</button></td>
+                </tr>`).join('') :
+                `<tr><td class="empty" colspan="7">${state.scans.length ? 'No scans match your search.' : 'No scans yet. They appear here live.'}</td></tr>`;
         }
 
-        function renderDucks() {
-            const term = document.getElementById('duck-search').value.trim().toLowerCase();
-            const ducks = state.ducks.filter(d => !term ||
-                [d.duck_id, d.duck_type, d.location, d.qr_code].some(v => String(v || '').toLowerCase().includes(term)));
-
-            const empty = document.getElementById('duck-empty');
-            empty.textContent = state.ducks.length ? 'No ducks match your search.' : 'No ducks yet. Add your first duck to start the hunt.';
-            empty.classList.toggle('hidden', ducks.length > 0);
-
-            document.getElementById('duck-list').innerHTML = ducks.map(d => `
-                <div class="rounded-xl border ${d.claimed ? 'border-[#ffe81f]/30 bg-[#ffe81f]/[0.04]' : 'border-white/10 bg-white/[0.03]'} p-4 flex flex-col gap-3">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <p class="text-[17px] font-bold font-tech tracking-wider text-white truncate">${esc(d.duck_id)}</p>
-                            <p class="text-[14px] text-gray-300 truncate">${esc(duckName(d.duck_type))} · <span class="text-[#ffe81f] font-semibold">${esc(d.points)} pts</span></p>
-                        </div>
-                        <span class="chip ${d.claimed ? 'chip-gold' : ''}">${d.claimed ? 'Claimed' : 'Open'}</span>
-                    </div>
-                    <div class="text-[13px] text-gray-400 flex flex-col gap-1">
-                        <p class="truncate">📍 ${esc(d.location || 'No location set')}</p>
-                        ${d.claimed ? `<p class="truncate">Found by <span class="text-white">${esc(d.claimed_by_name || d.claimed_by || 'unknown')}</span>${d.claimed_at ? ' · ' + esc(timeAgo(d.claimed_at)) : ''}</p>` : ''}
-                    </div>
-                    <div class="flex flex-wrap gap-2 mt-auto">
-                        <button type="button" data-action="show-qr" data-id="${esc(d.duck_id)}" class="btn btn-ghost text-[13px] px-3 py-1.5">QR</button>
-                        <button type="button" data-action="edit-duck" data-id="${esc(d.duck_id)}" class="btn btn-ghost text-[13px] px-3 py-1.5">Edit</button>
-                        ${d.claimed ? `<button type="button" data-action="reopen-duck" data-id="${esc(d.duck_id)}" class="btn btn-gold text-[13px] px-3 py-1.5">Re-open</button>` : ''}
-                        <button type="button" data-action="delete-duck" data-id="${esc(d.duck_id)}" class="btn btn-danger text-[13px] px-3 py-1.5 ml-auto">Delete</button>
-                    </div>
-                </div>`).join('');
-        }
-
-        function renderRescuers() {
-            const term = document.getElementById('rescuer-search').value.trim().toLowerCase();
-            const players = state.players.filter(p => !term ||
-                [p.first_name, p.last_name, fullName(p), p.student_id, p.email].some(v => String(v || '').toLowerCase().includes(term)));
-
-            const empty = document.getElementById('rescuer-empty');
-            empty.textContent = state.players.length ? 'No rescuers match your search.' : 'No rescuers have registered yet.';
-            empty.classList.toggle('hidden', players.length > 0);
-
-            document.getElementById('rescuer-list').innerHTML = players.map(p => {
-                const medal = ['text-[#ffe81f]', 'text-slate-300', 'text-amber-600'][p.place - 1] || 'text-gray-500';
-                return `
-                <li class="flex flex-wrap sm:flex-nowrap items-center gap-3 px-3 py-3 rounded-xl border border-white/10 bg-white/[0.03]">
-                    <span class="w-8 text-center font-tech font-bold text-[18px] ${medal}">${esc(p.place)}</span>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[15px] text-white font-semibold truncate">${esc(fullName(p))}</p>
-                        <p class="text-[12px] text-gray-400 truncate">ID ${esc(p.student_id)}${p.email ? ' · ' + esc(p.email) : ''}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-[15px] font-bold text-[#ffe81f]">${esc(p.points)} pts</p>
-                        <p class="text-[12px] text-gray-400">${esc(p.codes_scanned)} duck${p.codes_scanned === 1 ? '' : 's'}</p>
-                    </div>
-                    <div class="flex gap-2 w-full sm:w-auto justify-end">
-                        <button type="button" data-action="edit-rescuer" data-id="${esc(p.student_id)}" class="btn btn-ghost text-[13px] px-3 py-1.5">Edit</button>
-                        <button type="button" data-action="delete-rescuer" data-id="${esc(p.student_id)}" class="btn btn-danger text-[13px] px-3 py-1.5">Delete</button>
-                    </div>
-                </li>`;
-            }).join('');
+        function renderSortArrows() {
+            document.querySelectorAll('th.sortable').forEach(th => {
+                const s = sort[th.dataset.sort];
+                const label = th.textContent.replace(/[▲▼]/g, '').trim();
+                th.innerHTML = esc(label) + (s.key === th.dataset.key ? `<span class="arrow">${s.dir > 0 ? '▲' : '▼'}</span>` : '');
+            });
         }
 
         function switchTab(tab) {
             activeTab = tab;
-            document.querySelectorAll('[data-action="tab"]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-            ['live', 'ducks', 'rescuers'].forEach(t => document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab));
+            document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            ['ducks', 'rescuers', 'scans'].forEach(t => { $('panel-' + t).hidden = t !== tab; });
         }
 
-        // ---------- MODALS ----------
-        let modalResolve = null;
+        // ---------- DUCK DIALOGS ----------
+        let editingDuckId = null;
 
-        function openModal(html) {
-            document.getElementById('modal').innerHTML = html;
-            document.getElementById('overlay').classList.remove('hidden');
-            const first = document.querySelector('#modal input:not([readonly])');
-            if (first) first.focus();
+        function openDuckDialog(duck) {
+            editingDuckId = duck ? duck.duck_id : null;
+            $('duck-dialog-title').textContent = duck ? `Edit ${duck.duck_id}` : 'Add duck';
+            $('f-duck-id').value = duck ? duck.duck_id : nextDuckIds('D-', 1)[0];
+            $('f-duck-type').value = duck ? duck.duck_type || '' : '';
+            $('f-duck-points').value = duck ? duck.points : 10;
+            $('f-duck-location').value = duck ? duck.location || '' : '';
+            $('f-duck-qr').value = duck ? duck.qr_code : randomCode();
+            $('f-duck-qr-hint').hidden = !duck;
+            showError('duck-error', '');
+            $('duck-dialog').showModal();
         }
 
-        function closeModal(result) {
-            document.getElementById('overlay').classList.add('hidden');
-            document.getElementById('modal').innerHTML = '';
-            if (modalResolve) {
-                modalResolve(result);
-                modalResolve = null;
+        // Next free IDs like D-001, D-002 for a prefix
+        function nextDuckIds(prefix, count, start) {
+            const taken = new Set(state.ducks.map(d => d.duck_id));
+            let n = start;
+            if (n === undefined) {
+                n = 1;
+                state.ducks.forEach(d => {
+                    if (d.duck_id.startsWith(prefix)) {
+                        const num = parseInt(d.duck_id.slice(prefix.length), 10);
+                        if (!isNaN(num) && num >= n) n = num + 1;
+                    }
+                });
             }
+            const width = Math.max(3, String(n + count - 1).length);
+            const ids = [];
+            while (ids.length < count) {
+                const id = prefix + String(n).padStart(width, '0');
+                if (!taken.has(id)) ids.push(id);
+                n++;
+            }
+            return ids;
         }
 
-        function confirmDialog(title, message, confirmLabel, danger) {
-            openModal(`
-                <h3 class="text-xl font-bold font-tech tracking-wider text-white mb-2">${esc(title)}</h3>
-                <p class="text-[15px] text-gray-300 mb-6">${esc(message)}</p>
-                <div class="flex gap-3">
-                    <button type="button" data-action="modal-cancel" class="btn btn-ghost flex-1 py-3">Cancel</button>
-                    <button type="button" data-action="modal-ok" class="btn ${danger ? 'btn-danger' : 'btn-gold'} flex-1 py-3">${esc(confirmLabel)}</button>
-                </div>`);
-            return new Promise(resolve => { modalResolve = resolve; });
+        function bulkSettings() {
+            return {
+                count: Math.min(Math.max(parseInt($('b-count').value, 10) || 0, 0), 1000),
+                points: parseInt($('b-points').value, 10) || 0,
+                prefix: $('b-prefix').value.trim(),
+                start: parseInt($('b-start').value, 10),
+                type: $('b-type').value.trim(),
+                location: $('b-location').value.trim()
+            };
         }
 
-        function field(id, label, value, opts = {}) {
-            return `
-                <label class="flex flex-col gap-1.5">
-                    <span class="card-label">${esc(label)}</span>
-                    <input id="${id}" type="${opts.type || 'text'}" value="${esc(value)}" ${opts.readonly ? 'readonly' : ''} ${opts.min !== undefined ? `min="${opts.min}"` : ''}
-                        placeholder="${esc(opts.placeholder || '')}"
-                        class="glass-input w-full rounded-xl px-4 py-3 text-[15px] text-white placeholder-gray-500 ${opts.readonly ? 'opacity-60' : ''}">
-                </label>`;
+        function updateBulkPreview() {
+            const s = bulkSettings();
+            if (!s.count) return ($('bulk-preview').textContent = 'Enter how many ducks to create.');
+            const ids = nextDuckIds(s.prefix, s.count, isNaN(s.start) ? undefined : s.start);
+            $('bulk-preview').textContent = `Creates ${s.count} duck${s.count === 1 ? '' : 's'}: ` +
+                (ids.length > 3 ? `${ids[0]}, ${ids[1]}, … ${ids[ids.length - 1]}` : ids.join(', ')) +
+                ` · ${s.points} pts each` + (s.type ? ` · ${s.type}` : '');
         }
 
-        function duckForm(duck) {
-            const editing = Boolean(duck);
-            duck = duck || { duck_id: '', duck_type: '', points: 10, location: '', qr_code: randomCode() };
-            openModal(`
-                <form id="duck-form" data-original="${esc(editing ? duck.duck_id : '')}" class="flex flex-col gap-4">
-                    <h3 class="text-xl font-bold font-tech tracking-wider text-white">${editing ? 'Edit Duck' : 'Add Duck'}</h3>
-                    ${field('f-duck-id', 'Duck ID', duck.duck_id, { placeholder: 'e.g. D-014' })}
-                    <div class="grid grid-cols-2 gap-3">
-                        ${field('f-duck-type', 'Duck Type', duck.duck_type, { placeholder: 'e.g. Golden' })}
-                        ${field('f-duck-points', 'Points', duck.points, { type: 'number', min: 0 })}
-                    </div>
-                    ${field('f-duck-location', 'Location', duck.location, { placeholder: 'e.g. Library, 2nd floor' })}
-                    <div class="flex flex-col gap-1.5">
-                        <span class="card-label">QR Code</span>
-                        <div class="flex gap-2">
-                            <input id="f-duck-qr" type="text" value="${esc(duck.qr_code)}" class="glass-input flex-1 min-w-0 rounded-xl px-4 py-3 text-[15px] text-white font-mono">
-                            <button type="button" data-action="new-code" class="btn btn-ghost text-[13px] px-3">New</button>
-                        </div>
-                        ${editing ? '<span class="text-[12px] text-gray-400">Changing the code means reprinting this duck\'s QR label.</span>' : ''}
-                    </div>
-                    <p id="form-error" class="hidden text-[14px] text-[#ffe81f]"></p>
-                    <div class="flex gap-3 mt-2">
-                        <button type="button" data-action="modal-cancel" class="btn btn-ghost flex-1 py-3">Cancel</button>
-                        <button type="submit" class="btn btn-gold flex-1 py-3">${editing ? 'Save' : 'Add Duck'}</button>
-                    </div>
-                </form>`);
+        function openBulkDialog() {
+            const prefix = $('b-prefix').value.trim() || 'D-';
+            $('b-prefix').value = prefix;
+            const first = nextDuckIds(prefix, 1)[0];
+            $('b-start').value = parseInt(first.slice(prefix.length), 10);
+            showError('bulk-error', '');
+            updateBulkPreview();
+            $('bulk-dialog').showModal();
         }
 
-        function rescuerForm(p) {
-            openModal(`
-                <form id="rescuer-form" data-id="${esc(p.student_id)}" class="flex flex-col gap-4">
-                    <h3 class="text-xl font-bold font-tech tracking-wider text-white">Edit Rescuer</h3>
-                    ${field('f-student-id', 'Student ID', p.student_id, { readonly: true })}
-                    <div class="grid grid-cols-2 gap-3">
-                        ${field('f-first', 'First Name', p.first_name)}
-                        ${field('f-last', 'Last Name', p.last_name)}
-                    </div>
-                    ${field('f-email', 'Email', p.email, { type: 'email' })}
-                    ${field('f-points', 'Points', p.points, { type: 'number', min: 0 })}
-                    <p class="text-[12px] text-gray-400 -mt-2">Changing points here is a manual override. To undo a single scan, use Undo in Live Scans.</p>
-                    <p id="form-error" class="hidden text-[14px] text-[#ffe81f]"></p>
-                    <div class="flex gap-3 mt-2">
-                        <button type="button" data-action="modal-cancel" class="btn btn-ghost flex-1 py-3">Cancel</button>
-                        <button type="submit" class="btn btn-gold flex-1 py-3">Save</button>
-                    </div>
-                </form>`);
-        }
+        ['b-count', 'b-points', 'b-prefix', 'b-start', 'b-type'].forEach(id => $(id).addEventListener('input', updateBulkPreview));
 
         function renderQR(el, text, size) {
             el.innerHTML = '';
+            if (typeof QRCode === 'undefined') {
+                el.textContent = 'QR library failed to load.';
+                return;
+            }
             new QRCode(el, { text, width: size, height: size, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
         }
 
-        function qrModal(duck) {
-            openModal(`
-                <div class="flex flex-col items-center gap-4">
-                    <div class="text-center">
-                        <p class="card-label">QR Code</p>
-                        <h3 class="text-xl font-bold font-tech tracking-wider text-white">${esc(duck.duck_id)} · ${esc(duckName(duck.duck_type))}</h3>
-                    </div>
-                    <div id="qr-box" class="qr-frame w-64 bg-white p-4 rounded-xl"></div>
-                    <p class="font-mono text-[14px] text-gray-300 break-all text-center">${esc(duck.qr_code)}</p>
-                    <div class="flex gap-3 w-full">
-                        <button type="button" data-action="modal-cancel" class="btn btn-ghost flex-1 py-3">Close</button>
-                        <button type="button" data-action="download-qr" data-id="${esc(duck.duck_id)}" class="btn btn-gold flex-1 py-3">Download PNG</button>
-                    </div>
-                </div>`);
-            renderQR(document.getElementById('qr-box'), duck.qr_code, 512);
+        let qrDuckId = null;
+        function openQRDialog(duck) {
+            qrDuckId = duck.duck_id;
+            $('qr-title').textContent = `${duck.duck_id}${duck.duck_type ? ' · ' + duck.duck_type : ''}`;
+            $('qr-text').textContent = duck.qr_code;
+            renderQR($('qr-box'), duck.qr_code, 512);
+            $('qr-dialog').showModal();
         }
 
-        function printQRCodes() {
-            if (!state.ducks.length) return showToast('Add some ducks first.');
-            const area = document.getElementById('print-area');
-            area.innerHTML = state.ducks.map((d, i) => `
-                <div class="print-label">
+        function printLabels(ducks) {
+            if (!ducks.length) return snackbar('No ducks to print.');
+            const area = $('print-area');
+            area.innerHTML = ducks.map((d, i) => `
+                <div class="label">
                     <div id="print-qr-${i}"></div>
-                    <p style="margin:3mm 0 0;font-weight:700;font-size:13pt">${esc(d.duck_id)}</p>
-                    <p style="margin:1mm 0 0;font-size:10pt">${esc(duckName(d.duck_type))} · ${esc(d.points)} pts</p>
-                    <p style="margin:1mm 0 0;font-size:8pt;color:#555">Scan in the Duck Hunt app</p>
+                    <b>${esc(d.duck_id)}</b>
+                    <span>${esc(d.duck_type ? d.duck_type + ' Duck' : 'Duck')} · ${esc(d.points)} pts</span>
                 </div>`).join('');
-            state.ducks.forEach((d, i) => renderQR(document.getElementById('print-qr-' + i), d.qr_code, 400));
+            ducks.forEach((d, i) => renderQR($('print-qr-' + i), d.qr_code, 400));
             setTimeout(() => window.print(), 300);
         }
 
-        // ---------- ACTIONS ----------
+        function duckCSV(ducks, filename) {
+            downloadCSV(filename,
+                ['Duck ID', 'Duck Type', 'Points', 'QR Code', 'Location', 'Claimed', 'Found By', 'Found By Student ID', 'Found At'],
+                ducks.map(d => [d.duck_id, d.duck_type, d.points, d.qr_code, d.location, d.claimed ? 'Yes' : 'No',
+                    d.claimed_by_name, d.claimed_by, d.claimed_at]));
+        }
+
+        // ---------- EVENTS ----------
         const findDuck = id => state.ducks.find(d => d.duck_id === id);
         const findPlayer = id => state.players.find(p => p.student_id === id);
 
-        async function runAction(button, task, success) {
-            await busy(button, async () => {
-                try {
-                    await task();
-                    if (success) showToast(success);
-                    await load();
-                } catch (err) {
-                    showToast(err.message || 'Something went wrong.');
-                }
-            });
-        }
-
         document.addEventListener('click', async event => {
-            const el = event.target.closest('[data-action]');
-            if (!el) {
-                if (event.target.id === 'overlay') closeModal(false);
+            // Clicking the dark backdrop (outside the dialog box) closes it
+            if (event.target.tagName === 'DIALOG') {
+                const r = event.target.getBoundingClientRect();
+                const outside = event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom;
+                if (outside) event.target.close();
                 return;
             }
+
+            const th = event.target.closest('th.sortable');
+            if (th) {
+                const s = sort[th.dataset.sort];
+                s.dir = s.key === th.dataset.key ? -s.dir : 1;
+                s.key = th.dataset.key;
+                return render();
+            }
+
+            const el = event.target.closest('[data-action]');
+            if (!el) return;
             const id = el.dataset.id;
 
             switch (el.dataset.action) {
                 case 'sign-out': return signOut();
                 case 'tab': return switchTab(el.dataset.tab);
-                case 'modal-cancel': return closeModal(false);
-                case 'modal-ok': return closeModal(true);
-                case 'new-code': document.getElementById('f-duck-qr').value = randomCode(); return;
-                case 'add-duck': return duckForm(null);
-                case 'edit-duck': return duckForm(findDuck(id));
-                case 'show-qr': return qrModal(findDuck(id));
-                case 'print-qr': return printQRCodes();
-                case 'edit-rescuer': return rescuerForm(findPlayer(id));
-
-                case 'download-qr': {
-                    const canvasEl = document.querySelector('#qr-box canvas');
-                    const img = document.querySelector('#qr-box img');
-                    const link = document.createElement('a');
-                    link.href = canvasEl ? canvasEl.toDataURL('image/png') : img.src;
-                    link.download = `${id}-qr.png`;
-                    link.click();
-                    return;
+                case 'close-dialog': return el.closest('dialog').close();
+                case 'confirm-yes': {
+                    const resolve = confirmDialog.resolve;
+                    confirmDialog.resolve = null;
+                    $('confirm-dialog').close();
+                    return resolve && resolve(true);
+                }
+                case 'confirm-no': return $('confirm-dialog').close();
+                case 'new-code': $('f-duck-qr').value = randomCode(); return;
+                case 'add-duck': return openDuckDialog(null);
+                case 'edit-duck': return openDuckDialog(findDuck(id));
+                case 'bulk-create': return openBulkDialog();
+                case 'show-qr': return openQRDialog(findDuck(id));
+                case 'edit-rescuer': {
+                    const p = findPlayer(id);
+                    $('f-student-id').value = p.student_id;
+                    $('f-first').value = p.first_name;
+                    $('f-last').value = p.last_name;
+                    $('f-email').value = p.email || '';
+                    $('f-points').value = p.points;
+                    showError('rescuer-error', '');
+                    return $('rescuer-dialog').showModal();
                 }
 
-                case 'undo-scan': {
-                    const scan = state.scans.find(s => String(s.id) === id);
-                    if (!scan) return;
-                    const ok = await confirmDialog('Undo this scan?',
-                        `${scan.player_name || scan.student_id} loses ${scan.points} pts and ${duckName(scan.duck_type)} (${scan.duck_id || 'retired'}) becomes findable again.`,
-                        'Undo Scan', true);
-                    if (ok) runAction(el, () => rpc('admin_undo_scan', { p_scan_id: scan.id }), 'Scan undone.');
-                    return;
+                case 'download-qr': {
+                    const canvas = document.querySelector('#qr-box canvas');
+                    const img = document.querySelector('#qr-box img');
+                    const link = document.createElement('a');
+                    link.href = canvas ? canvas.toDataURL('image/png') : img.src;
+                    link.download = `${qrDuckId}-qr.png`;
+                    return link.click();
+                }
+
+                case 'print-all': return printLabels(visibleDucks());
+                case 'print-selected': return printLabels(visibleDucks().filter(d => selected.has(d.duck_id)));
+                case 'download-ducks': return duckCSV(visibleDucks(), `duck-hunt-ducks-${today()}.csv`);
+                case 'download-selected': return duckCSV(visibleDucks().filter(d => selected.has(d.duck_id)), `duck-hunt-ducks-${today()}.csv`);
+                case 'clear-selection': selected.clear(); return render();
+
+                case 'bulk-points': {
+                    const points = parseInt($('bulk-points').value, 10);
+                    if (isNaN(points) || points < 0) return snackbar('Enter 0 or more points.');
+                    return busy(el, async () => {
+                        const n = await rpc('admin_set_duck_points', { p_duck_ids: [...selected], p_points: points });
+                        snackbar(`Set ${n} duck${n === 1 ? '' : 's'} to ${points} points.`);
+                        await load();
+                    });
+                }
+
+                case 'bulk-delete': {
+                    const ids = [...selected];
+                    const ok = await confirmDialog(`Delete ${ids.length} duck${ids.length === 1 ? '' : 's'}?`,
+                        'Their QR codes stop working. Rescuers who already found them keep their points.', 'Delete', true);
+                    if (!ok) return;
+                    return busy(el, async () => {
+                        const n = await rpc('admin_delete_ducks', { p_duck_ids: ids });
+                        selected.clear();
+                        snackbar(`Deleted ${n} duck${n === 1 ? '' : 's'}.`);
+                        await load();
+                    });
                 }
 
                 case 'reopen-duck': {
-                    const duck = findDuck(id);
-                    const ok = await confirmDialog(`Re-open ${duck.duck_id}?`,
-                        `${duck.claimed_by_name || 'The rescuer who found it'} loses ${duck.points} pts and anyone can claim this duck again.`,
-                        'Re-open', false);
-                    if (ok) runAction(el, () => rpc('admin_reopen_duck', { p_duck_id: id }), `${id} is open again.`);
-                    return;
+                    const d = findDuck(id);
+                    const ok = await confirmDialog(`Re-open ${d.duck_id}?`,
+                        `${d.claimed_by_name || 'The rescuer who found it'} loses the points for it, and anyone can claim it again.`, 'Re-open', false);
+                    if (!ok) return;
+                    return busy(el, async () => {
+                        await rpc('admin_reopen_duck', { p_duck_id: id });
+                        snackbar(`${id} is open again.`);
+                        await load();
+                    });
                 }
 
                 case 'delete-duck': {
-                    const duck = findDuck(id);
-                    const ok = await confirmDialog(`Delete ${duck.duck_id}?`,
-                        'Its QR code stops working. Rescuers who already found it keep their points.',
-                        'Delete Duck', true);
-                    if (ok) runAction(el, () => rpc('admin_delete_duck', { p_duck_id: id }), `${id} deleted.`);
-                    return;
+                    const ok = await confirmDialog(`Delete ${id}?`,
+                        'Its QR code stops working. Rescuers who already found it keep their points.', 'Delete', true);
+                    if (!ok) return;
+                    return busy(el, async () => {
+                        await rpc('admin_delete_duck', { p_duck_id: id });
+                        selected.delete(id);
+                        snackbar(`${id} deleted.`);
+                        await load();
+                    });
                 }
 
                 case 'delete-rescuer': {
                     const p = findPlayer(id);
-                    const ok = await confirmDialog(`Delete ${fullName(p)}?`,
-                        `Their ${p.codes_scanned} scan${p.codes_scanned === 1 ? '' : 's'} are removed and those ducks become findable again. They can register again later.`,
-                        'Delete Rescuer', true);
-                    if (ok) runAction(el, () => rpc('admin_delete_player', { p_student_id: id }), `${fullName(p)} deleted.`);
-                    return;
+                    const ok = await confirmDialog(`Delete ${fullName(p) || p.student_id}?`,
+                        `Their ${p.codes_scanned} scan${p.codes_scanned === 1 ? '' : 's'} are removed and those ducks can be found again.`, 'Delete', true);
+                    if (!ok) return;
+                    return busy(el, async () => {
+                        await rpc('admin_delete_player', { p_student_id: id });
+                        snackbar(`${fullName(p) || p.student_id} deleted.`);
+                        await load();
+                    });
                 }
 
-                case 'export-rescuers':
-                    return downloadCSV('duck-hunt-rescuers.csv',
-                        ['Place', 'First Name', 'Last Name', 'Student ID', 'Email', 'Points', 'Codes Scanned', 'Registered'],
-                        state.players.map(p => [p.place, p.first_name, p.last_name, p.student_id, p.email, p.points, p.codes_scanned, p.created_at]));
-
-                case 'export-scans':
+                case 'undo-scan': {
+                    const s = state.scans.find(x => String(x.id) === id);
+                    const ok = await confirmDialog('Undo this scan?',
+                        `${s.player_name || s.student_id} loses ${s.points} points` +
+                        (s.duck_id ? ` and ${s.duck_id} can be found again.` : '.'), 'Undo scan', true);
+                    if (!ok) return;
                     return busy(el, async () => {
-                        try {
-                            let all = [];
-                            for (let from = 0; ; from += 1000) {
-                                const { data, error } = await db.from('duck_log').select('*').order('scanned_at').range(from, from + 999);
-                                if (error) throw error;
-                                all = all.concat(data);
-                                if (data.length < 1000) break;
-                            }
-                            const names = Object.fromEntries(state.players.map(p => [p.student_id, fullName(p)]));
-                            downloadCSV('duck-hunt-scans.csv',
-                                ['Timestamp', 'Duck ID', 'Duck Type', 'Points', 'Student ID', 'Rescuer'],
-                                all.map(s => [s.scanned_at, s.duck_id, s.duck_type, s.points, s.student_id, names[s.student_id] || '']));
-                        } catch (err) {
-                            showToast(err.message || 'Export failed.');
+                        await rpc('admin_undo_scan', { p_scan_id: s.id });
+                        snackbar('Scan undone.');
+                        await load();
+                    });
+                }
+
+                case 'download-rescuers':
+                    return downloadCSV(`duck-hunt-rescuers-${today()}.csv`,
+                        ['Rank', 'First Name', 'Last Name', 'Student ID', 'Email', 'Points', 'Codes Scanned', 'Registered'],
+                        sorted(state.players, 'players').map(p => [p.place, p.first_name, p.last_name, p.student_id, p.email, p.points, p.codes_scanned, p.created_at]));
+
+                case 'download-scans':
+                    return busy(el, async () => {
+                        let all = [];
+                        for (let from = 0; ; from += 1000) {
+                            const { data, error } = await db.from('duck_log').select('*').order('scanned_at').range(from, from + 999);
+                            if (error) throw error;
+                            all = all.concat(data);
+                            if (data.length < 1000) break;
                         }
+                        const players = Object.fromEntries(state.players.map(p => [p.student_id, p]));
+                        downloadCSV(`duck-hunt-scans-${today()}.csv`,
+                            ['Timestamp', 'Duck ID', 'Duck Type', 'Points', 'Student ID', 'First Name', 'Last Name'],
+                            all.map(s => [s.scanned_at, s.duck_id, s.duck_type, s.points, s.student_id,
+                                players[s.student_id] ? players[s.student_id].first_name : '',
+                                players[s.student_id] ? players[s.student_id].last_name : '']));
                     });
             }
         });
 
-        document.addEventListener('submit', event => {
-            const form = event.target;
-            if (form.id !== 'duck-form' && form.id !== 'rescuer-form') return;
-            event.preventDefault();
-            const button = form.querySelector('[type="submit"]');
-            const error = document.getElementById('form-error');
-            const value = id => document.getElementById(id).value;
+        // Row checkboxes
+        document.addEventListener('change', event => {
+            const t = event.target;
+            if (t.dataset.select !== undefined) {
+                t.checked ? selected.add(t.dataset.select) : selected.delete(t.dataset.select);
+                return renderDucks();
+            }
+            if (t.id === 'select-all') {
+                visibleDucks().forEach(d => t.checked ? selected.add(d.duck_id) : selected.delete(d.duck_id));
+                return renderDucks();
+            }
+            if (t.dataset.pointsDuck !== undefined || t.dataset.pointsPlayer !== undefined) savePoints(t);
+        });
 
-            busy(button, async () => {
+        // Inline points editing: saves on Enter or when leaving the cell
+        async function savePoints(input) {
+            const points = parseInt(input.value, 10);
+            const duckId = input.dataset.pointsDuck;
+            const studentId = input.dataset.pointsPlayer;
+            const original = duckId ? findDuck(duckId).points : findPlayer(studentId).points;
+            if (isNaN(points) || points < 0) {
+                input.value = original;
+                return snackbar('Points must be 0 or more.');
+            }
+            if (points === original) return;
+            try {
+                if (duckId) {
+                    await rpc('admin_set_duck_points', { p_duck_ids: [duckId], p_points: points });
+                    snackbar(`${duckId} is now worth ${points} points.`);
+                } else {
+                    const p = findPlayer(studentId);
+                    await rpc('admin_save_player', {
+                        p_student_id: studentId, p_first_name: p.first_name, p_last_name: p.last_name,
+                        p_email: p.email || '', p_points: points
+                    });
+                    snackbar(`${fullName(p) || studentId} now has ${points} points.`);
+                }
+                await load();
+            } catch (err) {
+                input.value = original;
+                snackbar(err.message || 'Couldn\'t save.');
+            }
+        }
+
+        document.addEventListener('keydown', event => {
+            const t = event.target;
+            if (!t.classList || !t.classList.contains('cell-num')) return;
+            if (event.key === 'Enter') t.blur();
+            if (event.key === 'Escape') {
+                // Put the saved value back so leaving the cell doesn't save
+                const row = t.dataset.pointsDuck !== undefined ? findDuck(t.dataset.pointsDuck) : findPlayer(t.dataset.pointsPlayer);
+                if (row) t.value = row.points;
+                t.blur();
+            }
+        });
+        document.addEventListener('focusout', event => {
+            if (event.target.classList && event.target.classList.contains('cell-num')) {
+                setTimeout(() => { if (renderPending && !editingCell()) render(); }, 0);
+            }
+        });
+
+        $('duck-search').addEventListener('input', renderDucks);
+        $('rescuer-search').addEventListener('input', renderRescuers);
+        $('scan-search').addEventListener('input', renderScans);
+
+        // ---------- FORMS ----------
+        $('duck-form').addEventListener('submit', event => {
+            event.preventDefault();
+            busy(event.submitter, async () => {
                 try {
-                    if (form.id === 'duck-form') {
-                        const original = form.dataset.original || null;
-                        await rpc('admin_save_duck', {
-                            p_original_id: original,
-                            p_duck_id: value('f-duck-id'),
-                            p_duck_type: value('f-duck-type'),
-                            p_points: parseInt(value('f-duck-points'), 10) || 0,
-                            p_qr_code: value('f-duck-qr'),
-                            p_location: value('f-duck-location')
-                        });
-                        showToast(original ? 'Duck saved.' : 'Duck added.');
-                    } else {
-                        await rpc('admin_save_player', {
-                            p_student_id: form.dataset.id,
-                            p_first_name: value('f-first'),
-                            p_last_name: value('f-last'),
-                            p_email: value('f-email'),
-                            p_points: parseInt(value('f-points'), 10) || 0
-                        });
-                        showToast('Rescuer saved.');
-                    }
-                    closeModal(true);
-                    load();
+                    await rpc('admin_save_duck', {
+                        p_original_id: editingDuckId,
+                        p_duck_id: $('f-duck-id').value,
+                        p_duck_type: $('f-duck-type').value,
+                        p_points: parseInt($('f-duck-points').value, 10) || 0,
+                        p_qr_code: $('f-duck-qr').value,
+                        p_location: $('f-duck-location').value
+                    });
+                    $('duck-dialog').close();
+                    snackbar(editingDuckId ? 'Duck saved.' : 'Duck added.');
+                    await load();
                 } catch (err) {
-                    error.textContent = err.message || 'Couldn\'t save.';
-                    error.classList.remove('hidden');
+                    showError('duck-error', err.message);
                 }
             });
         });
 
-        document.addEventListener('keydown', event => {
-            if (event.key === 'Escape' && !document.getElementById('overlay').classList.contains('hidden')) closeModal(false);
+        $('bulk-form').addEventListener('submit', event => {
+            event.preventDefault();
+            const s = bulkSettings();
+            if (!s.count) return showError('bulk-error', 'Enter how many ducks to create.');
+            if (s.points < 0) return showError('bulk-error', 'Points can\'t be negative.');
+            const ids = nextDuckIds(s.prefix, s.count, isNaN(s.start) ? undefined : s.start);
+            const ducks = ids.map(id => ({ duck_id: id, duck_type: s.type, points: s.points, qr_code: randomCode(), location: s.location }));
+            busy(event.submitter, async () => {
+                try {
+                    const n = await rpc('admin_bulk_create_ducks', { p_ducks: ducks });
+                    $('bulk-dialog').close();
+                    snackbar(`Created ${n} ducks. Select them to print their QR codes.`);
+                    $('duck-search').value = '';
+                    selected.clear();
+                    ids.forEach(id => selected.add(id));
+                    await load();
+                } catch (err) {
+                    showError('bulk-error', err.message);
+                }
+            });
         });
 
-        document.getElementById('duck-search').addEventListener('input', renderDucks);
-        document.getElementById('rescuer-search').addEventListener('input', renderRescuers);
+        $('rescuer-form').addEventListener('submit', event => {
+            event.preventDefault();
+            busy(event.submitter, async () => {
+                try {
+                    await rpc('admin_save_player', {
+                        p_student_id: $('f-student-id').value,
+                        p_first_name: $('f-first').value,
+                        p_last_name: $('f-last').value,
+                        p_email: $('f-email').value,
+                        p_points: parseInt($('f-points').value, 10) || 0
+                    });
+                    $('rescuer-dialog').close();
+                    snackbar('Rescuer saved.');
+                    await load();
+                } catch (err) {
+                    showError('rescuer-error', err.message);
+                }
+            });
+        });
 
         // ---------- START ----------
         window.onload = async function() {
-            resize();
-            initStars();
-            animate();
-
             if (!db) return showLogin('Couldn\'t load Supabase. Check your connection and reload.');
             const { data } = await db.auth.getSession();
-            if (data && data.session) enterAdmin();
+            const session = data && data.session;
+            if (session) enterAdmin(session.user && session.user.email);
             else showLogin();
         };
     </script>

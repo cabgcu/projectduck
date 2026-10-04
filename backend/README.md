@@ -9,10 +9,15 @@ Everything runs on Supabase. There's no Google Sheet anymore.
 ```
 
 - **`index.html`** is the student app: register, sign in, scan ducks, leaderboard and history.
-- **`admin.html`** is the Command Center:
-  - **Live Scans:** a real-time feed of every claim. **Undo** removes a scan; the player loses the points and the duck can be found again. **Export CSV** downloads every scan.
-  - **Ducks:** add, edit and delete ducks, and generate random QR codes. You can view or download a single QR as a PNG, or **Print QR Codes** to get printable labels for every duck. **Re-open** makes a claimed duck findable again and takes its points back.
-  - **Rescuers:** search, edit names, email and points, delete a rescuer (their ducks re-open), and export to CSV.
+- **`admin.html`** is a plain admin page with three tables:
+  - **Ducks:** the master list. Click a column header to sort.
+    - Edit **Points** right in the table: type a number and press Enter.
+    - **Add duck** for one duck, or **Bulk create** for many at once (for example 50 "Rubber" ducks worth 10 points, D-001 to D-050), each with its own random QR code.
+    - Tick rows to **set points**, **print QR codes**, **download CSV** or **delete** them all at once.
+    - **QR** shows a single duck's code and downloads it as a PNG. **Re-open** makes a claimed duck findable again and takes its points back.
+  - **Rescuers:** edit Points in the table, edit names and email, delete a rescuer (their ducks re-open), and download CSV.
+  - **Scans:** live as students scan. **Undo** removes a scan; the player loses the points and the duck can be found again. Download CSV gets every scan.
+  - Changing a duck's points only affects future scans. Points already awarded stay the same.
 - **`supabase.sql`** creates the whole database. It's safe to re-run, and also removes the old Google Sheet sync if it was installed.
 
 ## Game rules
@@ -51,12 +56,12 @@ where user_id = (select id from auth.users where email = 'them@example.com');
 
 ### 3. Open the admin page
 
-Open `admin.html` from the same place you host `index.html` (for example `https://<your-site>/admin.html`) and sign in. The **Live** dot in the corner lights up when real-time updates are connected. If they drop, the page still refreshes every 30 seconds.
+Open `admin.html` from the same place you host `index.html` (for example `https://<your-site>/admin.html`) and sign in. The green **Live** dot at the top means real-time updates are connected. If they drop, the page still refreshes every 30 seconds.
 
 ### 4. Add ducks and print QR codes
 
-1. **Ducks → + Add Duck.** A random QR code is filled in for you.
-2. **Print QR Codes** prints a label for every duck, with its ID, type and points. Stick each label on its duck.
+1. **Ducks → Bulk create** (or **Add duck**). The new ducks stay selected afterwards.
+2. **Print QR codes** prints a label for each duck, with its ID, type and points. Stick each label on its duck. **Download CSV** includes every duck's QR code text, if you'd rather make labels elsewhere.
 
 ## Security notes
 
