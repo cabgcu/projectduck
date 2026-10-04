@@ -718,7 +718,7 @@
                     <td class="num"><input class="cell-num" type="number" min="0" value="${esc(d.points)}" data-points-duck="${esc(d.duck_id)}" aria-label="Points for ${esc(d.duck_id)}"></td>
                     <td>${esc(d.location)}</td>
                     <td class="mono">${esc(d.qr_code)}</td>
-                    <td><span class="badge ${d.claimed ? 'badge-claimed' : d.active ? 'badge-open' : 'badge-inactive'}">${d.claimed ? 'Claimed' : d.active ? 'Open' : 'Inactive'}</span></td>
+                    <td><span class="badge ${d.claimed ? 'badge-claimed' : d.active ? 'badge-open' : 'badge-inactive'}">${d.claimed ? 'Claimed' : d.active ? 'Active' : 'Inactive'}</span></td>
                     <td>${esc(d.claimed_by_name || d.claimed_by || '')}</td>
                     <td class="muted">${esc(formatDate(d.claimed_at))}</td>
                     <td class="actions">

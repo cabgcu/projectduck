@@ -363,6 +363,22 @@ as $$
     limit 100;
 $$;
 
+-- Rebel Coordinates: how many active, unclaimed ducks are at each location.
+-- Ducks without a location are grouped as null.
+create or replace function public.get_rebel_coordinates()
+returns table (location text, ducks bigint)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+    select d.location, count(*)
+    from public.ducks d
+    where d.active and not d.claimed
+    group by d.location
+    order by d.location is null, count(*) desc, lower(d.location);
+$$;
+
 revoke execute on all functions in schema public from public, anon, authenticated;
 grant execute on function
     public.register_player(text, text, text, text),
@@ -370,7 +386,8 @@ grant execute on function
     public.claim_duck(text, text),
     public.get_rescuer_rank(text),
     public.get_leaderboard(text, integer),
-    public.get_scan_history(text)
+    public.get_scan_history(text),
+    public.get_rebel_coordinates()
 to anon, authenticated;
 
 
