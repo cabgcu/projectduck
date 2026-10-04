@@ -57,6 +57,45 @@
         #force-stage video { width: 100%; height: 100%; object-fit: contain; }
         .force-shard { position: fixed; z-index: 96; pointer-events: none; background-repeat: no-repeat; will-change: transform, opacity; }
 
+        /* Hologram limit: the screen freezes over */
+        #freeze-overlay { position: fixed; inset: 0; z-index: 93; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 24px; }
+        #freeze-overlay .ice {
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse at center, rgba(180, 230, 255, 0.10) 30%, rgba(170, 225, 255, 0.55) 100%),
+                linear-gradient(135deg, rgba(120, 200, 255, 0.35), rgba(200, 240, 255, 0.25));
+            backdrop-filter: blur(3px) saturate(60%) hue-rotate(-10deg);
+            -webkit-backdrop-filter: blur(3px) saturate(60%);
+            box-shadow: inset 0 0 120px 30px rgba(220, 245, 255, 0.85);
+            animation: freeze-in 1.2s ease-out both;
+        }
+        @keyframes freeze-in {
+            from { opacity: 0; box-shadow: inset 0 0 0 0 rgba(220, 245, 255, 0); backdrop-filter: blur(0) saturate(100%); }
+            to { opacity: 1; }
+        }
+        .snowflake {
+            position: absolute; top: -30px; color: #fff; pointer-events: none; user-select: none;
+            text-shadow: 0 0 8px rgba(160, 220, 255, 0.9);
+            animation: snow-fall linear infinite;
+        }
+        @keyframes snow-fall {
+            from { transform: translate(0, 0) rotate(0deg); }
+            to { transform: translate(var(--drift), 110vh) rotate(360deg); }
+        }
+        .freeze-card {
+            position: relative; max-width: 360px; width: 100%; text-align: center; padding: 24px 22px;
+            border-radius: 20px; border: 1px solid rgba(200, 240, 255, 0.7);
+            background: rgba(10, 40, 70, 0.72);
+            color: #fff;
+            box-shadow: 0 0 40px rgba(140, 210, 255, 0.55), inset 0 0 30px rgba(180, 230, 255, 0.15);
+            animation: freeze-card-in 0.6s 0.5s cubic-bezier(.2, 1.4, .4, 1) both;
+        }
+        @keyframes freeze-card-in { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: none; } }
+        @media (prefers-reduced-motion: reduce) {
+            .snowflake { display: none; }
+            #freeze-overlay .ice, .freeze-card { animation: none; }
+        }
+
         /* Hologram transmissions (admin announcements) */
         #holo-overlay { animation: holo-in 0.35s ease-out; }
         @keyframes holo-in { from { opacity: 0; } to { opacity: 1; } }
@@ -454,6 +493,7 @@
                             <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>Each duck can be rescued once. The first rescuer to scan it gets the points.</span></li>
                             <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>Different ducks are worth different points. Rare ducks are worth more.</span></li>
                             <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>If a duck "isn't in play yet," it hasn't been activated. Check back later.</span></li>
+                            <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>You can scan up to 10 hologram codes a day. The limit resets at midnight. Rebel ducks have no limit.</span></li>
                             <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>The leaderboard ranks rescuers by points. Rescuers with equal points share a place.</span></li>
                             <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>Play fair: one account per student, using your own Student ID.</span></li>
                         </ul>
@@ -1504,6 +1544,58 @@
             vignette.remove();
         }
 
+        // ---------- HOLOGRAM LIMIT ----------
+        // Hologram codes are capped per day (the database enforces it). Hitting
+        // the cap freezes the screen over; it resets at midnight Arizona time.
+        let freezeResumeScanner = false;
+
+        function freezeScreen(limit) {
+            if (document.getElementById('freeze-overlay')) return;
+            freezeResumeScanner = scanning;
+            if (scanning) stopScanner();
+            if (navigator.vibrate) navigator.vibrate([40, 30, 40, 30, 200]);
+
+            const overlay = document.createElement('div');
+            overlay.id = 'freeze-overlay';
+            overlay.setAttribute('role', 'alertdialog');
+            overlay.setAttribute('aria-labelledby', 'freeze-title');
+            overlay.innerHTML = `
+                <div class="ice"></div>
+                <div class="freeze-card">
+                    <div class="text-[44px] leading-none mb-2" aria-hidden="true">❄️</div>
+                    <p class="card-label" style="color:#bfeaff">Frozen in Carbonite</p>
+                    <h2 id="freeze-title" class="text-2xl font-bold font-tech tracking-wider text-white mt-1">Hologram Limit Reached</h2>
+                    <p class="mt-2 text-[15px] text-[#d8f3ff] leading-snug">You've scanned ${limit} hologram codes today. Your limit resets at <b class="text-white">12:00 AM</b>.</p>
+                    <p class="mt-2 text-[14px] text-[#a9dcf5] leading-snug">Rebel ducks have no limit, so keep hunting!</p>
+                    <button type="button" class="mt-5 w-full bg-white/10 border border-[#bfeaff]/60 hover:bg-white/20 text-white font-bold text-[16px] py-3 rounded-xl transition-all duration-300 active:scale-[0.98]">Thaw out</button>
+                </div>`;
+
+            // Snowfall
+            const flakes = window.innerWidth < 600 ? 40 : 70;
+            for (let i = 0; i < flakes; i++) {
+                const flake = document.createElement('span');
+                flake.className = 'snowflake';
+                flake.textContent = Math.random() < 0.6 ? '❄' : '•';
+                flake.style.left = Math.random() * 100 + 'vw';
+                flake.style.fontSize = (8 + Math.random() * 18) + 'px';
+                flake.style.opacity = (0.5 + Math.random() * 0.5).toFixed(2);
+                flake.style.animationDuration = (5 + Math.random() * 7).toFixed(1) + 's';
+                flake.style.animationDelay = (-Math.random() * 10).toFixed(1) + 's';
+                flake.style.setProperty('--drift', (Math.random() * 80 - 40) + 'px');
+                overlay.insertBefore(flake, overlay.querySelector('.freeze-card'));
+            }
+
+            overlay.querySelector('button').addEventListener('click', thawScreen);
+            document.body.appendChild(overlay);
+        }
+
+        function thawScreen() {
+            const overlay = document.getElementById('freeze-overlay');
+            if (!overlay) return;
+            overlay.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, easing: 'ease-in' }).onfinish = () => overlay.remove();
+            if (freezeResumeScanner) startScanner();
+        }
+
         // ---------- QR SCANNER ----------
         let qrScanner = null;
         let scanning = false;
@@ -1593,6 +1685,8 @@
                 } else if (result.status === 'closed') {
                     showToast('Duck Hunt is offline right now. Stand by!');
                     refreshHuntStatus();
+                } else if (result.status === 'hologram_limit') {
+                    freezeScreen(result.limit || 10);
                 } else if (result.status === 'inactive') {
                     showToast(`${name === 'this duck' ? 'This duck' : name} isn't in play yet. Check back soon!`);
                 } else if (result.status === 'unknown_player') {
