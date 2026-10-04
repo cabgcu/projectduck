@@ -368,7 +368,7 @@
                 <header class="flex items-center gap-3">
                     <button
                         type="button"
-                        onclick="closeHistoryPage()"
+                        onclick="closeSubPage()"
                         aria-label="Back"
                         class="w-11 h-11 rounded-xl bg-white/5 border border-white/20 hover:bg-white/10 hover:border-white/40 text-white flex items-center justify-center transition-all duration-300 active:scale-95"
                     >
@@ -384,6 +384,78 @@
                 <section class="shimmer-wrapper w-full">
                     <div class="glass-inner w-full p-5">
                         <ul id="history-full-list" class="flex flex-col divide-y divide-white/10"></ul>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- INFO VIEW: how to play, rules, prizes, past transmissions -->
+        <div id="info-view" class="hidden fade-transition opacity-0 fixed inset-0 overflow-y-auto no-scrollbar">
+            <div class="w-full max-w-md mx-auto px-4 pt-6 pb-12 flex flex-col gap-5">
+                <header class="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onclick="closeSubPage()"
+                        aria-label="Back"
+                        class="w-11 h-11 rounded-xl bg-white/5 border border-white/20 hover:bg-white/10 hover:border-white/40 text-white flex items-center justify-center transition-all duration-300 active:scale-95"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+                    </button>
+                    <div>
+                        <p class="card-label">Briefing</p>
+                        <h2 class="text-xl font-bold font-tech tracking-wider text-white">Duck Hunt Info</h2>
+                    </div>
+                </header>
+
+                <!-- How to play -->
+                <section class="shimmer-wrapper w-full">
+                    <div class="glass-inner w-full p-5">
+                        <p class="card-label">Mission</p>
+                        <h3 class="text-lg font-bold font-tech tracking-wider text-white mb-3">How to Play</h3>
+                        <ol class="flex flex-col gap-3 text-[15px] text-gray-200 leading-snug">
+                            <li class="flex gap-3"><span class="shrink-0 w-7 h-7 rounded-lg bg-[#ffe81f]/10 border border-[#ffe81f]/30 flex items-center justify-center font-tech font-bold text-[#ffe81f]">1</span><span>Find rubber ducks hidden around campus. <b class="text-white">Rebel Coordinates</b> on the home screen shows how many are still out at each location.</span></li>
+                            <li class="flex gap-3"><span class="shrink-0 w-7 h-7 rounded-lg bg-[#ffe81f]/10 border border-[#ffe81f]/30 flex items-center justify-center font-tech font-bold text-[#ffe81f]">2</span><span>Scan the duck's QR code with the in-app scanner, or just with your phone's camera.</span></li>
+                            <li class="flex gap-3"><span class="shrink-0 w-7 h-7 rounded-lg bg-[#ffe81f]/10 border border-[#ffe81f]/30 flex items-center justify-center font-tech font-bold text-[#ffe81f]">3</span><span>Earn points for every duck you rescue and climb the leaderboard.</span></li>
+                        </ol>
+                    </div>
+                </section>
+
+                <!-- Rules -->
+                <section class="shimmer-wrapper w-full">
+                    <div class="glass-inner w-full p-5">
+                        <p class="card-label">Code of Conduct</p>
+                        <h3 class="text-lg font-bold font-tech tracking-wider text-white mb-3">Rules</h3>
+                        <ul class="flex flex-col gap-2.5 text-[15px] text-gray-200 leading-snug">
+                            <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>Each duck can be rescued once. The first rescuer to scan it gets the points.</span></li>
+                            <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>Different ducks are worth different points. Rare ducks are worth more.</span></li>
+                            <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>If a duck "isn't in play yet," it hasn't been activated. Check back later.</span></li>
+                            <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>The leaderboard ranks rescuers by points. Rescuers with equal points share a place.</span></li>
+                            <li class="flex gap-3"><span class="mt-2 shrink-0 w-1.5 h-1.5 rounded-full bg-[#ffe81f]"></span><span>Play fair: one account per student, using your own Student ID.</span></li>
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- Prizes (edit this card when prizes are set) -->
+                <section class="shimmer-wrapper w-full">
+                    <div class="glass-inner w-full p-5">
+                        <p class="card-label">Rewards</p>
+                        <h3 class="text-lg font-bold font-tech tracking-wider text-white mb-3">Prizes</h3>
+                        <p class="text-[15px] text-gray-200 leading-snug">The top rescuers on the leaderboard win prizes. Prize details will come through as a transmission, so keep an eye out for the hologram.</p>
+                    </div>
+                </section>
+
+                <!-- Past transmissions -->
+                <section class="shimmer-wrapper w-full">
+                    <div class="glass-inner w-full p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <p class="card-label">Archive</p>
+                                <h3 class="text-lg font-bold font-tech tracking-wider text-white">Transmissions</h3>
+                            </div>
+                            <span id="info-transmission-count" class="text-[12px] px-3 py-1 rounded-full bg-white/5 border border-white/15 text-gray-400">0</span>
+                        </div>
+                        <ul id="info-transmissions" class="flex flex-col gap-2"></ul>
+                        <p id="info-transmissions-empty" class="py-4 text-center text-gray-400 text-[14px]">No transmissions yet.</p>
                     </div>
                 </section>
             </div>
@@ -525,7 +597,7 @@
                         <button
                             id="history-see-all"
                             type="button"
-                            onclick="openHistoryPage()"
+                            onclick="openSubPage('history')"
                             class="hidden mt-3 w-full bg-white/5 border border-white/20 hover:bg-white/10 hover:border-white/40 text-white font-semibold text-[15px] py-3 rounded-xl transition-all duration-300 active:scale-[0.98]"
                         >
                             See all
@@ -554,9 +626,9 @@
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span class="text-[11px] font-tech tracking-wider">History</span>
                     </button>
-                    <button type="button" data-nav="profile" onclick="navTo('profile')" class="nav-item flex flex-col items-center gap-1">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                        <span class="text-[11px] font-tech tracking-wider">Profile</span>
+                    <button type="button" data-nav="info" onclick="navTo('info')" class="nav-item flex flex-col items-center gap-1">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
+                        <span class="text-[11px] font-tech tracking-wider">Info</span>
                     </button>
                 </div>
             </nav>
@@ -812,9 +884,9 @@
         function signOut() {
             stopScanner();
             document.getElementById('holo-overlay').classList.add('hidden');
-            if (historyPageOpen()) {
-                // Signed out from the full history page: drop it and leave from home
-                const page = document.getElementById('history-view');
+            if (openSubPageName()) {
+                // Signed out from a full-screen page: drop it and leave from home
+                const page = document.getElementById(openSubPageName() + '-view');
                 page.classList.add('hidden', 'opacity-0');
                 page.classList.remove('opacity-100');
                 const home = document.getElementById('home-view');
@@ -974,25 +1046,34 @@
             }, 500); // matches the .fade-transition duration
         }
 
-        function historyPageOpen() {
-            return !document.getElementById('history-view').classList.contains('hidden');
+        // Full-screen pages opened from home (All Scans, Info). Each pushes a
+        // history entry so the phone's back gesture returns home.
+        const SUB_PAGES = ['history', 'info'];
+
+        function openSubPageName() {
+            return SUB_PAGES.find(name => !document.getElementById(name + '-view').classList.contains('hidden')) || null;
         }
 
-        function openHistoryPage() {
-            if (historyPageOpen()) return;
+        function openSubPage(name) {
+            if (openSubPageName()) return;
             stopScanner();
-            history.pushState({ page: 'history' }, '');
-            swapViews('home-view', 'history-view');
+            history.pushState({ page: name }, '');
+            swapViews('home-view', name + '-view');
         }
 
-        function closeHistoryPage() {
-            if (!historyPageOpen()) return;
-            if (history.state && history.state.page === 'history') return history.back();
-            swapViews('history-view', 'home-view');
+        function closeSubPage() {
+            const name = openSubPageName();
+            if (!name) return;
+            if (history.state && history.state.page === name) return history.back();
+            swapViews(name + '-view', 'home-view');
         }
 
         window.addEventListener('popstate', () => {
-            if (historyPageOpen()) swapViews('history-view', 'home-view');
+            const name = openSubPageName();
+            if (name) {
+                swapViews(name + '-view', 'home-view');
+                navTo('home');
+            }
         });
 
         // ---------- TRANSMISSIONS (admin announcements) ----------
@@ -1012,7 +1093,46 @@
             return !document.getElementById('holo-overlay').classList.contains('hidden');
         }
 
+        function renderInfoTransmissions() {
+            const seen = holoSeenId();
+            const list = document.getElementById('info-transmissions');
+            list.innerHTML = '';
+            document.getElementById('info-transmission-count').textContent = announcements.length;
+            document.getElementById('info-transmissions-empty').classList.toggle('hidden', announcements.length > 0);
+            announcements.forEach((a, i) => {
+                const unread = Number(a.id) > seen;
+                const li = document.createElement('li');
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'w-full text-left flex items-center gap-3 px-3 py-3 rounded-xl border transition-all duration-300 ' +
+                    (unread ? 'bg-[#8fe3ff]/10 border-[#8fe3ff]/40' : 'bg-white/[0.03] border-white/10 hover:bg-white/[0.06]');
+                button.addEventListener('click', () => openHolo(i));
+
+                const dot = document.createElement('span');
+                dot.className = 'shrink-0 w-2 h-2 rounded-full ' + (unread ? 'bg-[#8fe3ff] holo-dot' : 'bg-white/20');
+
+                const body = document.createElement('span');
+                body.className = 'flex-1 min-w-0';
+                const title = document.createElement('span');
+                title.className = 'block text-[15px] font-semibold truncate ' + (unread ? 'holo-text' : 'text-white');
+                title.textContent = a.title || 'Message from Command';
+                const preview = document.createElement('span');
+                preview.className = 'block text-[13px] text-gray-400 truncate';
+                preview.textContent = a.message;
+                body.append(title, preview);
+
+                const when = document.createElement('span');
+                when.className = 'shrink-0 text-[12px] text-gray-500';
+                when.textContent = new Date(a.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+                button.append(dot, body, when);
+                li.appendChild(button);
+                list.appendChild(li);
+            });
+        }
+
         function updateHoloButton() {
+            renderInfoTransmissions();
             const newest = announcements[0];
             document.getElementById('holo-btn').classList.toggle('hidden', !newest);
             document.getElementById('holo-unread').classList.toggle('hidden', !newest || Number(newest.id) <= holoSeenId());
@@ -1320,8 +1440,8 @@
             } else if (tab === 'scan') {
                 document.getElementById('scan-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
                 startScanner();
-            } else if (tab === 'profile') {
-                showToast('Profile coming soon');
+            } else if (tab === 'info') {
+                openSubPage('info');
             }
         }
 
@@ -1378,7 +1498,7 @@
 
             // Keep the leaderboard live while the home screen is open
             setInterval(() => {
-                const homeOpen = !document.getElementById('home-view').classList.contains('hidden') || historyPageOpen();
+                const homeOpen = !document.getElementById('home-view').classList.contains('hidden') || !!openSubPageName();
                 if (player && homeOpen && !document.hidden) refreshHome();
             }, 30000);
         };
