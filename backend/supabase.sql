@@ -193,6 +193,33 @@ as $$
 $$;
 
 
+-- Virtual / hologram codes: duck type "Virtual", "Hologram" or "Holo",
+-- optionally followed by "duck" or "code". They aren't hidden anywhere
+-- physical, so they're left off Rebel Coordinates and capped per day.
+create or replace function private.is_hologram(p_duck_type text)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+    select lower(trim(coalesce(p_duck_type, ''))) ~ '^(virtual|hologram|holo)( (duck|code))?$';
+$$;
+
+-- Hologram codes each rescuer can claim per day. The day resets at
+-- midnight Arizona time (GCU).
+create or replace function private.hologram_daily_limit()
+returns integer language sql immutable set search_path = '' as $$ select 10 $$;
+
+create or replace function private.today_start()
+returns timestamptz
+language sql
+stable
+set search_path = ''
+as $$
+    select date_trunc('day', now() at time zone 'America/Phoenix') at time zone 'America/Phoenix';
+$$;
+
+
 -- ---------------------------------------------------------------------
 -- API used by the app (callable with the publishable / anon key)
 -- ---------------------------------------------------------------------
@@ -254,6 +281,7 @@ $$;
 -- first rescuer to scan it.
 --
 -- status: claimed | already_yours | already_claimed | inactive | invalid | unknown_player | closed
+--         | hologram_limit (10 hologram codes a day; regular ducks have no cap)
 create or replace function public.claim_duck(p_student_id text, p_qr_code text)
 returns jsonb
 language plpgsql
@@ -294,6 +322,21 @@ begin
     -- Not placed yet: an admin hasn't scanned it to activate it
     if not v_duck.active then
         return jsonb_build_object('status', 'inactive', 'duck_id', v_duck.duck_id, 'duck_type', v_duck.duck_type);
+    end if;
+
+    -- Daily cap on hologram codes (the player row is locked above, so two
+    -- scans at once can't both slip under the limit)
+    if private.is_hologram(v_duck.duck_type) and (
+        select count(*) from public.duck_log l
+        where l.student_id = v_player.student_id
+          and l.scanned_at >= private.today_start()
+          and private.is_hologram(l.duck_type)
+    ) >= private.hologram_daily_limit() then
+        return jsonb_build_object(
+            'status', 'hologram_limit',
+            'limit', private.hologram_daily_limit(),
+            'duck_type', v_duck.duck_type
+        );
     end if;
 
     update public.ducks
@@ -388,9 +431,7 @@ as $$
 $$;
 
 -- Rebel Coordinates: how many active, unclaimed ducks are at each location.
--- Ducks without a location are grouped as null. Virtual / hologram codes
--- (duck type "Virtual" or "Hologram", optionally followed by "duck" or
--- "code") aren't hidden anywhere physical, so they're left out.
+-- Ducks without a location are grouped as null. Hologram codes are left out.
 create or replace function public.get_rebel_coordinates()
 returns table (location text, ducks bigint)
 language sql
@@ -401,7 +442,7 @@ as $$
     select d.location, count(*)
     from public.ducks d
     where d.active and not d.claimed
-      and lower(trim(coalesce(d.duck_type, ''))) !~ '^(virtual|hologram|holo)( (duck|code))?$'
+      and not private.is_hologram(d.duck_type)
     group by d.location
     order by d.location is null, count(*) desc, lower(d.location);
 $$;
