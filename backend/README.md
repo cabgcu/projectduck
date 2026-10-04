@@ -102,4 +102,30 @@ Existing rows in **Duck Log** are not pushed. Supabase becomes the record of sca
 - **Deleting a duck:** delete it in Supabase (Table Editor → `ducks`) and the sheet row is removed automatically. Deleting a row in the sheet does **not** delete it in Supabase.
 - **Updating the script:** after editing the Apps Script, use **Deploy → Manage deployments → Edit → Version: New version** so the web app URL keeps working with the new code.
 - **Security:** sign-in is by Student ID only, with no password, so anyone who knows another student's ID could sign in as them. Before a real launch, add Supabase Auth (for example an email code sent to `@my.gcu.edu`).
-- **Troubleshooting live updates:** if they stop, check **Apps Script → Executions** for errors, and the `net._http_response` table in Supabase for webhook responses. The 10-minute refresh catches up either way.
+- **Troubleshooting live updates:** see below.
+
+## Live updates not showing up?
+
+If the sheet only changes when you run **Pull everything**, Supabase's live updates aren't reaching the sheet. Run this in the Supabase **SQL Editor**:
+
+```sql
+select * from private.sheet_sync;
+
+select created, status_code, error_msg, left(content::text, 120) as response
+from net._http_response
+order by created desc
+limit 10;
+```
+
+| What you see | Cause | Fix |
+|---|---|---|
+| First query returns **no rows** | Supabase doesn't know where to send updates | Run setup step 4 |
+| Second query returns **no rows**, even right after a scan | The triggers aren't installed | Re-run `supabase.sql` |
+| `error_msg` mentions **timeout** | The script took longer than Supabase waited | Re-run `supabase.sql`; it now waits 30 seconds |
+| **401 / 403**, or a response mentioning **Sign in** | The web app isn't public | Deploy → Manage deployments → Edit → **Who has access: Anyone** |
+| **404** | Wrong or deleted web app URL | Copy the current `/exec` URL into step 4 again |
+| **302** | Google received the update (this is normal) | Check **Apps Script → Executions** for `doPost` runs. The log says why an update was rejected, e.g. *secret does not match WEBHOOK_SECRET* |
+
+**Quick check:** open the `/exec` URL in a private or incognito window. You should see *"Duck Hunt sync is running."* If you get a Google sign-in page instead, the web app isn't set to **Anyone**.
+
+**After changing the script**, always use **Deploy → Manage deployments → Edit → Version: New version → Deploy**. Saving the code alone doesn't update the live web app.

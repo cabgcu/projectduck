@@ -154,15 +154,25 @@ function upsert(kind, records) {
 // Supabase → Sheet
 // ---------------------------------------------------------------------
 
+/**
+ * Web app health check. Open the /exec URL in a private browser window:
+ * you should see this text, not a Google sign-in page.
+ */
+function doGet() {
+  return textResponse('Duck Hunt sync is running.');
+}
+
 /** Web app endpoint: Supabase POSTs every change here (see private.notify_sheet). */
 function doPost(e) {
   let payload;
   try {
     payload = JSON.parse(e.postData.contents);
   } catch (err) {
+    console.warn('Live update rejected: body is not JSON');
     return textResponse('bad request');
   }
   if (!payload || payload.secret !== getProp('WEBHOOK_SECRET')) {
+    console.warn('Live update rejected: secret does not match WEBHOOK_SECRET');
     return textResponse('forbidden');
   }
 
@@ -179,6 +189,10 @@ function doPost(e) {
     } else {
       upsertRecord(kind, payload.record);
     }
+    console.log(`Live update applied: ${payload.table} ${payload.op}`);
+  } catch (err) {
+    console.error(`Live update failed: ${payload.table} ${payload.op}: ${err.message || err}`);
+    throw err;
   } finally {
     lock.releaseLock();
   }

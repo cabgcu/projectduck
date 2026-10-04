@@ -361,7 +361,9 @@ begin
             'op',     tg_op,
             'record', case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end
         ),
-        headers := '{"Content-Type": "application/json"}'::jsonb
+        headers := '{"Content-Type": "application/json"}'::jsonb,
+        -- pg_net gives up after 5s by default; a cold Apps Script often takes longer
+        timeout_milliseconds := 30000
     );
     return null;
 end;
