@@ -6,6 +6,7 @@
     <title>Duck Hunt</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
@@ -238,6 +239,8 @@
                             >
                         </div>
 
+                        <p id="login-error" class="hidden -mt-3 mb-4 text-center text-[14px] text-[#ffe81f]"></p>
+
                         <div class="mb-8 text-center">
                             <a href="#" class="text-[16px] text-gray-400 underline decoration-gray-500/50 underline-offset-[5px] hover:text-white hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.7)] transition-all duration-300">
                                 What is Duck Hunt?
@@ -247,7 +250,7 @@
                         <div class="flex gap-3 w-full">
                             <button 
                                 type="button" 
-                                onclick="signIn()"
+                                onclick="signIn(this)"
                                 class="flex-1 bg-white/5 border border-white/20 backdrop-blur-md hover:bg-white/10 hover:border-white/40 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] text-white font-bold text-[17px] py-4 rounded-xl transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.8)] active:scale-[0.98]"
                             >
                                 Sign In
@@ -282,12 +285,14 @@
                         <input id="reg-id" type="text" placeholder="Student ID" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
                         <input id="reg-email" type="email" placeholder="Email @my.gcu.edu" class="glass-input w-full rounded-xl px-4 py-3 text-center text-[15px] text-white placeholder-gray-300/80 focus:placeholder-transparent" required>
 
-                        <div class="flex items-center gap-3 mt-2 mb-4 px-2">
+                        <div class="flex items-center gap-3 mt-2 mb-1 px-2">
                             <input type="checkbox" id="terms" class="custom-checkbox cursor-pointer" required>
                             <label for="terms" class="text-[14px] text-gray-300 cursor-pointer select-none leading-tight">
                                 I agree to the <span class="text-white underline decoration-gray-500/50 underline-offset-2 hover:text-[#ffe81f] transition-colors">Terms & Conditions</span>
                             </label>
                         </div>
+
+                        <p id="register-error" class="hidden text-center text-[14px] text-[#ffe81f]"></p>
 
                         <div class="flex gap-3 w-full">
                             <button 
@@ -299,7 +304,7 @@
                             </button>
                             <button 
                                 type="button" 
-                                onclick="register()"
+                                onclick="register(this)"
                                 class="flex-1 bg-[#ffe81f]/10 border border-[#ffe81f]/40 backdrop-blur-md hover:bg-[#ffe81f]/20 hover:border-[#ffe81f]/60 hover:shadow-[0_0_15px_rgba(255,232,31,0.3)] text-white font-bold text-[16px] py-3 rounded-xl transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.8)] active:scale-[0.98]"
                             >
                                 Submit
@@ -352,7 +357,7 @@
                             </div>
                             <div class="flex-1 min-w-0">
                                 <p class="card-label">Your Rank</p>
-                                <p class="text-[15px] text-white"><span id="rank-ducks" class="text-[#ffe81f] font-semibold">0</span> ducks rescued</p>
+                                <p class="text-[15px] text-white"><span id="rank-points" class="text-[#ffe81f] font-semibold">0</span> pts · <span id="rank-ducks">0 ducks</span> rescued</p>
                                 <p id="rank-next" class="text-[12px] text-gray-400 truncate"></p>
                             </div>
                         </div>
@@ -583,157 +588,201 @@
             requestAnimationFrame(animateHyper);
         }
 
-        // ---------- USER / STORAGE ----------
-        const STORAGE_KEY = 'duckhunt';
+        // ---------- SUPABASE ----------
+        // Project Settings → API in the Supabase dashboard. The publishable
+        // (anon) key is safe to ship in the page; never put the secret key here.
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_PUBLISHABLE_KEY';
 
-        function loadStore() {
+        const db = (window.supabase && !SUPABASE_URL.startsWith('YOUR_'))
+            ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+            : null;
+
+        async function rpc(name, params) {
+            if (!db) throw new Error('Supabase isn\'t configured yet.');
+            const { data, error } = await db.rpc(name, params);
+            if (error) throw error;
+            return data;
+        }
+
+        // ---------- SESSION ----------
+        const SESSION_KEY = 'duckhunt.session';
+        let player = null; // { student_id, first_name, last_name }
+
+        function loadSession() {
+            try { player = JSON.parse(localStorage.getItem(SESSION_KEY)); } catch (e) { player = null; }
+        }
+
+        function saveSession() {
             try {
-                return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { users: {}, current: null };
-            } catch (e) {
-                return { users: {}, current: null };
+                if (player) localStorage.setItem(SESSION_KEY, JSON.stringify(player));
+                else localStorage.removeItem(SESSION_KEY);
+            } catch (e) {}
+        }
+
+        function showFormError(id, message) {
+            const el = document.getElementById(id);
+            el.textContent = message || '';
+            el.classList.toggle('hidden', !message);
+        }
+
+        async function withBusy(button, task) {
+            if (button.disabled) return;
+            const label = button.textContent;
+            button.disabled = true;
+            button.classList.add('opacity-60');
+            button.textContent = 'Loading…';
+            try {
+                await task();
+            } finally {
+                button.disabled = false;
+                button.classList.remove('opacity-60');
+                button.textContent = label;
             }
         }
 
-        function saveStore(store) {
-            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); } catch (e) {}
+        function signIn(button) {
+            const id = document.getElementById('student-id').value.trim();
+            if (!id) return showFormError('login-error', 'Enter your Student ID.');
+            withBusy(button, async () => {
+                try {
+                    const rows = await rpc('get_player', { p_student_id: id });
+                    if (!rows || !rows.length) {
+                        return showFormError('login-error', 'No rescuer with that Student ID. Register first!');
+                    }
+                    showFormError('login-error', '');
+                    player = rows[0];
+                    saveSession();
+                    navigate('login', 'home');
+                } catch (err) {
+                    showFormError('login-error', err.message || 'Couldn\'t sign in. Try again.');
+                }
+            });
         }
 
-        let store = loadStore();
-
-        function currentUser() {
-            return store.current ? store.users[store.current] : null;
-        }
-
-        function signIn() {
-            const id = document.getElementById('student-id').value.trim() || 'guest';
-            if (!store.users[id]) {
-                store.users[id] = { firstName: '', lastName: '', studentId: id, scans: [] };
-            }
-            store.current = id;
-            saveStore(store);
-            navigate('login', 'home');
-        }
-
-        function register() {
+        function register(button) {
             const first = document.getElementById('reg-first').value.trim();
             const last = document.getElementById('reg-last').value.trim();
-            const id = document.getElementById('reg-id').value.trim() || 'guest';
+            const id = document.getElementById('reg-id').value.trim();
             const email = document.getElementById('reg-email').value.trim();
-            const existing = store.users[id];
-            store.users[id] = {
-                firstName: first,
-                lastName: last,
-                studentId: id,
-                email: email,
-                scans: existing ? existing.scans : []
-            };
-            store.current = id;
-            saveStore(store);
-            navigate('register', 'home');
+
+            if (!first || !last || !id || !email) return showFormError('register-error', 'Fill in every field.');
+            if (!/@my\.gcu\.edu$/i.test(email)) return showFormError('register-error', 'Use your @my.gcu.edu email.');
+            if (!document.getElementById('terms').checked) return showFormError('register-error', 'Agree to the Terms & Conditions to continue.');
+
+            withBusy(button, async () => {
+                try {
+                    const result = await rpc('register_player', {
+                        p_student_id: id, p_first_name: first, p_last_name: last, p_email: email
+                    });
+                    if (result.status === 'invalid') return showFormError('register-error', 'Fill in every field.');
+                    showFormError('register-error', '');
+                    player = { student_id: result.student_id, first_name: result.first_name, last_name: result.last_name };
+                    saveSession();
+                    navigate('register', 'home');
+                    if (result.status === 'exists') setTimeout(() => showToast('Welcome back! You were already registered.'), 3000);
+                } catch (err) {
+                    showFormError('register-error', err.message || 'Couldn\'t register. Try again.');
+                }
+            });
         }
 
         function signOut() {
             stopScanner();
-            store.current = null;
-            saveStore(store);
+            player = null;
+            saveSession();
             navigate('home', 'login');
         }
 
         // ---------- LEADERBOARD ----------
         const LEADERBOARD_SIZE = 5;
 
-        // Sample rescuers so the leaderboard isn't empty during development.
-        // Replace getRescuers() with a call to the real leaderboard API.
-        const SAMPLE_RESCUERS = [
-            { id: 'sample-1', name: 'Maverick Q.', ducks: 18 },
-            { id: 'sample-2', name: 'Luna W.', ducks: 14 },
-            { id: 'sample-3', name: 'Jett P.', ducks: 11 },
-            { id: 'sample-4', name: 'Nova R.', ducks: 9 },
-            { id: 'sample-5', name: 'Skye D.', ducks: 7 },
-            { id: 'sample-6', name: 'Orion T.', ducks: 5 },
-            { id: 'sample-7', name: 'Echo M.', ducks: 3 }
-        ];
-
-        function displayName(user) {
-            if (user.firstName) return user.firstName + (user.lastName ? ' ' + user.lastName[0] + '.' : '');
-            return user.studentId !== 'guest' ? user.studentId : 'Rescuer';
-        }
-
-        function getRescuers() {
-            const me = currentUser();
-            const local = Object.values(store.users)
-                .filter(u => u.studentId !== 'guest' || u === me)
-                .map(u => ({ id: u.studentId, name: displayName(u), ducks: u.scans.length }));
-            // Stable sort: on ties, rescuers already on the board stay ahead
-            return SAMPLE_RESCUERS.concat(local).sort((a, b) => b.ducks - a.ducks);
-        }
-
-        function getPosition(rescuers, id) {
-            return rescuers.findIndex(r => r.id === id) + 1;
-        }
-
-        function leaderboardRow(rescuer, position, isMe) {
-            const medal = ['text-[#ffe81f]', 'text-slate-300', 'text-amber-600'][position - 1] || 'text-gray-500';
+        function leaderboardRow(rescuer) {
+            const medal = ['text-[#ffe81f]', 'text-slate-300', 'text-amber-600'][rescuer.place - 1] || 'text-gray-500';
             const li = document.createElement('li');
             li.className = 'flex items-center gap-3 px-3 py-2.5 rounded-xl border ' +
-                (isMe ? 'bg-[#ffe81f]/10 border-[#ffe81f]/40' : 'bg-white/[0.03] border-white/10');
+                (rescuer.is_me ? 'bg-[#ffe81f]/10 border-[#ffe81f]/40' : 'bg-white/[0.03] border-white/10');
 
             const pos = document.createElement('span');
             pos.className = 'w-8 text-center font-tech font-bold text-[18px] ' + medal;
-            pos.textContent = position;
+            pos.textContent = rescuer.place;
 
             const name = document.createElement('span');
-            name.className = 'flex-1 min-w-0 truncate text-[15px] ' + (isMe ? 'text-white font-semibold' : 'text-gray-200');
-            name.textContent = isMe ? rescuer.name + ' (You)' : rescuer.name;
+            name.className = 'flex-1 min-w-0 truncate text-[15px] ' + (rescuer.is_me ? 'text-white font-semibold' : 'text-gray-200');
+            name.textContent = rescuer.is_me ? rescuer.name + ' (You)' : rescuer.name;
 
-            const ducks = document.createElement('span');
-            ducks.className = 'text-[14px] font-semibold ' + (isMe ? 'text-[#ffe81f]' : 'text-gray-300');
-            ducks.textContent = rescuer.ducks + ' 🦆';
+            const points = document.createElement('span');
+            points.className = 'text-[14px] font-semibold ' + (rescuer.is_me ? 'text-[#ffe81f]' : 'text-gray-300');
+            points.textContent = rescuer.points + ' pts';
 
-            li.append(pos, name, ducks);
+            li.append(pos, name, points);
             return li;
         }
 
         // ---------- HOME RENDERING ----------
         function renderHome() {
-            const user = currentUser();
-            const scans = user ? user.scans : [];
+            if (!player) return;
+            document.getElementById('welcome-name').textContent = player.first_name || 'Rescuer';
+            refreshHome();
+        }
 
-            document.getElementById('welcome-name').textContent =
-                (user && user.firstName) ? user.firstName : (user && user.studentId !== 'guest' ? user.studentId : 'Rescuer');
+        async function refreshHome() {
+            if (!player) return;
+            const id = player.student_id;
+            try {
+                const [rankRows, board, history] = await Promise.all([
+                    rpc('get_rescuer_rank', { p_student_id: id }),
+                    rpc('get_leaderboard', { p_student_id: id, p_limit: LEADERBOARD_SIZE }),
+                    rpc('get_scan_history', { p_student_id: id })
+                ]);
+                if (!player || player.student_id !== id) return; // signed out meanwhile
+                const me = rankRows && rankRows[0];
+                if (!me) {
+                    // Player was removed from Supabase / the sheet
+                    showToast('Your rescuer profile wasn\'t found. Please sign in again.');
+                    return signOut();
+                }
+                renderRank(me, board || []);
+                renderHistory(history || []);
+                return me;
+            } catch (err) {
+                showToast(err.message || 'Couldn\'t load your stats.');
+            }
+        }
 
-            // Leaderboard
-            const rescuers = getRescuers();
-            const myId = user ? user.studentId : null;
-            const myPos = getPosition(rescuers, myId);
-            document.getElementById('rank-total').textContent = `${rescuers.length} rescuers`;
-            document.getElementById('rank-position').textContent = myPos ? '#' + myPos : '#–';
-            document.getElementById('rank-ducks').textContent = scans.length;
-            const ahead = myPos > 1 ? rescuers[myPos - 2] : null;
-            document.getElementById('rank-next').textContent = ahead
-                ? `${ahead.ducks - scans.length + 1} more to pass ${ahead.name}`
+        function renderRank(me, board) {
+            document.getElementById('rank-total').textContent = `${me.total_rescuers} rescuer${me.total_rescuers === 1 ? '' : 's'}`;
+            document.getElementById('rank-position').textContent = '#' + me.place;
+            document.getElementById('rank-points').textContent = me.points;
+            document.getElementById('rank-ducks').textContent = `${me.codes_scanned} duck${me.codes_scanned === 1 ? '' : 's'}`;
+            document.getElementById('rank-next').textContent = me.next_name
+                ? `${me.next_points - me.points + 1} more points to pass ${me.next_name}`
                 : 'You\'re the top rescuer!';
 
-            const board = document.getElementById('leaderboard-list');
-            board.innerHTML = '';
-            rescuers.slice(0, LEADERBOARD_SIZE).forEach((r, i) => {
-                board.appendChild(leaderboardRow(r, i + 1, r.id === myId));
-            });
-            if (myPos > LEADERBOARD_SIZE) {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = '';
+            board.forEach(r => list.appendChild(leaderboardRow(r)));
+            if (!board.some(r => r.is_me)) {
                 const gap = document.createElement('li');
                 gap.className = 'text-center text-gray-500 leading-none py-0.5';
                 gap.textContent = '···';
-                board.appendChild(gap);
-                board.appendChild(leaderboardRow(rescuers[myPos - 1], myPos, true));
+                list.appendChild(gap);
+                list.appendChild(leaderboardRow({
+                    place: me.place,
+                    name: player.first_name + (player.last_name ? ' ' + player.last_name[0] + '.' : ''),
+                    points: me.points,
+                    is_me: true
+                }));
             }
+        }
 
-            // History
+        function renderHistory(scans) {
             const list = document.getElementById('history-list');
             list.innerHTML = '';
             document.getElementById('history-count').textContent = `${scans.length} scan${scans.length === 1 ? '' : 's'}`;
             document.getElementById('history-empty').classList.toggle('hidden', scans.length > 0);
 
-            scans.slice().reverse().forEach((scan, i) => {
+            scans.forEach((scan, i) => {
                 const li = document.createElement('li');
                 li.className = 'flex items-center gap-3 py-3';
 
@@ -745,17 +794,17 @@
                 body.className = 'flex-1 min-w-0';
                 const title = document.createElement('p');
                 title.className = 'text-[15px] text-white font-semibold truncate';
-                title.textContent = scan.label;
-                const time = document.createElement('p');
-                time.className = 'text-[12px] text-gray-400';
-                time.textContent = formatTime(scan.time);
-                body.append(title, time);
+                title.textContent = scan.duck_type ? `${scan.duck_type} Duck` : 'Duck';
+                const meta = document.createElement('p');
+                meta.className = 'text-[12px] text-gray-400 truncate';
+                meta.textContent = `${scan.duck_id} · ${formatTime(scan.scanned_at)}`;
+                body.append(title, meta);
 
-                const check = document.createElement('span');
-                check.className = 'text-[#ffe81f]';
-                check.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>';
+                const points = document.createElement('span');
+                points.className = 'text-[15px] font-bold font-tech text-[#ffe81f]';
+                points.textContent = '+' + scan.points;
 
-                li.append(icon, body, check);
+                li.append(icon, body, points);
                 list.appendChild(li);
             });
         }
@@ -822,34 +871,34 @@
             scanning ? stopScanner() : startScanner();
         }
 
-        function scanLabel(text) {
-            // Support QR codes like https://.../?duck=Name or plain text
-            try {
-                const url = new URL(text);
-                const duck = url.searchParams.get('duck');
-                if (duck) return duck;
-            } catch (e) {}
-            return text.length > 40 ? text.slice(0, 40) + '…' : text;
-        }
-
-        function onScanSuccess(decodedText) {
+        async function onScanSuccess(decodedText) {
             if (!scanning) return;
-            const user = currentUser();
             stopScanner();
-            if (!user) return;
+            if (!player) return;
 
-            if (user.scans.some(s => s.code === decodedText)) {
-                showToast('You already rescued this duck!');
-                return;
+            try {
+                const before = document.getElementById('rank-position').textContent;
+                const result = await rpc('claim_duck', { p_student_id: player.student_id, p_qr_code: decodedText });
+                const name = result.duck_type ? `${result.duck_type} Duck` : 'this duck';
+
+                if (result.status === 'claimed') {
+                    const me = await refreshHome();
+                    const after = me ? '#' + me.place : before;
+                    const rankUp = me && before.startsWith('#') && me.place < parseInt(before.slice(1), 10);
+                    showToast(rankUp ? `+${result.points} pts! You're now ${after}` : `${name} rescued! +${result.points} pts 🦆`);
+                } else if (result.status === 'already_yours') {
+                    showToast(`You already rescued ${name}!`);
+                } else if (result.status === 'already_claimed') {
+                    showToast(`Another rescuer already claimed ${name}.`);
+                } else if (result.status === 'unknown_player') {
+                    showToast('Your rescuer profile wasn\'t found. Please sign in again.');
+                    signOut();
+                } else {
+                    showToast('That\'s not a Duck Hunt code.');
+                }
+            } catch (err) {
+                showToast(err.message || 'Couldn\'t claim that duck. Try again.');
             }
-
-            const before = getPosition(getRescuers(), user.studentId);
-            user.scans.push({ code: decodedText, label: scanLabel(decodedText), time: Date.now() });
-            saveStore(store);
-            renderHome();
-
-            const after = getPosition(getRescuers(), user.studentId);
-            showToast(after < before ? `Rank up! You're now #${after}` : 'Duck rescued! 🦆');
         }
 
         // ---------- BOTTOM NAV ----------
@@ -909,13 +958,20 @@
             animate();
 
             // Returning user: skip straight to home
-            if (currentUser()) {
+            loadSession();
+            if (player) {
                 document.getElementById('login-view').classList.add('hidden');
                 renderHome();
                 const home = document.getElementById('home-view');
                 home.classList.remove('hidden', 'opacity-0');
                 home.classList.add('opacity-100');
             }
+
+            // Keep the leaderboard live while the home screen is open
+            setInterval(() => {
+                const homeOpen = !document.getElementById('home-view').classList.contains('hidden');
+                if (player && homeOpen && !document.hidden) refreshHome();
+            }, 30000);
         };
     </script>
 </body>
