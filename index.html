@@ -186,6 +186,23 @@
             100% { top: 90%; }
         }
 
+        /* Lightsaber duck burst (normal rubber duck rescues) */
+        .saber-duck {
+            position: fixed;
+            z-index: 60;
+            pointer-events: none;
+            opacity: 0;
+            filter: drop-shadow(0 0 12px rgba(255, 232, 31, 0.6));
+            animation: saber-pop 2.2s ease-out forwards;
+        }
+        @keyframes saber-pop {
+            0%   { opacity: 0; transform: scale(0.2) rotate(var(--r0)); }
+            15%  { opacity: 1; transform: scale(1.15) rotate(var(--r1)); }
+            30%  { transform: scale(1) rotate(var(--r1)); }
+            75%  { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-40px) scale(0.9) rotate(var(--r2)); }
+        }
+
 
         /* Bottom nav */
         .nav-glass {
@@ -452,7 +469,7 @@
             </nav>
 
             <!-- Toast -->
-            <div id="toast" class="toast fixed left-1/2 -translate-x-1/2 bottom-28 z-30 opacity-0 translate-y-2 pointer-events-none px-5 py-3 rounded-xl bg-black/90 border border-[#ffe81f]/40 text-[14px] text-white shadow-[0_0_20px_rgba(255,232,31,0.25)] whitespace-nowrap"></div>
+            <div id="toast" class="toast fixed left-1/2 -translate-x-1/2 bottom-28 z-[70] opacity-0 translate-y-2 pointer-events-none px-5 py-3 rounded-xl bg-black/90 border border-[#ffe81f]/40 text-[14px] text-white shadow-[0_0_20px_rgba(255,232,31,0.25)] whitespace-nowrap"></div>
         </div>
 
     </main>
@@ -825,6 +842,35 @@
             }, 2500);
         }
 
+        // ---------- LIGHTSABER DUCK BURST ----------
+        const SABER_DUCK_SRC = 'https://i.imgur.com/Run8l2x.png';
+        const NORMAL_DUCK_TYPES = ['', 'rubber', 'normal', 'regular'];
+        new Image().src = SABER_DUCK_SRC; // preload so the burst shows instantly
+
+        function isNormalDuck(type) {
+            return NORMAL_DUCK_TYPES.includes(String(type || '').trim().toLowerCase().replace(/\s*duck$/, ''));
+        }
+
+        function saberDuckBurst(count = 24) {
+            for (let i = 0; i < count; i++) {
+                const img = document.createElement('img');
+                const size = 60 + Math.random() * 80;
+                img.src = SABER_DUCK_SRC;
+                img.alt = '';
+                img.className = 'saber-duck';
+                img.style.width = size + 'px';
+                img.style.left = Math.random() * (window.innerWidth - size) + 'px';
+                img.style.top = Math.random() * (window.innerHeight - size) + 'px';
+                img.style.animationDelay = (Math.random() * 0.6).toFixed(2) + 's';
+                const tilt = Math.random() * 60 - 30;
+                img.style.setProperty('--r0', (tilt - 90) + 'deg');
+                img.style.setProperty('--r1', tilt + 'deg');
+                img.style.setProperty('--r2', (tilt + (Math.random() * 40 - 20)) + 'deg');
+                img.addEventListener('animationend', () => img.remove());
+                document.body.appendChild(img);
+            }
+        }
+
         // ---------- QR SCANNER ----------
         let qrScanner = null;
         let scanning = false;
@@ -889,6 +935,7 @@
                 const name = result.duck_type ? `${result.duck_type} Duck` : 'this duck';
 
                 if (result.status === 'claimed') {
+                    if (isNormalDuck(result.duck_type)) saberDuckBurst();
                     const me = await refreshHome();
                     const after = me ? '#' + me.place : before;
                     const rankUp = me && before.startsWith('#') && me.place < parseInt(before.slice(1), 10);
