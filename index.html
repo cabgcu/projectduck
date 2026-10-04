@@ -32,6 +32,35 @@
             font-family: 'Rajdhani', sans-serif;
         }
 
+        /* Hologram transmissions (admin announcements) */
+        #holo-overlay { animation: holo-in 0.35s ease-out; }
+        @keyframes holo-in { from { opacity: 0; } to { opacity: 1; } }
+        .holo-text { color: #8fe3ff; text-shadow: 0 0 10px rgba(80, 200, 255, 0.75); }
+        .holo-soft { color: #c9f1ff; text-shadow: 0 0 8px rgba(80, 200, 255, 0.45); }
+        .holo-figure { position: relative; }
+        .holo-figure img {
+            display: block;
+            filter: drop-shadow(0 0 22px rgba(80, 200, 255, 0.55));
+            animation: holo-flicker 4s infinite steps(1, end), holo-hover 3.2s ease-in-out infinite alternate;
+        }
+        @keyframes holo-flicker {
+            0%, 100% { opacity: 1; }
+            41% { opacity: 0.75; }
+            42% { opacity: 1; }
+            77% { opacity: 0.85; }
+            78% { opacity: 1; }
+        }
+        @keyframes holo-hover { from { transform: translateY(0); } to { transform: translateY(-6px); } }
+        .holo-panel {
+            border: 1px solid rgba(143, 227, 255, 0.35);
+            background: rgba(10, 40, 60, 0.35);
+            box-shadow: 0 0 30px rgba(80, 200, 255, 0.18), inset 0 0 30px rgba(80, 200, 255, 0.08);
+        }
+        .holo-dot { box-shadow: 0 0 8px rgba(80, 200, 255, 0.9); }
+        @media (prefers-reduced-motion: reduce) {
+            .holo-figure img, #holo-overlay { animation: none; }
+        }
+
         .shimmer-wrapper {
             position: relative;
             padding: 2px;
@@ -366,6 +395,17 @@
 
                 <!-- Header: Duck Hunt logo -->
                 <header class="relative flex flex-col items-center">
+                    <button
+                        id="holo-btn"
+                        type="button"
+                        onclick="openHolo(0)"
+                        aria-label="Transmissions"
+                        title="Transmissions"
+                        class="hidden absolute left-0 top-1 p-2 rounded-xl bg-white/5 border border-[#8fe3ff]/30 text-[#8fe3ff] hover:border-[#8fe3ff]/70 hover:bg-[#8fe3ff]/10 transition-all duration-300"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12h.008v.007H12V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/></svg>
+                        <span id="holo-unread" class="hidden absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#8fe3ff] holo-dot"></span>
+                    </button>
                     <button
                         type="button"
                         onclick="signOut()"
@@ -771,6 +811,7 @@
 
         function signOut() {
             stopScanner();
+            document.getElementById('holo-overlay').classList.add('hidden');
             if (historyPageOpen()) {
                 // Signed out from the full history page: drop it and leave from home
                 const page = document.getElementById('history-view');
@@ -836,6 +877,7 @@
                 renderRank(me, board || []);
                 renderHistory(history || []);
                 refreshCoordinates();
+                refreshAnnouncements();
                 return me;
             } catch (err) {
                 showToast(err.message || 'Couldn\'t load your stats.');
@@ -951,6 +993,88 @@
 
         window.addEventListener('popstate', () => {
             if (historyPageOpen()) swapViews('history-view', 'home-view');
+        });
+
+        // ---------- TRANSMISSIONS (admin announcements) ----------
+        // New messages pop up full screen once per device; the antenna button
+        // in the header opens them again any time.
+        const HOLO_SEEN_KEY = 'duckhunt.seenAnnouncement';
+        const HOLO_IMG = 'https://i.imgur.com/AWkygpg.png';
+        new Image().src = HOLO_IMG; // preload so the pop-up shows instantly
+        let announcements = [];
+        let holoIndex = 0;
+
+        function holoSeenId() {
+            try { return Number(localStorage.getItem(HOLO_SEEN_KEY)) || 0; } catch (e) { return 0; }
+        }
+
+        function holoOpen() {
+            return !document.getElementById('holo-overlay').classList.contains('hidden');
+        }
+
+        function updateHoloButton() {
+            const newest = announcements[0];
+            document.getElementById('holo-btn').classList.toggle('hidden', !newest);
+            document.getElementById('holo-unread').classList.toggle('hidden', !newest || Number(newest.id) <= holoSeenId());
+        }
+
+        async function refreshAnnouncements() {
+            try {
+                announcements = (await rpc('get_announcements', { p_limit: 20 })) || [];
+            } catch (err) {
+                return; // database not updated yet, or offline
+            }
+            updateHoloButton();
+            showUnseenAnnouncement();
+        }
+
+        function showUnseenAnnouncement() {
+            const newest = announcements[0];
+            if (!player || !newest || Number(newest.id) <= holoSeenId() || holoOpen()) return;
+            const home = document.getElementById('home-view');
+            // Wait out the sign-in hyperspeed transition before popping up
+            if (home.classList.contains('hidden') || home.classList.contains('opacity-0')) {
+                clearTimeout(showUnseenAnnouncement.timer);
+                showUnseenAnnouncement.timer = setTimeout(showUnseenAnnouncement, 1000);
+                return;
+            }
+            openHolo(0);
+        }
+
+        function renderHolo() {
+            const a = announcements[holoIndex];
+            if (!a) return;
+            document.getElementById('holo-title').textContent = a.title || 'Message from Command';
+            document.getElementById('holo-message').textContent = a.message;
+            document.getElementById('holo-date').textContent = formatTime(a.created_at);
+            document.getElementById('holo-pager').classList.toggle('hidden', announcements.length < 2);
+            document.getElementById('holo-count').textContent = `${holoIndex + 1} of ${announcements.length}`;
+            document.getElementById('holo-newer').disabled = holoIndex === 0;
+            document.getElementById('holo-older').disabled = holoIndex >= announcements.length - 1;
+        }
+
+        function openHolo(index) {
+            if (!announcements.length) return;
+            holoIndex = Math.min(Math.max(index, 0), announcements.length - 1);
+            renderHolo();
+            document.getElementById('holo-overlay').classList.remove('hidden');
+        }
+
+        function stepHolo(dir) {
+            holoIndex = Math.min(Math.max(holoIndex + dir, 0), announcements.length - 1);
+            renderHolo();
+        }
+
+        function closeHolo() {
+            document.getElementById('holo-overlay').classList.add('hidden');
+            if (announcements[0]) {
+                try { localStorage.setItem(HOLO_SEEN_KEY, String(announcements[0].id)); } catch (e) {}
+            }
+            updateHoloButton();
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && holoOpen()) closeHolo();
         });
 
         // ---------- REBEL COORDINATES ----------
@@ -1259,5 +1383,34 @@
             }, 30000);
         };
     </script>
+    <!-- Hologram transmission (admin announcements) -->
+    <div id="holo-overlay" class="hidden fixed inset-0 z-[90] overflow-y-auto bg-black/85 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="holo-title">
+        <div class="min-h-full w-full max-w-md mx-auto px-5 py-10 flex flex-col items-center justify-center gap-4">
+            <button type="button" onclick="closeHolo()" aria-label="Close" class="fixed right-4 top-4 p-2 rounded-xl bg-white/5 border border-white/15 text-gray-300 hover:text-white hover:border-white/40">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+
+            <p class="card-label holo-text">Incoming Transmission</p>
+            <div class="holo-figure w-56 max-w-[60vw]">
+                <img src="https://i.imgur.com/AWkygpg.png" alt="Hologram duck" class="w-full h-auto">
+            </div>
+
+            <div class="holo-panel w-full rounded-2xl px-5 py-4 text-center">
+                <h2 id="holo-title" class="font-tech font-bold text-2xl tracking-wider holo-text"></h2>
+                <p id="holo-message" class="mt-2 text-[16px] leading-relaxed whitespace-pre-line break-words holo-soft"></p>
+                <p id="holo-date" class="mt-3 text-[12px] text-[#8fe3ff]/60"></p>
+            </div>
+
+            <div id="holo-pager" class="hidden w-full flex items-center justify-between text-[14px]">
+                <button type="button" id="holo-newer" onclick="stepHolo(-1)" class="px-3 py-2 rounded-lg text-[#8fe3ff] disabled:opacity-30 hover:bg-[#8fe3ff]/10">‹ Newer</button>
+                <span id="holo-count" class="text-[#8fe3ff]/70"></span>
+                <button type="button" id="holo-older" onclick="stepHolo(1)" class="px-3 py-2 rounded-lg text-[#8fe3ff] disabled:opacity-30 hover:bg-[#8fe3ff]/10">Older ›</button>
+            </div>
+
+            <button type="button" onclick="closeHolo()" class="w-full bg-[#8fe3ff]/10 border border-[#8fe3ff]/40 hover:bg-[#8fe3ff]/20 text-white font-bold text-[16px] py-3 rounded-xl transition-all duration-300 active:scale-[0.98]">
+                End Transmission
+            </button>
+        </div>
+    </div>
 </body>
 </html>

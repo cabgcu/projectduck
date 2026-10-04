@@ -24,6 +24,7 @@ Everything runs on Supabase. There's no Google Sheet anymore.
 
 - **New ducks start inactive.** Rescuers can't claim a duck until an admin activates it, usually by scanning it on the admin page's **Scanner** tab while hiding it. Ducks that existed before this feature stay active.
 - **Location tags** are created on the Scanner tab. Switch the scanner to **Assign location**, pick a tag, and scan ducks to tag them. Deleting a tag clears it from its ducks.
+- **Messages** sent from the admin page's Messages tab pop up full screen as a hologram on every player's app (within about 30 seconds while it's open). Each device shows a new message once; the antenna button on the home screen opens past messages any time.
 - **Each duck can be claimed once**, by the first rescuer to scan it.
 - **QR codes are links** (`https://<your-site>/?duck=<code>`). Scanning one with the phone's normal camera opens the site and claims the duck; if the rescuer isn't signed in yet, it's claimed right after they sign in or register. The in-app scanner reads these links and older plain-code labels.
 - **The leaderboard ranks by points.** Players with equal points share a place.
