@@ -7,7 +7,8 @@
 --   ducks     the hunt's ducks and their QR codes (managed on admin.html)
 --   duck_locations  location tags admins assign ducks to
 --   announcements   messages admins send to every player
---   game_settings   one row: whether the hunt is on
+--   game_settings   one row: whether the hunt is on, and the closing crawl
+--   duck_alerts     golden-duck rescues, pushed live to every player
 --   players   registered rescuers and their points
 --   duck_log  every claimed scan
 --
@@ -86,6 +87,20 @@ create table if not exists public.game_settings (
     updated_at timestamptz not null default now()
 );
 insert into public.game_settings (id) values (true) on conflict (id) do nothing;
+-- The Star Wars-style crawl players see when the hunt is switched off
+alter table public.game_settings add column if not exists crawl_title text not null default '';
+alter table public.game_settings add column if not exists crawl_text text not null default '';
+
+-- One row per golden-duck rescue (Golden type or 1000+ points). Public, so
+-- Supabase Realtime can announce it to every player straight away.
+create table if not exists public.duck_alerts (
+    id           bigint generated always as identity primary key,
+    duck_id      text,
+    duck_type    text,
+    points       integer not null default 0,
+    rescuer_name text not null default '',
+    created_at   timestamptz not null default now()
+);
 
 -- Deleting a duck keeps the scans (and the points they earned); renaming
 -- a duck's ID carries its scans along
@@ -103,9 +118,10 @@ alter table public.duck_log enable row level security;
 alter table public.duck_locations enable row level security;
 alter table public.announcements enable row level security;
 alter table public.game_settings enable row level security;
+alter table public.duck_alerts enable row level security;
 
-revoke all on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements, public.game_settings from anon, authenticated;
-grant all on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements, public.game_settings to service_role;
+revoke all on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements, public.game_settings, public.duck_alerts from anon, authenticated;
+grant all on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements, public.game_settings, public.duck_alerts to service_role;
 grant usage, select on all sequences in schema public to service_role;
 
 -- Remove the old Google Sheet sync, if it was installed
@@ -360,6 +376,13 @@ begin
     insert into public.duck_log (duck_id, student_id, duck_type, points)
     values (v_duck.duck_id, v_player.student_id, v_duck.duck_type, v_duck.points);
 
+    -- Golden duck: tell every player who found it
+    if coalesce(v_duck.duck_type, '') ~* 'golden' or v_duck.points >= 1000 then
+        insert into public.duck_alerts (duck_id, duck_type, points, rescuer_name)
+        values (v_duck.duck_id, v_duck.duck_type, v_duck.points,
+                private.display_name(v_player.first_name, v_player.last_name));
+    end if;
+
     update public.players
     set points = points + v_duck.points, codes_scanned = codes_scanned + 1
     where student_id = v_player.student_id
@@ -469,7 +492,11 @@ stable
 security definer
 set search_path = ''
 as $$
-    select jsonb_build_object('hunt_open', coalesce((select g.hunt_open from public.game_settings g where g.id), true));
+    select coalesce((
+        select jsonb_build_object('hunt_open', g.hunt_open, 'changed_at', g.updated_at,
+                                  'crawl_title', g.crawl_title, 'crawl_text', g.crawl_text)
+        from public.game_settings g where g.id
+    ), jsonb_build_object('hunt_open', true));
 $$;
 
 -- Messages from the admins, newest first.
@@ -568,12 +595,16 @@ grant select on public.game_settings to anon, authenticated;
 drop policy if exists everyone_read on public.game_settings;
 create policy everyone_read on public.game_settings for select to anon, authenticated using (true);
 
+grant select on public.duck_alerts to anon, authenticated;
+drop policy if exists everyone_read on public.duck_alerts;
+create policy everyone_read on public.duck_alerts for select to anon, authenticated using (true);
+
 do $$
 declare
     t text;
 begin
     if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
-        foreach t in array array['players', 'ducks', 'duck_log', 'duck_locations', 'announcements', 'game_settings'] loop
+        foreach t in array array['players', 'ducks', 'duck_log', 'duck_locations', 'announcements', 'game_settings', 'duck_alerts'] loop
             if not exists (
                 select 1 from pg_publication_tables
                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
@@ -630,6 +661,8 @@ begin
             from public.duck_locations l
         ), '[]'::jsonb),
         'hunt_open', coalesce((select g.hunt_open from public.game_settings g where g.id), true),
+        'crawl_title', (select g.crawl_title from public.game_settings g where g.id),
+        'crawl_text', (select g.crawl_text from public.game_settings g where g.id),
         'announcements', coalesce((
             select jsonb_agg(to_jsonb(a) order by a.id desc)
             from public.announcements a
@@ -954,8 +987,10 @@ begin
 end;
 $$;
 
--- Turn the hunt on or off for everyone.
-create or replace function public.admin_set_hunt_open(p_open boolean)
+-- Turn the hunt on or off for everyone. When turning it off, the title and
+-- text become the crawl players see (left as they were when null).
+drop function if exists public.admin_set_hunt_open(boolean);
+create or replace function public.admin_set_hunt_open(p_open boolean, p_crawl_title text default null, p_crawl_text text default null)
 returns boolean
 language plpgsql
 security definer
@@ -963,9 +998,13 @@ set search_path = ''
 as $$
 begin
     perform private.require_admin();
-    insert into public.game_settings (id, hunt_open, updated_at)
-    values (true, coalesce(p_open, false), now())
-    on conflict (id) do update set hunt_open = excluded.hunt_open, updated_at = now();
+    insert into public.game_settings (id, hunt_open, updated_at, crawl_title, crawl_text)
+    values (true, coalesce(p_open, false), now(), coalesce(trim(p_crawl_title), ''), coalesce(trim(p_crawl_text), ''))
+    on conflict (id) do update set
+        hunt_open = excluded.hunt_open,
+        updated_at = now(),
+        crawl_title = coalesce(trim(p_crawl_title), public.game_settings.crawl_title),
+        crawl_text = coalesce(trim(p_crawl_text), public.game_settings.crawl_text);
     return coalesce(p_open, false);
 end;
 $$;
@@ -1057,7 +1096,7 @@ revoke execute on function
     public.admin_delete_location(text),
     public.admin_post_announcement(text, text),
     public.admin_delete_announcement(bigint),
-    public.admin_set_hunt_open(boolean),
+    public.admin_set_hunt_open(boolean, text, text),
     public.admin_unfreeze_player(text)
 from public, anon;
 grant execute on function
@@ -1079,6 +1118,6 @@ grant execute on function
     public.admin_delete_location(text),
     public.admin_post_announcement(text, text),
     public.admin_delete_announcement(bigint),
-    public.admin_set_hunt_open(boolean),
+    public.admin_set_hunt_open(boolean, text, text),
     public.admin_unfreeze_player(text)
 to authenticated;
