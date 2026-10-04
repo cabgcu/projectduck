@@ -5,6 +5,7 @@
 -- including on a project set up with the old Google Sheet sync.
 --
 --   ducks     the hunt's ducks and their QR codes (managed on admin.html)
+--   duck_locations  location tags admins assign ducks to
 --   players   registered rescuers and their points
 --   duck_log  every claimed scan
 --
@@ -55,6 +56,16 @@ create table if not exists public.duck_log (
     points     integer not null default 0
 );
 
+-- Ducks only count once an admin activates them (by scanning them on the
+-- admin page). Ducks that existed before this column are left active.
+alter table public.ducks add column if not exists active boolean not null default true;
+alter table public.ducks alter column active set default false;
+
+create table if not exists public.duck_locations (
+    name       text primary key,
+    created_at timestamptz not null default now()
+);
+
 -- Deleting a duck keeps the scans (and the points they earned); renaming
 -- a duck's ID carries its scans along
 alter table public.duck_log alter column duck_id drop not null;
@@ -68,9 +79,10 @@ create index if not exists players_points_idx on public.players (points desc);
 alter table public.players  enable row level security;
 alter table public.ducks    enable row level security;
 alter table public.duck_log enable row level security;
+alter table public.duck_locations enable row level security;
 
-revoke all on public.players, public.ducks, public.duck_log from anon, authenticated;
-grant all on public.players, public.ducks, public.duck_log to service_role;
+revoke all on public.players, public.ducks, public.duck_log, public.duck_locations from anon, authenticated;
+grant all on public.players, public.ducks, public.duck_log, public.duck_locations to service_role;
 grant usage, select on all sequences in schema public to service_role;
 
 -- Remove the old Google Sheet sync, if it was installed
@@ -222,7 +234,7 @@ $$;
 -- Claim a duck by its QR code. Each duck can be claimed once, by the
 -- first rescuer to scan it.
 --
--- status: claimed | already_yours | already_claimed | invalid | unknown_player
+-- status: claimed | already_yours | already_claimed | inactive | invalid | unknown_player
 create or replace function public.claim_duck(p_student_id text, p_qr_code text)
 returns jsonb
 language plpgsql
@@ -253,6 +265,11 @@ begin
             'duck_id', v_duck.duck_id,
             'duck_type', v_duck.duck_type
         );
+    end if;
+
+    -- Not placed yet: an admin hasn't scanned it to activate it
+    if not v_duck.active then
+        return jsonb_build_object('status', 'inactive', 'duck_id', v_duck.duck_id, 'duck_type', v_duck.duck_type);
     end if;
 
     update public.ducks
@@ -401,7 +418,7 @@ $$;
 
 -- Admins can read the tables, which is what Supabase Realtime needs to
 -- stream changes to admin.html. All writes go through admin_* functions.
-grant select on public.players, public.ducks, public.duck_log to authenticated;
+grant select on public.players, public.ducks, public.duck_log, public.duck_locations to authenticated;
 
 drop policy if exists admins_read on public.players;
 create policy admins_read on public.players for select to authenticated using (public.is_admin());
@@ -409,13 +426,15 @@ drop policy if exists admins_read on public.ducks;
 create policy admins_read on public.ducks for select to authenticated using (public.is_admin());
 drop policy if exists admins_read on public.duck_log;
 create policy admins_read on public.duck_log for select to authenticated using (public.is_admin());
+drop policy if exists admins_read on public.duck_locations;
+create policy admins_read on public.duck_locations for select to authenticated using (public.is_admin());
 
 do $$
 declare
     t text;
 begin
     if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
-        foreach t in array array['players', 'ducks', 'duck_log'] loop
+        foreach t in array array['players', 'ducks', 'duck_log', 'duck_locations'] loop
             if not exists (
                 select 1 from pg_publication_tables
                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
@@ -463,7 +482,11 @@ begin
                 limit 200
             ) l
         ), '[]'::jsonb),
-        'total_scans', (select count(*) from public.duck_log)
+        'total_scans', (select count(*) from public.duck_log),
+        'locations', coalesce((
+            select jsonb_agg(to_jsonb(l) order by lower(l.name))
+            from public.duck_locations l
+        ), '[]'::jsonb)
     );
 end;
 $$;
@@ -678,6 +701,130 @@ begin
 end;
 $$;
 
+-- Activate or deactivate several ducks. Inactive ducks can't be claimed.
+create or replace function public.admin_set_ducks_active(p_duck_ids text[], p_active boolean)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_count integer;
+begin
+    perform private.require_admin();
+    update public.ducks set active = coalesce(p_active, false) where duck_id = any (p_duck_ids);
+    get diagnostics v_count = row_count;
+    return v_count;
+end;
+$$;
+
+-- Put several ducks at a location (empty clears it).
+create or replace function public.admin_set_ducks_location(p_duck_ids text[], p_location text)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_count integer;
+begin
+    perform private.require_admin();
+    update public.ducks set location = nullif(trim(p_location), '') where duck_id = any (p_duck_ids);
+    get diagnostics v_count = row_count;
+    return v_count;
+end;
+$$;
+
+-- What the admin scanner does with one QR code.
+--   p_mode 'activate': make the duck claimable
+--   p_mode 'locate':   tag the duck with p_location
+-- status: activated | already_active | located | already_there | unknown
+create or replace function public.admin_scan_duck(p_qr_code text, p_mode text, p_location text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_duck   public.ducks;
+    v_status text;
+    v_before text;
+begin
+    perform private.require_admin();
+    select * into v_duck from public.ducks where qr_code = trim(p_qr_code) for update;
+    if not found then
+        return jsonb_build_object('status', 'unknown');
+    end if;
+    v_before := v_duck.location;
+
+    if p_mode = 'activate' then
+        if v_duck.active then
+            v_status := 'already_active';
+        else
+            update public.ducks set active = true where duck_id = v_duck.duck_id returning * into v_duck;
+            v_status := 'activated';
+        end if;
+    elsif p_mode = 'locate' then
+        if coalesce(trim(p_location), '') = '' then
+            raise exception 'Pick a location first';
+        end if;
+        if v_duck.location is not distinct from trim(p_location) then
+            v_status := 'already_there';
+        else
+            update public.ducks set location = trim(p_location) where duck_id = v_duck.duck_id returning * into v_duck;
+            v_status := 'located';
+        end if;
+    else
+        raise exception 'Unknown scan mode %', p_mode;
+    end if;
+
+    return jsonb_build_object(
+        'status', v_status,
+        'duck_id', v_duck.duck_id,
+        'duck_type', v_duck.duck_type,
+        'active', v_duck.active,
+        'claimed', v_duck.claimed,
+        'location', v_duck.location,
+        'previous_location', v_before
+    );
+end;
+$$;
+
+-- Location tags.
+create or replace function public.admin_add_location(p_name text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    perform private.require_admin();
+    if coalesce(trim(p_name), '') = '' then
+        raise exception 'Enter a location name';
+    end if;
+    insert into public.duck_locations (name) values (trim(p_name))
+    on conflict (name) do nothing;
+end;
+$$;
+
+-- Removing a tag also clears it from the ducks that had it.
+create or replace function public.admin_delete_location(p_name text)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_count integer;
+begin
+    perform private.require_admin();
+    update public.ducks set location = null where location = p_name;
+    get diagnostics v_count = row_count;
+    delete from public.duck_locations where name = p_name;
+    return v_count;
+end;
+$$;
+
 revoke execute on function
     public.admin_overview(),
     public.admin_save_duck(text, text, text, integer, text, text),
@@ -688,7 +835,12 @@ revoke execute on function
     public.admin_delete_player(text),
     public.admin_bulk_create_ducks(jsonb),
     public.admin_set_duck_points(text[], integer),
-    public.admin_delete_ducks(text[])
+    public.admin_delete_ducks(text[]),
+    public.admin_set_ducks_active(text[], boolean),
+    public.admin_set_ducks_location(text[], text),
+    public.admin_scan_duck(text, text, text),
+    public.admin_add_location(text),
+    public.admin_delete_location(text)
 from public, anon;
 grant execute on function
     public.is_admin(),
@@ -701,5 +853,10 @@ grant execute on function
     public.admin_delete_player(text),
     public.admin_bulk_create_ducks(jsonb),
     public.admin_set_duck_points(text[], integer),
-    public.admin_delete_ducks(text[])
+    public.admin_delete_ducks(text[]),
+    public.admin_set_ducks_active(text[], boolean),
+    public.admin_set_ducks_location(text[], text),
+    public.admin_scan_duck(text, text, text),
+    public.admin_add_location(text),
+    public.admin_delete_location(text)
 to authenticated;

@@ -1060,6 +1060,8 @@
                     showToast(`You already rescued ${name}!`);
                 } else if (result.status === 'already_claimed') {
                     showToast(`Another rescuer already claimed ${name}.`);
+                } else if (result.status === 'inactive') {
+                    showToast(`${name === 'this duck' ? 'This duck' : name} isn't in play yet. Check back soon!`);
                 } else if (result.status === 'unknown_player') {
                     showToast('Your rescuer profile wasn\'t found. Please sign in again.');
                     signOut();

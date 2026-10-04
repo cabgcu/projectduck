@@ -180,6 +180,7 @@
         .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 500; }
         .badge-open { background: var(--line-soft); color: var(--muted); }
         .badge-claimed { background: var(--green-soft); color: var(--green); }
+        .badge-inactive { background: transparent; color: var(--muted); border: 1px dashed var(--line); }
 
         /* Dialogs */
         dialog {
@@ -290,6 +291,8 @@
                     <span class="spacer" style="flex:1"></span>
                     <label>Set points to <input id="bulk-points" type="number" min="0" value="10"></label>
                     <button type="button" class="btn btn-sm" data-action="bulk-points">Apply</button>
+                    <button type="button" class="btn btn-sm" data-action="bulk-activate">Activate</button>
+                    <button type="button" class="btn btn-sm" data-action="bulk-deactivate">Deactivate</button>
                     <button type="button" class="btn btn-sm" data-action="print-selected">Print QR codes</button>
                     <button type="button" class="btn btn-sm" data-action="download-selected">Download CSV</button>
                     <button type="button" class="btn btn-sm btn-danger" data-action="bulk-delete">Delete</button>
@@ -715,7 +718,7 @@
                     <td class="num"><input class="cell-num" type="number" min="0" value="${esc(d.points)}" data-points-duck="${esc(d.duck_id)}" aria-label="Points for ${esc(d.duck_id)}"></td>
                     <td>${esc(d.location)}</td>
                     <td class="mono">${esc(d.qr_code)}</td>
-                    <td><span class="badge ${d.claimed ? 'badge-claimed' : 'badge-open'}">${d.claimed ? 'Claimed' : 'Open'}</span></td>
+                    <td><span class="badge ${d.claimed ? 'badge-claimed' : d.active ? 'badge-open' : 'badge-inactive'}">${d.claimed ? 'Claimed' : d.active ? 'Open' : 'Inactive'}</span></td>
                     <td>${esc(d.claimed_by_name || d.claimed_by || '')}</td>
                     <td class="muted">${esc(formatDate(d.claimed_at))}</td>
                     <td class="actions">
@@ -972,6 +975,16 @@
                 case 'download-ducks': return duckCSV(visibleDucks(), `duck-hunt-ducks-${today()}.csv`);
                 case 'download-selected': return duckCSV(visibleDucks().filter(d => selected.has(d.duck_id)), `duck-hunt-ducks-${today()}.csv`);
                 case 'clear-selection': selected.clear(); return render();
+
+                case 'bulk-activate':
+                case 'bulk-deactivate': {
+                    const active = el.dataset.action === 'bulk-activate';
+                    return busy(el, async () => {
+                        const n = await rpc('admin_set_ducks_active', { p_duck_ids: [...selected], p_active: active });
+                        snackbar(`${active ? 'Activated' : 'Deactivated'} ${n} duck${n === 1 ? '' : 's'}.`);
+                        await load();
+                    });
+                }
 
                 case 'bulk-points': {
                     const points = parseInt($('bulk-points').value, 10);
