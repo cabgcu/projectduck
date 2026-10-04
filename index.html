@@ -274,7 +274,7 @@
                             </button>
                             <button 
                                 type="button" 
-                                onclick="navigate('login', 'register')"
+                                onclick="goToRegister()"
                                 class="flex-1 bg-[#ffe81f]/10 border border-[#ffe81f]/40 backdrop-blur-md hover:bg-[#ffe81f]/20 hover:border-[#ffe81f]/60 hover:shadow-[0_0_15px_rgba(255,232,31,0.3)] text-white font-bold text-[17px] py-4 rounded-xl transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.8)] active:scale-[0.98]"
                             >
                                 Register
@@ -330,6 +330,33 @@
                         
                     </form>
                 </div>
+            </div>
+        </div>
+
+        <!-- FULL SCAN HISTORY VIEW (Hidden Initially) -->
+        <div id="history-view" class="hidden fade-transition opacity-0 fixed inset-0 overflow-y-auto no-scrollbar">
+            <div class="w-full max-w-md mx-auto px-4 pt-6 pb-12 flex flex-col gap-5">
+                <header class="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onclick="closeHistoryPage()"
+                        aria-label="Back"
+                        class="w-11 h-11 rounded-xl bg-white/5 border border-white/20 hover:bg-white/10 hover:border-white/40 text-white flex items-center justify-center transition-all duration-300 active:scale-95"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+                    </button>
+                    <div>
+                        <p class="card-label">Log</p>
+                        <h2 class="text-xl font-bold font-tech tracking-wider text-white">All Scans</h2>
+                    </div>
+                    <span id="history-full-count" class="ml-auto text-[12px] px-3 py-1 rounded-full bg-white/5 border border-white/15 text-gray-400">0 scans</span>
+                </header>
+
+                <section class="shimmer-wrapper w-full">
+                    <div class="glass-inner w-full p-5">
+                        <ul id="history-full-list" class="flex flex-col divide-y divide-white/10"></ul>
+                    </div>
+                </section>
             </div>
         </div>
 
@@ -437,6 +464,15 @@
                             <p class="text-gray-400 text-[15px]">No ducks rescued yet.</p>
                             <p class="text-gray-500 text-[13px] mt-1">Your scans will show up here.</p>
                         </div>
+
+                        <button
+                            id="history-see-all"
+                            type="button"
+                            onclick="openHistoryPage()"
+                            class="hidden mt-3 w-full bg-white/5 border border-white/20 hover:bg-white/10 hover:border-white/40 text-white font-semibold text-[15px] py-3 rounded-xl transition-all duration-300 active:scale-[0.98]"
+                        >
+                            See all
+                        </button>
                     </div>
                 </section>
             </div>
@@ -665,7 +701,10 @@
                 try {
                     const rows = await rpc('get_player', { p_student_id: id });
                     if (!rows || !rows.length) {
-                        return showFormError('login-error', 'No rescuer with that Student ID. Register first!');
+                        // New rescuer: go straight to registration with their ID filled in
+                        showFormError('login-error', '');
+                        document.getElementById('reg-id').value = id;
+                        return navigate('login', 'register');
                     }
                     showFormError('login-error', '');
                     player = rows[0];
@@ -675,6 +714,13 @@
                     showFormError('login-error', err.message || 'Couldn\'t sign in. Try again.');
                 }
             });
+        }
+
+        function goToRegister() {
+            const id = document.getElementById('student-id').value.trim();
+            if (id) document.getElementById('reg-id').value = id;
+            showFormError('login-error', '');
+            navigate('login', 'register');
         }
 
         function register(button) {
@@ -706,6 +752,15 @@
 
         function signOut() {
             stopScanner();
+            if (historyPageOpen()) {
+                // Signed out from the full history page: drop it and leave from home
+                const page = document.getElementById('history-view');
+                page.classList.add('hidden', 'opacity-0');
+                page.classList.remove('opacity-100');
+                const home = document.getElementById('home-view');
+                home.classList.remove('hidden', 'opacity-0');
+                home.classList.add('opacity-100');
+            }
             player = null;
             saveSession();
             navigate('home', 'login');
@@ -793,38 +848,90 @@
             }
         }
 
-        function renderHistory(scans) {
-            const list = document.getElementById('history-list');
-            list.innerHTML = '';
-            document.getElementById('history-count').textContent = `${scans.length} scan${scans.length === 1 ? '' : 's'}`;
-            document.getElementById('history-empty').classList.toggle('hidden', scans.length > 0);
+        const HISTORY_PREVIEW_SIZE = 5;
+        let lastHistory = [];
 
-            scans.forEach((scan, i) => {
-                const li = document.createElement('li');
-                li.className = 'flex items-center gap-3 py-3';
+        function historyItem(scan, number) {
+            const li = document.createElement('li');
+            li.className = 'flex items-center gap-3 py-3';
 
-                const icon = document.createElement('div');
-                icon.className = 'shrink-0 w-10 h-10 rounded-xl bg-[#ffe81f]/10 border border-[#ffe81f]/30 flex items-center justify-center font-tech font-bold text-[#ffe81f]';
-                icon.textContent = '#' + (scans.length - i);
+            const icon = document.createElement('div');
+            icon.className = 'shrink-0 w-10 h-10 rounded-xl bg-[#ffe81f]/10 border border-[#ffe81f]/30 flex items-center justify-center font-tech font-bold text-[#ffe81f]';
+            icon.textContent = '#' + number;
 
-                const body = document.createElement('div');
-                body.className = 'flex-1 min-w-0';
-                const title = document.createElement('p');
-                title.className = 'text-[15px] text-white font-semibold truncate';
-                title.textContent = scan.duck_type ? `${scan.duck_type} Duck` : 'Duck';
-                const meta = document.createElement('p');
-                meta.className = 'text-[12px] text-gray-400 truncate';
-                meta.textContent = `${scan.duck_id || "Retired duck"} · ${formatTime(scan.scanned_at)}`;
-                body.append(title, meta);
+            const body = document.createElement('div');
+            body.className = 'flex-1 min-w-0';
+            const title = document.createElement('p');
+            title.className = 'text-[15px] text-white font-semibold truncate';
+            title.textContent = scan.duck_type ? `${scan.duck_type} Duck` : 'Duck';
+            const meta = document.createElement('p');
+            meta.className = 'text-[12px] text-gray-400 truncate';
+            meta.textContent = `${scan.duck_id || "Retired duck"} · ${formatTime(scan.scanned_at)}`;
+            body.append(title, meta);
 
-                const points = document.createElement('span');
-                points.className = 'text-[15px] font-bold font-tech text-[#ffe81f]';
-                points.textContent = '+' + scan.points;
+            const points = document.createElement('span');
+            points.className = 'text-[15px] font-bold font-tech text-[#ffe81f]';
+            points.textContent = '+' + scan.points;
 
-                li.append(icon, body, points);
-                list.appendChild(li);
-            });
+            li.append(icon, body, points);
+            return li;
         }
+
+        function renderHistory(scans) {
+            lastHistory = scans;
+            const countText = `${scans.length} scan${scans.length === 1 ? '' : 's'}`;
+            document.getElementById('history-count').textContent = countText;
+            document.getElementById('history-full-count').textContent = countText;
+            document.getElementById('history-empty').classList.toggle('hidden', scans.length > 0);
+            document.getElementById('history-see-all').classList.toggle('hidden', scans.length <= HISTORY_PREVIEW_SIZE);
+
+            const preview = document.getElementById('history-list');
+            preview.innerHTML = '';
+            scans.slice(0, HISTORY_PREVIEW_SIZE).forEach((scan, i) => preview.appendChild(historyItem(scan, scans.length - i)));
+
+            const full = document.getElementById('history-full-list');
+            full.innerHTML = '';
+            scans.forEach((scan, i) => full.appendChild(historyItem(scan, scans.length - i)));
+        }
+
+        // Full history page: a simple fade swap with the home view, plus a history
+        // entry so the phone's back gesture returns home.
+        function swapViews(fromId, toId) {
+            const from = document.getElementById(fromId);
+            const to = document.getElementById(toId);
+            from.classList.remove('opacity-100');
+            from.classList.add('opacity-0');
+            setTimeout(() => {
+                from.classList.add('hidden');
+                to.classList.remove('hidden');
+                to.scrollTop = 0;
+                setTimeout(() => {
+                    to.classList.remove('opacity-0');
+                    to.classList.add('opacity-100');
+                }, 50);
+            }, 500); // matches the .fade-transition duration
+        }
+
+        function historyPageOpen() {
+            return !document.getElementById('history-view').classList.contains('hidden');
+        }
+
+        function openHistoryPage() {
+            if (historyPageOpen()) return;
+            stopScanner();
+            history.pushState({ page: 'history' }, '');
+            swapViews('home-view', 'history-view');
+        }
+
+        function closeHistoryPage() {
+            if (!historyPageOpen()) return;
+            if (history.state && history.state.page === 'history') return history.back();
+            swapViews('history-view', 'home-view');
+        }
+
+        window.addEventListener('popstate', () => {
+            if (historyPageOpen()) swapViews('history-view', 'home-view');
+        });
 
         function formatTime(ts) {
             const d = new Date(ts);
@@ -1026,7 +1133,7 @@
 
             // Keep the leaderboard live while the home screen is open
             setInterval(() => {
-                const homeOpen = !document.getElementById('home-view').classList.contains('hidden');
+                const homeOpen = !document.getElementById('home-view').classList.contains('hidden') || historyPageOpen();
                 if (player && homeOpen && !document.hidden) refreshHome();
             }, 30000);
         };
