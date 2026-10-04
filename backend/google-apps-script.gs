@@ -12,7 +12,7 @@
  * Direction of sync:
  *   Master Ducks  ⇄  ducks     (edit in the sheet or in Supabase)
  *   Player        ⇄  players   (edit in the sheet or in Supabase)
- *   Duck Log      ←  duck_log  (written by the app; sheet is a read-only mirror)
+ *   Duck Log      ⇄  duck_log  (written by the app; deleting a row undoes that scan)
  */
 
 // Tab names in the spreadsheet
@@ -37,7 +37,8 @@ const COLUMNS = {
     'Duck ID': 'duck_id',
     'Student ID': 'student_id',
     'Timestamp': 'scanned_at',
-    'Type': 'duck_type'
+    'Type': 'duck_type',
+    'Log ID': 'id'
   },
   players: {
     'First Name': 'first_name',
@@ -50,12 +51,16 @@ const COLUMNS = {
 };
 
 const TABLES = { ducks: 'ducks', log: 'duck_log', players: 'players' };
-const KEYS = { ducks: 'duck_id', players: 'student_id' };
+const KEYS = { ducks: 'duck_id', players: 'student_id', log: 'id' };
 const ORDER = { ducks: 'duck_id.asc', log: 'scanned_at.asc', players: 'points.desc,created_at.asc' };
 const NUMBER_FIELDS = ['points', 'codes_scanned'];
 const BOOLEAN_FIELDS = ['claimed'];
 const DATE_FIELDS = ['scanned_at'];
 const NOT_NULL_TEXT_FIELDS = ['first_name', 'last_name'];
+
+// Erasing more Duck Log rows than this at once won't delete them in
+// Supabase automatically; use the menu item to confirm instead.
+const MAX_AUTO_DELETE = 10;
 
 
 // ---------------------------------------------------------------------
@@ -67,6 +72,7 @@ function onOpen() {
     .createMenu('Duck Hunt')
     .addItem('Pull everything from Supabase', 'pullAllFromSupabase')
     .addItem('Push Master Ducks & Players to Supabase', 'pushAllToSupabase')
+    .addItem('Sync erased Duck Log rows to Supabase', 'syncErasedScansFromMenu')
     .addSeparator()
     .addItem('Set up sync triggers', 'setupTriggers')
     .addToUi();
@@ -76,12 +82,14 @@ function onOpen() {
 function setupTriggers() {
   const ss = SpreadsheetApp.getActive();
   ScriptApp.getProjectTriggers().forEach(t => {
-    if (['handleEdit', 'pullAllFromSupabase'].indexOf(t.getHandlerFunction()) !== -1) {
+    if (['handleEdit', 'handleChange', 'pullAllFromSupabase'].indexOf(t.getHandlerFunction()) !== -1) {
       ScriptApp.deleteTrigger(t);
     }
   });
   // Installable (not simple) onEdit, because simple triggers can't call UrlFetchApp
   ScriptApp.newTrigger('handleEdit').forSpreadsheet(ss).onEdit().create();
+  // Row deletions don't fire onEdit
+  ScriptApp.newTrigger('handleChange').forSpreadsheet(ss).onChange().create();
   // Safety net in case a live update from Supabase is missed
   ScriptApp.newTrigger('pullAllFromSupabase').timeBased().everyMinutes(10).create();
   ss.toast('Sync triggers installed.', 'Duck Hunt');
@@ -96,6 +104,7 @@ function setupTriggers() {
 function handleEdit(e) {
   const sheet = e.range.getSheet();
   const kind = kindForSheet(sheet.getName());
+  if (kind === 'log') return syncErasedScans(false);
   if (kind !== 'ducks' && kind !== 'players') return;
 
   const firstRow = Math.max(e.range.getRow(), 2);
@@ -150,6 +159,91 @@ function upsert(kind, records) {
 }
 
 
+/** Installable onChange trigger: catch deleted Duck Log rows. */
+function handleChange(e) {
+  if (e && e.changeType === 'REMOVE_ROW') syncErasedScans(false);
+}
+
+function syncErasedScansFromMenu() {
+  syncErasedScans(true);
+}
+
+/**
+ * Delete scans from Supabase whose Duck Log row was erased. Supabase then
+ * un-claims the duck and takes the points back (see private.undo_claim).
+ *
+ * Only scans the sheet has already shown (Log ID <= LOG_MAX_ID) count as
+ * erased, so newer scans that haven't reached the sheet yet are safe.
+ */
+function syncErasedScans(fromMenu) {
+  const ss = SpreadsheetApp.getActive();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  let deleted;
+  try {
+    const maxSeen = Number(PropertiesService.getDocumentProperties().getProperty('LOG_MAX_ID')) || 0;
+    if (!maxSeen) return;
+
+    const sheet = getSheet('log');
+    const headers = readHeaders(sheet, 'log');
+    const present = {};
+    if (sheet.getLastRow() > 1) {
+      sheet.getRange(2, headers.id + 1, sheet.getLastRow() - 1, 1).getValues()
+        .forEach(r => { present[cellText(r[0])] = true; });
+    }
+
+    let known = [];
+    for (let offset = 0; ; offset += 1000) {
+      const page = supabaseRequest('get', `/rest/v1/duck_log?select=id&id=lte.${maxSeen}&order=id.asc&limit=1000&offset=${offset}`);
+      known = known.concat(page);
+      if (page.length < 1000) break;
+    }
+    const erased = known.map(r => r.id).filter(id => !present[String(id)]);
+    if (!erased.length) {
+      if (fromMenu) ss.toast('No erased scans to sync.', 'Duck Hunt');
+      return;
+    }
+
+    if (erased.length > MAX_AUTO_DELETE) {
+      if (!fromMenu) {
+        ss.toast(`${erased.length} Duck Log rows were erased. To remove these scans from Supabase, use Duck Hunt → Sync erased Duck Log rows. Otherwise they come back on the next pull.`, 'Duck Hunt', 15);
+        return;
+      }
+      const answer = SpreadsheetApp.getUi().alert('Duck Hunt',
+        `Delete ${erased.length} scans from Supabase? Their ducks will be un-claimed and the points taken back.`,
+        SpreadsheetApp.getUi().ButtonSet.YES_NO);
+      if (answer !== SpreadsheetApp.getUi().Button.YES) return;
+    }
+
+    deleted = [];
+    for (let i = 0; i < erased.length; i += 100) {
+      deleted = deleted.concat(supabaseRequest('delete',
+        `/rest/v1/duck_log?id=in.(${erased.slice(i, i + 100).join(',')})`,
+        undefined, { Prefer: 'return=representation' }) || []);
+    }
+
+    // Show the un-claimed ducks and new point totals right away
+    refreshRows('ducks', deleted.map(r => r.duck_id));
+    refreshRows('players', deleted.map(r => r.student_id));
+  } finally {
+    lock.releaseLock();
+  }
+
+  const points = deleted.reduce((sum, r) => sum + (r.points || 0), 0);
+  ss.toast(`Removed ${deleted.length} scan${deleted.length === 1 ? '' : 's'} (${points} pts taken back).`, 'Duck Hunt');
+}
+
+/** Re-read specific rows from Supabase and write them into the sheet. */
+function refreshRows(kind, ids) {
+  const unique = ids.filter((id, i) => id && ids.indexOf(id) === i);
+  if (!unique.length) return;
+  const list = unique.map(id => '"' + String(id).replace(/"/g, '\\"') + '"').join(',');
+  const columns = Object.values(COLUMNS[kind]).join(',');
+  supabaseRequest('get', `/rest/v1/${TABLES[kind]}?select=${columns}&${KEYS[kind]}=in.(${encodeURIComponent(list)})`)
+    .forEach(record => upsertRecord(kind, record));
+}
+
+
 // ---------------------------------------------------------------------
 // Supabase → Sheet
 // ---------------------------------------------------------------------
@@ -182,8 +276,8 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    if (kind === 'log') {
-      if (payload.op === 'INSERT') appendRecord(kind, payload.record);
+    if (kind === 'log' && payload.op === 'INSERT') {
+      appendRecord(kind, payload.record);
     } else if (payload.op === 'DELETE') {
       deleteRecord(kind, payload.record);
     } else {
@@ -231,6 +325,9 @@ function pullAllFromSupabase() {
       if (rows.length) {
         sheet.getRange(2, 1, rows.length, width).setValues(rows);
       }
+      if (kind === 'log') {
+        setMaxLogId(records.reduce((max, r) => Math.max(max, Number(r.id) || 0), 0), true);
+      }
     });
   } finally {
     lock.releaseLock();
@@ -265,7 +362,16 @@ function upsertRecord(kind, record) {
 function appendRecord(kind, record) {
   const sheet = getSheet(kind);
   const headers = readHeaders(sheet, kind);
+  if (findRow(sheet, headers.id, record.id)) return;
   sheet.appendRow(recordToRow(kind, record, headers, new Array(sheet.getLastColumn()).fill('')));
+  setMaxLogId(Number(record.id) || 0, false);
+}
+
+/** Highest Log ID the sheet has shown; scans above it are never treated as erased. */
+function setMaxLogId(id, replace) {
+  const props = PropertiesService.getDocumentProperties();
+  const current = Number(props.getProperty('LOG_MAX_ID')) || 0;
+  props.setProperty('LOG_MAX_ID', String(replace ? id : Math.max(current, id)));
 }
 
 function deleteRecord(kind, record) {
@@ -328,6 +434,11 @@ function readHeaders(sheet, kind) {
     if (field && headers[field] === undefined) headers[field] = i;
   });
   const missing = Object.keys(COLUMNS[kind]).filter(h => headers[COLUMNS[kind][h]] === undefined);
+  if (missing.length === 1 && missing[0] === 'Log ID') {
+    // Added by this script; create it instead of making the user do it
+    sheet.getRange(1, row.length + 1).setValue('Log ID');
+    return readHeaders(sheet, kind);
+  }
   if (missing.length) throw new Error(`"${sheet.getName()}" is missing columns: ${missing.join(', ')}`);
   return headers;
 }

@@ -7,13 +7,13 @@
 
 - **Supabase** is the live database. The app talks only to Supabase.
 - **The Google Sheet** is your master view. Scans and points show up there within seconds. Edits you make to **Master Ducks** or **Player** are pushed to Supabase.
-- **Duck Log** is written by the app. Treat it as read-only, because edits there are overwritten.
+- **Duck Log** is written by the app. **Erasing a row undoes that scan**: the duck goes back to unclaimed and the player loses the points. Any other edits there are overwritten.
 - As a safety net, the sheet is fully refreshed from Supabase every 10 minutes.
 
 | Sheet tab      | Supabase table | Direction | Columns |
 |----------------|----------------|-----------|---------|
 | `Master Ducks` | `ducks`        | ⇄ both    | Duck ID, Duck Type, Points, QR Code, Location, Claimed |
-| `Duck Log`     | `duck_log`     | → sheet   | Duck ID, Student ID, Timestamp, Type |
+| `Duck Log`     | `duck_log`     | → sheet, plus erasing rows | Duck ID, Student ID, Timestamp, Type, Log ID |
 | `Player`       | `players`      | ⇄ both    | First Name, Last Name, Student ID, Email, Points, Codes Scanned |
 
 Headers are matched by name, so column order doesn't matter, and extra columns (like a Notes column) are left alone. If your tabs are named differently, change `SHEET_NAMES` at the top of `google-apps-script.gs`.
@@ -21,7 +21,11 @@ Headers are matched by name, so column order doesn't matter, and extra columns (
 ## Game rules (as built)
 
 - **Each duck can be claimed once**: the first rescuer to scan it gets its points, and the duck is marked **Claimed**. Anyone who scans it later sees "already claimed".
-- **Unchecking Claimed** in the sheet re-opens the duck so it can be found again. Points already awarded are **not** taken back. To take them back, edit that player's Points in the Player tab.
+- **Erasing a Duck Log row** (deleting the row, or selecting it and pressing Delete) removes that scan from Supabase. The duck's **Claimed** goes back to unticked, the player loses the duck's **Points** and one **Codes Scanned**, and anyone can claim the duck again. Deleting a scan in Supabase's Table Editor does the same and removes the sheet row.
+  - Only scans the sheet has already shown count. A brand-new scan that hasn't reached the sheet yet is never deleted.
+  - Erasing more than 10 rows at once does nothing automatically. Use **Duck Hunt → Sync erased Duck Log rows**, which asks before deleting; otherwise the rows come back on the next pull.
+  - The **Log ID** column is how the script matches rows to Supabase. It's added automatically. Don't edit it.
+- **Unticking Claimed** on Master Ducks re-opens the duck, but **doesn't** take points back. To undo a scan completely, erase its Duck Log row instead.
 - **The leaderboard ranks by Points.** Players with the same points share a place.
 
 To let *every* rescuer claim *every* duck once instead, change the `if v_duck.claimed` check in `claim_duck` in `supabase.sql`.
@@ -62,7 +66,7 @@ The publishable key is safe to put in the page. **Never put the secret key in `i
    | `SUPABASE_SECRET_KEY` | your Secret key |
    | `WEBHOOK_SECRET`      | a long random string you make up (e.g. 40 random letters/numbers) |
 
-4. Back in the editor, pick **`setupTriggers`** in the function dropdown and click **Run**. Approve the permissions prompt. This installs the on-edit push and the 10-minute refresh.
+4. Back in the editor, pick **`setupTriggers`** in the function dropdown and click **Run**. Approve the permissions prompt. This installs the on-edit push, the erased-row check and the 10-minute refresh. **Run it again after updating the script**, so new triggers get installed.
 5. Click **Deploy → New deployment → Select type: Web app**, then:
    - **Execute as:** Me
    - **Who has access:** Anyone
@@ -84,7 +88,7 @@ on conflict (id) do update set webhook_url = excluded.webhook_url, secret = excl
 Reload the spreadsheet so the **Duck Hunt** menu appears, then:
 
 1. **Duck Hunt → Push Master Ducks & Players to Supabase**. This copies your current ducks and players up. Rows without a Duck ID or QR Code are skipped.
-2. **Duck Hunt → Pull everything from Supabase**. This rewrites the tabs from Supabase so everything matches.
+2. **Duck Hunt → Pull everything from Supabase**. This rewrites the tabs from Supabase so everything matches, and fills in the **Log ID** column. Erasing Duck Log rows only takes effect after this first pull.
 
 Existing rows in **Duck Log** are not pushed. Supabase becomes the record of scans from this point on.
 

@@ -5,7 +5,8 @@
 --
 -- Tables mirror the Google Sheet:
 --   ducks     ⇄  "Master Ducks"  (Duck ID, Duck Type, Points, QR Code, Location, Claimed)
---   duck_log  →  "Duck Log"      (Duck ID, Student ID, Timestamp, Type)
+--   duck_log  ⇄  "Duck Log"      (Duck ID, Student ID, Timestamp, Type, Log ID)
+--                                 deleting a Duck Log row undoes that scan
 --   players   ⇄  "Player"        (First Name, Last Name, Student ID, Email, Points, Codes Scanned)
 --
 -- The browser never touches these tables directly (RLS is on with no
@@ -105,6 +106,32 @@ create trigger players_touch before update on public.players
 drop trigger if exists ducks_touch on public.ducks;
 create trigger ducks_touch before insert or update on public.ducks
     for each row execute function private.touch_duck();
+
+
+-- Deleting a scan (from the Duck Log tab or the Table Editor) undoes
+-- it: the duck is un-claimed and the player loses its points.
+create or replace function private.undo_claim()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    update public.ducks
+    set claimed = false
+    where duck_id = old.duck_id and claimed_by = old.student_id;
+
+    update public.players
+    set points = greatest(points - old.points, 0),
+        codes_scanned = greatest(codes_scanned - 1, 0)
+    where student_id = old.student_id;
+    return old;
+end;
+$$;
+
+drop trigger if exists duck_log_undo on public.duck_log;
+create trigger duck_log_undo after delete on public.duck_log
+    for each row execute function private.undo_claim();
 
 
 -- ---------------------------------------------------------------------
@@ -378,5 +405,5 @@ create trigger players_to_sheet after insert or update or delete on public.playe
     for each row execute function private.notify_sheet();
 
 drop trigger if exists duck_log_to_sheet on public.duck_log;
-create trigger duck_log_to_sheet after insert on public.duck_log
+create trigger duck_log_to_sheet after insert or delete on public.duck_log
     for each row execute function private.notify_sheet();
