@@ -126,6 +126,10 @@ create table if not exists public.code_reports (
 );
 create index if not exists code_reports_student_idx on public.code_reports (student_id, created_at desc);
 
+-- 'scan' for a real claim, 'report' for points awarded by a broken-code
+-- report that didn't name a duck (no duck is used up)
+alter table public.duck_log add column if not exists source text not null default 'scan';
+
 -- Deleting a duck keeps the scans (and the points they earned); renaming
 -- a duck's ID carries its scans along
 alter table public.duck_log alter column duck_id drop not null;
@@ -504,14 +508,15 @@ as $$
 $$;
 
 -- The player's own scans, newest first.
+drop function if exists public.get_scan_history(text);
 create or replace function public.get_scan_history(p_student_id text)
-returns table (duck_id text, duck_type text, points integer, scanned_at timestamptz)
+returns table (duck_id text, duck_type text, points integer, scanned_at timestamptz, source text)
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-    select l.duck_id, l.duck_type, l.points, l.scanned_at
+    select l.duck_id, l.duck_type, l.points, l.scanned_at, l.source
     from public.duck_log l
     where l.student_id = trim(p_student_id)
     order by l.scanned_at desc
@@ -569,15 +574,32 @@ $$;
 --
 -- A rescuer whose duck won't scan reports it. If they give a Duck ID or
 -- code that matches an available duck, they get that duck (and it's
--- flagged for reprinting). Otherwise they get an available duck of the
--- same kind at the location they picked; golden ducks are never handed
--- out without their exact ID. Each rescuer can have at most 5 Rebel duck
--- and 10 hologram code reports honored.
+-- flagged for reprinting). Otherwise they get the standard points for
+-- that kind of duck, without using up any other duck. Each rescuer can
+-- have at most 5 Rebel duck and 10 hologram code reports honored.
 -- ---------------------------------------------------------------------
 
 create or replace function private.report_limit(p_kind text)
 returns integer language sql immutable set search_path = '' as $$
     select case when p_kind = 'hologram' then 10 else 5 end
+$$;
+
+-- Points for a report that doesn't name a duck: the most common value
+-- among regular (non-golden) ducks of that kind, or 10 / 5 if there are none.
+create or replace function private.report_points(p_kind text)
+returns integer
+language sql
+stable
+set search_path = ''
+as $$
+    select coalesce((
+        select d.points from public.ducks d
+        where private.is_hologram(d.duck_type) = (p_kind = 'hologram')
+          and coalesce(d.duck_type, '') !~* 'golden' and d.points < 1000
+        group by d.points
+        order by count(*) desc, d.points
+        limit 1
+    ), case when p_kind = 'hologram' then 5 else 10 end);
 $$;
 
 create or replace function private.reports_left(p_student_id text, p_kind text)
@@ -591,7 +613,7 @@ as $$
     where r.student_id = p_student_id and r.kind = p_kind and r.status = 'honored';
 $$;
 
--- status: honored | denied | review | closed | unknown_player | invalid
+-- status: honored | denied | closed | unknown_player | invalid
 create or replace function public.report_code(
     p_student_id text,
     p_kind       text,
@@ -616,6 +638,8 @@ declare
     v_outcome  text;
     v_award    jsonb;
     v_report   bigint;
+    v_points   integer;
+    v_log_id   bigint;
 begin
     if not coalesce((select g.hunt_open from public.game_settings g where g.id), true) then
         return jsonb_build_object('status', 'closed', 'message', 'Duck Hunt is offline right now, so reports are paused.');
@@ -661,57 +685,52 @@ begin
                             case when v_kind = 'hologram' then 'hologram code' else 'Rebel duck' end);
     end if;
 
-    -- 3. No usable ID: an available duck of that kind at that location.
-    --    Golden / special ducks are only ever awarded by exact ID.
-    if v_status is null and not v_matched then
-        select * into v_duck from public.ducks d
-        where d.active and not d.claimed
-          and private.is_hologram(d.duck_type) = (v_kind = 'hologram')
-          and coalesce(d.duck_type, '') !~* 'golden' and d.points < 1000
-          and (v_kind = 'hologram' or v_location is null or d.location = v_location)
-        order by d.points, d.duck_id
-        limit 1
-        for update skip locked;
-        if not found then
-            v_status := 'review';
-            v_outcome := case when v_location is not null
-                then format('No ducks are left at %s to award, so an admin will take a look.', v_location)
-                else 'No matching ducks are left to award, so an admin will take a look.' end;
-            v_duck := null;
-        end if;
-    end if;
-
     -- Hologram codes still count toward the daily hologram limit
-    if v_status is null and private.is_hologram(v_duck.duck_type)
+    if v_status is null
+       and (case when v_matched then private.is_hologram(v_duck.duck_type) else v_kind = 'hologram' end)
        and private.holograms_today(v_player.student_id, v_player.hologram_reset_at) >= private.hologram_daily_limit() then
         v_status := 'denied';
         v_outcome := format('You''ve hit today''s limit of %s hologram codes. Try again after midnight.', private.hologram_daily_limit());
     end if;
 
-    -- 4. Honor it
-    if v_status is null then
+    -- 3. Honor it
+    if v_status is null and v_matched then
+        -- The duck they named: it's theirs now, and its label gets flagged
         v_award := private.award_duck(v_player, v_duck);
-        if v_matched then
-            update public.ducks set broken_reports = broken_reports + 1 where duck_id = v_duck.duck_id;
-        end if;
+        update public.ducks set broken_reports = broken_reports + 1 where duck_id = v_duck.duck_id;
+        v_points := v_duck.points;
         v_status := 'honored';
-        v_outcome := format('Honored: %s (+%s pts) added to your score.', v_duck.duck_id, v_duck.points);
+        v_outcome := format('Honored: %s (+%s pts) added to your score.', v_duck.duck_id, v_points);
+    elsif v_status is null then
+        -- No duck named: standard points, no other duck is used up
+        v_points := private.report_points(v_kind);
+        insert into public.duck_log (duck_id, student_id, duck_type, points, source)
+        values (null, v_player.student_id, case when v_kind = 'hologram' then 'Hologram' else 'Rebel' end, v_points, 'report')
+        returning id into v_log_id;
+        update public.players
+        set points = points + v_points, codes_scanned = codes_scanned + 1
+        where student_id = v_player.student_id;
+        v_award := jsonb_build_object('log_id', v_log_id);
+        v_status := 'honored';
+        v_outcome := format('Honored: +%s pts for a %s%s.', v_points,
+                            case when v_kind = 'hologram' then 'hologram code' else 'Rebel duck' end,
+                            case when v_location is not null and v_kind = 'rebel' then ' at ' || v_location else '' end);
     end if;
 
     insert into public.code_reports (student_id, kind, location, code_ref, issue, note, status, outcome, duck_id, points, log_id)
     values (v_player.student_id, v_kind, v_location, v_ref, left(coalesce(trim(p_issue), ''), 80), left(coalesce(trim(p_note), ''), 500),
             v_status, v_outcome,
-            case when v_status = 'honored' or v_matched then v_duck.duck_id end,
-            case when v_status = 'honored' then v_duck.points else 0 end,
+            case when v_matched then v_duck.duck_id end,
+            coalesce(v_points, 0),
             (v_award->>'log_id')::bigint)
     returning id into v_report;
 
     return jsonb_build_object(
         'status', v_status,
         'message', v_outcome,
-        'duck_id', case when v_status = 'honored' then v_duck.duck_id end,
-        'duck_type', case when v_status = 'honored' then v_duck.duck_type end,
-        'points', case when v_status = 'honored' then v_duck.points else 0 end,
+        'duck_id', case when v_status = 'honored' and v_matched then v_duck.duck_id end,
+        'duck_type', case when v_status = 'honored' and v_matched then v_duck.duck_type end,
+        'points', coalesce(v_points, 0),
         'rebel_left', private.reports_left(v_player.student_id, 'rebel'),
         'hologram_left', private.reports_left(v_player.student_id, 'hologram')
     );

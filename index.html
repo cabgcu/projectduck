@@ -1276,10 +1276,10 @@
             body.className = 'flex-1 min-w-0';
             const title = document.createElement('p');
             title.className = 'text-[15px] text-white font-semibold truncate';
-            title.textContent = scan.duck_type ? `${scan.duck_type} Duck` : 'Duck';
+            title.textContent = scan.source === 'report' ? `${scan.duck_type || 'Rebel'} code reported` : (scan.duck_type ? `${scan.duck_type} Duck` : 'Duck');
             const meta = document.createElement('p');
             meta.className = 'text-[12px] text-gray-400 truncate';
-            meta.textContent = `${scan.duck_id || "Retired duck"} · ${formatTime(scan.scanned_at)}`;
+            meta.textContent = `${scan.duck_id || (scan.source === 'report' ? 'Reported code' : 'Retired duck')} · ${formatTime(scan.scanned_at)}`;
             body.append(title, meta);
 
             const points = document.createElement('span');
@@ -1562,7 +1562,7 @@
                 closeReport();
                 if (result.status === 'honored') {
                     if (result.duck_id) myGoldenClaims.add(result.duck_id);
-                    scanFeedback('ok', 'Report honored!', `+${result.points} pts`, result.message.replace(/^Honored: /, ''));
+                    scanFeedback('ok', 'Report honored!', `+${result.points} pts`, 'Added to your score. Thanks for letting us know!');
                     refreshHome();
                 } else if (result.status === 'review') {
                     scanFeedback('warn', 'Sent to an admin', null, result.message);
