@@ -599,6 +599,85 @@ begin
 end;
 $$;
 
+-- Create many ducks at once. p_ducks is a JSON array of
+-- {duck_id, duck_type, points, qr_code, location}. All or nothing.
+create or replace function public.admin_bulk_create_ducks(p_ducks jsonb)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_count integer;
+begin
+    perform private.require_admin();
+    if jsonb_typeof(p_ducks) <> 'array' or jsonb_array_length(p_ducks) = 0 then
+        raise exception 'No ducks to create';
+    end if;
+    if jsonb_array_length(p_ducks) > 1000 then
+        raise exception 'Create at most 1000 ducks at a time';
+    end if;
+    if exists (
+        select 1 from jsonb_array_elements(p_ducks) d
+        where coalesce(trim(d->>'duck_id'), '') = '' or coalesce(trim(d->>'qr_code'), '') = ''
+           or coalesce((d->>'points')::integer, 0) < 0
+    ) then
+        raise exception 'Every duck needs a Duck ID, a QR code and non-negative points';
+    end if;
+
+    insert into public.ducks (duck_id, duck_type, points, qr_code, location)
+    select trim(d->>'duck_id'),
+           nullif(trim(d->>'duck_type'), ''),
+           coalesce((d->>'points')::integer, 0),
+           trim(d->>'qr_code'),
+           nullif(trim(d->>'location'), '')
+    from jsonb_array_elements(p_ducks) d;
+    get diagnostics v_count = row_count;
+    return v_count;
+exception
+    when unique_violation then
+        raise exception 'Some of those Duck IDs or QR codes already exist';
+end;
+$$;
+
+-- Set the points for several ducks. Points already awarded for past
+-- scans don't change.
+create or replace function public.admin_set_duck_points(p_duck_ids text[], p_points integer)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_count integer;
+begin
+    perform private.require_admin();
+    if coalesce(p_points, -1) < 0 then
+        raise exception 'Points can''t be negative';
+    end if;
+    update public.ducks set points = p_points where duck_id = any (p_duck_ids);
+    get diagnostics v_count = row_count;
+    return v_count;
+end;
+$$;
+
+-- Retire several ducks. Their scans and the points they earned are kept.
+create or replace function public.admin_delete_ducks(p_duck_ids text[])
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_count integer;
+begin
+    perform private.require_admin();
+    delete from public.ducks where duck_id = any (p_duck_ids);
+    get diagnostics v_count = row_count;
+    return v_count;
+end;
+$$;
+
 revoke execute on function
     public.admin_overview(),
     public.admin_save_duck(text, text, text, integer, text, text),
@@ -606,7 +685,10 @@ revoke execute on function
     public.admin_reopen_duck(text),
     public.admin_undo_scan(bigint),
     public.admin_save_player(text, text, text, text, integer),
-    public.admin_delete_player(text)
+    public.admin_delete_player(text),
+    public.admin_bulk_create_ducks(jsonb),
+    public.admin_set_duck_points(text[], integer),
+    public.admin_delete_ducks(text[])
 from public, anon;
 grant execute on function
     public.is_admin(),
@@ -616,5 +698,8 @@ grant execute on function
     public.admin_reopen_duck(text),
     public.admin_undo_scan(bigint),
     public.admin_save_player(text, text, text, text, integer),
-    public.admin_delete_player(text)
+    public.admin_delete_player(text),
+    public.admin_bulk_create_ducks(jsonb),
+    public.admin_set_duck_points(text[], integer),
+    public.admin_delete_ducks(text[])
 to authenticated;
