@@ -9,6 +9,7 @@
 --   announcements   messages admins send to every player
 --   game_settings   one row: whether the hunt is on, and the closing crawl
 --   duck_alerts     golden-duck rescues, pushed live to every player
+--   code_reports    players reporting broken QR codes, resolved automatically
 --   players   registered rescuers and their points
 --   duck_log  every claimed scan
 --
@@ -102,6 +103,29 @@ create table if not exists public.duck_alerts (
     created_at   timestamptz not null default now()
 );
 
+-- How many honored "broken code" reports point at each duck (its label
+-- probably needs reprinting). Cleared with Mark fixed on the admin page.
+alter table public.ducks add column if not exists broken_reports integer not null default 0;
+
+-- Broken / unscannable code reports. Resolved automatically by
+-- report_code(); admins see them all and can undo honored ones.
+create table if not exists public.code_reports (
+    id         bigint generated always as identity primary key,
+    student_id text not null references public.players (student_id) on delete cascade,
+    kind       text not null check (kind in ('rebel', 'hologram')),
+    location   text,
+    code_ref   text,                 -- Duck ID or code the player typed, if any
+    issue      text not null default '',
+    note       text not null default '',
+    status     text not null check (status in ('honored', 'denied', 'review', 'reversed')),
+    outcome    text not null default '',
+    duck_id    text,                 -- duck awarded (or matched)
+    points     integer not null default 0,
+    log_id     bigint,               -- the duck_log row an honored report created
+    created_at timestamptz not null default now()
+);
+create index if not exists code_reports_student_idx on public.code_reports (student_id, created_at desc);
+
 -- Deleting a duck keeps the scans (and the points they earned); renaming
 -- a duck's ID carries its scans along
 alter table public.duck_log alter column duck_id drop not null;
@@ -119,6 +143,9 @@ alter table public.duck_locations enable row level security;
 alter table public.announcements enable row level security;
 alter table public.game_settings enable row level security;
 alter table public.duck_alerts enable row level security;
+alter table public.code_reports enable row level security;
+revoke all on public.code_reports from anon, authenticated;
+grant all on public.code_reports to service_role;
 
 revoke all on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements, public.game_settings, public.duck_alerts from anon, authenticated;
 grant all on public.players, public.ducks, public.duck_log, public.duck_locations, public.announcements, public.game_settings, public.duck_alerts to service_role;
@@ -186,6 +213,10 @@ begin
     set points = greatest(points - old.points, 0),
         codes_scanned = greatest(codes_scanned - 1, 0)
     where student_id = old.student_id;
+
+    -- A broken-code report that awarded this scan no longer counts
+    update public.code_reports set status = 'reversed'
+    where log_id = old.id and status = 'honored';
     return old;
 end;
 $$;
@@ -316,6 +347,42 @@ $$;
 --
 -- status: claimed | already_yours | already_claimed | inactive | invalid | unknown_player | closed
 --         | hologram_limit (10 hologram codes a day; regular ducks have no cap)
+-- Give a duck to a rescuer: mark it claimed, log the scan, add the points
+-- and announce golden ducks. Callers lock the player and duck rows first.
+create or replace function private.award_duck(p_player public.players, p_duck public.ducks)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_log_id bigint;
+    v_total  integer;
+begin
+    update public.ducks
+    set claimed = true, claimed_by = p_player.student_id, claimed_at = now()
+    where duck_id = p_duck.duck_id;
+
+    insert into public.duck_log (duck_id, student_id, duck_type, points)
+    values (p_duck.duck_id, p_player.student_id, p_duck.duck_type, p_duck.points)
+    returning id into v_log_id;
+
+    -- Golden duck: tell every player who found it
+    if coalesce(p_duck.duck_type, '') ~* 'golden' or p_duck.points >= 1000 then
+        insert into public.duck_alerts (duck_id, duck_type, points, rescuer_name)
+        values (p_duck.duck_id, p_duck.duck_type, p_duck.points,
+                private.display_name(p_player.first_name, p_player.last_name));
+    end if;
+
+    update public.players
+    set points = points + p_duck.points, codes_scanned = codes_scanned + 1
+    where student_id = p_player.student_id
+    returning points into v_total;
+
+    return jsonb_build_object('log_id', v_log_id, 'total_points', v_total);
+end;
+$$;
+
 create or replace function public.claim_duck(p_student_id text, p_qr_code text)
 returns jsonb
 language plpgsql
@@ -325,6 +392,7 @@ as $$
 declare
     v_player public.players;
     v_duck   public.ducks;
+    v_award  jsonb;
 begin
     -- The hunt is switched off on the admin page
     if not coalesce((select g.hunt_open from public.game_settings g where g.id), true) then
@@ -369,31 +437,14 @@ begin
         );
     end if;
 
-    update public.ducks
-    set claimed = true, claimed_by = v_player.student_id, claimed_at = now()
-    where duck_id = v_duck.duck_id;
-
-    insert into public.duck_log (duck_id, student_id, duck_type, points)
-    values (v_duck.duck_id, v_player.student_id, v_duck.duck_type, v_duck.points);
-
-    -- Golden duck: tell every player who found it
-    if coalesce(v_duck.duck_type, '') ~* 'golden' or v_duck.points >= 1000 then
-        insert into public.duck_alerts (duck_id, duck_type, points, rescuer_name)
-        values (v_duck.duck_id, v_duck.duck_type, v_duck.points,
-                private.display_name(v_player.first_name, v_player.last_name));
-    end if;
-
-    update public.players
-    set points = points + v_duck.points, codes_scanned = codes_scanned + 1
-    where student_id = v_player.student_id
-    returning * into v_player;
+    v_award := private.award_duck(v_player, v_duck);
 
     return jsonb_build_object(
         'status', 'claimed',
         'duck_id', v_duck.duck_id,
         'duck_type', v_duck.duck_type,
         'points', v_duck.points,
-        'total_points', v_player.points
+        'total_points', (v_award->>'total_points')::integer
     );
 end;
 $$;
@@ -513,6 +564,182 @@ as $$
     limit least(greatest(coalesce(p_limit, 20), 1), 100);
 $$;
 
+-- ---------------------------------------------------------------------
+-- Broken code reports (automatic resolution)
+--
+-- A rescuer whose duck won't scan reports it. If they give a Duck ID or
+-- code that matches an available duck, they get that duck (and it's
+-- flagged for reprinting). Otherwise they get an available duck of the
+-- same kind at the location they picked; golden ducks are never handed
+-- out without their exact ID. Each rescuer can have at most 5 Rebel duck
+-- and 10 hologram code reports honored.
+-- ---------------------------------------------------------------------
+
+create or replace function private.report_limit(p_kind text)
+returns integer language sql immutable set search_path = '' as $$
+    select case when p_kind = 'hologram' then 10 else 5 end
+$$;
+
+create or replace function private.reports_left(p_student_id text, p_kind text)
+returns integer
+language sql
+stable
+set search_path = ''
+as $$
+    select greatest(private.report_limit(p_kind) - count(*)::integer, 0)
+    from public.code_reports r
+    where r.student_id = p_student_id and r.kind = p_kind and r.status = 'honored';
+$$;
+
+-- status: honored | denied | review | closed | unknown_player | invalid
+create or replace function public.report_code(
+    p_student_id text,
+    p_kind       text,
+    p_location   text default null,
+    p_code_ref   text default null,
+    p_issue      text default null,
+    p_note       text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_player   public.players;
+    v_duck     public.ducks;
+    v_kind     text := lower(trim(coalesce(p_kind, '')));
+    v_location text := nullif(trim(coalesce(p_location, '')), '');
+    v_ref      text := nullif(trim(coalesce(p_code_ref, '')), '');
+    v_matched  boolean := false;
+    v_status   text;
+    v_outcome  text;
+    v_award    jsonb;
+    v_report   bigint;
+begin
+    if not coalesce((select g.hunt_open from public.game_settings g where g.id), true) then
+        return jsonb_build_object('status', 'closed', 'message', 'Duck Hunt is offline right now, so reports are paused.');
+    end if;
+    if v_kind not in ('rebel', 'hologram') then
+        return jsonb_build_object('status', 'invalid', 'message', 'Pick Rebel duck or Hologram code.');
+    end if;
+
+    -- Lock the rescuer so two reports at once can't both slip under a limit
+    select * into v_player from public.players where student_id = trim(p_student_id) for update;
+    if not found then
+        return jsonb_build_object('status', 'unknown_player');
+    end if;
+
+    -- 1. They typed a Duck ID or code: try that exact duck
+    if v_ref is not null then
+        select * into v_duck from public.ducks d
+        where lower(d.duck_id) = lower(v_ref) or d.qr_code = v_ref
+        order by (lower(d.duck_id) = lower(v_ref)) desc
+        limit 1
+        for update;
+        if found then
+            v_matched := true;
+            if v_duck.claimed then
+                v_status := 'denied';
+                v_outcome := case when v_duck.claimed_by = v_player.student_id
+                    then format('You already rescued %s.', v_duck.duck_id)
+                    else format('%s was already rescued by someone else.', v_duck.duck_id) end;
+            elsif not v_duck.active then
+                v_status := 'denied';
+                v_outcome := format('%s isn''t in play yet.', v_duck.duck_id);
+            else
+                -- Count it against the right kind of report, whatever they picked
+                v_kind := case when private.is_hologram(v_duck.duck_type) then 'hologram' else 'rebel' end;
+            end if;
+        end if;
+    end if;
+
+    -- 2. Out of honored reports for this kind
+    if v_status is null and private.reports_left(v_player.student_id, v_kind) <= 0 then
+        v_status := 'denied';
+        v_outcome := format('You''ve used all %s of your %s reports.', private.report_limit(v_kind),
+                            case when v_kind = 'hologram' then 'hologram code' else 'Rebel duck' end);
+    end if;
+
+    -- 3. No usable ID: an available duck of that kind at that location.
+    --    Golden / special ducks are only ever awarded by exact ID.
+    if v_status is null and not v_matched then
+        select * into v_duck from public.ducks d
+        where d.active and not d.claimed
+          and private.is_hologram(d.duck_type) = (v_kind = 'hologram')
+          and coalesce(d.duck_type, '') !~* 'golden' and d.points < 1000
+          and (v_kind = 'hologram' or v_location is null or d.location = v_location)
+        order by d.points, d.duck_id
+        limit 1
+        for update skip locked;
+        if not found then
+            v_status := 'review';
+            v_outcome := case when v_location is not null
+                then format('No ducks are left at %s to award, so an admin will take a look.', v_location)
+                else 'No matching ducks are left to award, so an admin will take a look.' end;
+            v_duck := null;
+        end if;
+    end if;
+
+    -- Hologram codes still count toward the daily hologram limit
+    if v_status is null and private.is_hologram(v_duck.duck_type)
+       and private.holograms_today(v_player.student_id, v_player.hologram_reset_at) >= private.hologram_daily_limit() then
+        v_status := 'denied';
+        v_outcome := format('You''ve hit today''s limit of %s hologram codes. Try again after midnight.', private.hologram_daily_limit());
+    end if;
+
+    -- 4. Honor it
+    if v_status is null then
+        v_award := private.award_duck(v_player, v_duck);
+        if v_matched then
+            update public.ducks set broken_reports = broken_reports + 1 where duck_id = v_duck.duck_id;
+        end if;
+        v_status := 'honored';
+        v_outcome := format('Honored: %s (+%s pts) added to your score.', v_duck.duck_id, v_duck.points);
+    end if;
+
+    insert into public.code_reports (student_id, kind, location, code_ref, issue, note, status, outcome, duck_id, points, log_id)
+    values (v_player.student_id, v_kind, v_location, v_ref, left(coalesce(trim(p_issue), ''), 80), left(coalesce(trim(p_note), ''), 500),
+            v_status, v_outcome,
+            case when v_status = 'honored' or v_matched then v_duck.duck_id end,
+            case when v_status = 'honored' then v_duck.points else 0 end,
+            (v_award->>'log_id')::bigint)
+    returning id into v_report;
+
+    return jsonb_build_object(
+        'status', v_status,
+        'message', v_outcome,
+        'duck_id', case when v_status = 'honored' then v_duck.duck_id end,
+        'duck_type', case when v_status = 'honored' then v_duck.duck_type end,
+        'points', case when v_status = 'honored' then v_duck.points else 0 end,
+        'rebel_left', private.reports_left(v_player.student_id, 'rebel'),
+        'hologram_left', private.reports_left(v_player.student_id, 'hologram')
+    );
+end;
+$$;
+
+-- A rescuer's own reports and how many they have left.
+create or replace function public.get_my_reports(p_student_id text)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+    select jsonb_build_object(
+        'rebel_left', private.reports_left(trim(p_student_id), 'rebel'),
+        'hologram_left', private.reports_left(trim(p_student_id), 'hologram'),
+        'rebel_limit', private.report_limit('rebel'),
+        'hologram_limit', private.report_limit('hologram'),
+        'reports', coalesce((
+            select jsonb_agg(jsonb_build_object('id', r.id, 'kind', r.kind, 'location', r.location, 'issue', r.issue,
+                                                'status', r.status, 'outcome', r.outcome, 'duck_id', r.duck_id,
+                                                'points', r.points, 'created_at', r.created_at) order by r.id desc)
+            from public.code_reports r where r.student_id = trim(p_student_id)
+        ), '[]'::jsonb)
+    );
+$$;
+
 revoke execute on all functions in schema public from public, anon, authenticated;
 grant execute on function
     public.register_player(text, text, text, text),
@@ -523,7 +750,9 @@ grant execute on function
     public.get_scan_history(text),
     public.get_rebel_coordinates(),
     public.get_announcements(integer),
-    public.get_game_status()
+    public.get_game_status(),
+    public.report_code(text, text, text, text, text, text),
+    public.get_my_reports(text)
 to anon, authenticated;
 
 
@@ -581,6 +810,9 @@ drop policy if exists admins_read on public.duck_log;
 create policy admins_read on public.duck_log for select to authenticated using (public.is_admin());
 drop policy if exists admins_read on public.duck_locations;
 create policy admins_read on public.duck_locations for select to authenticated using (public.is_admin());
+grant select on public.code_reports to authenticated;
+drop policy if exists admins_read on public.code_reports;
+create policy admins_read on public.code_reports for select to authenticated using (public.is_admin());
 drop policy if exists admins_read on public.announcements;
 create policy admins_read on public.announcements for select to authenticated using (public.is_admin());
 
@@ -604,7 +836,7 @@ declare
     t text;
 begin
     if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
-        foreach t in array array['players', 'ducks', 'duck_log', 'duck_locations', 'announcements', 'game_settings', 'duck_alerts'] loop
+        foreach t in array array['players', 'ducks', 'duck_log', 'duck_locations', 'announcements', 'game_settings', 'duck_alerts', 'code_reports'] loop
             if not exists (
                 select 1 from pg_publication_tables
                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
@@ -645,6 +877,16 @@ begin
             ) p
         ), '[]'::jsonb),
         'hologram_limit', private.hologram_daily_limit(),
+        'reports', coalesce((
+            select jsonb_agg(to_jsonb(r) order by r.id desc)
+            from (
+                select r.*, concat_ws(' ', p.first_name, p.last_name) as player_name
+                from public.code_reports r
+                left join public.players p on p.student_id = r.student_id
+                order by r.id desc
+                limit 500
+            ) r
+        ), '[]'::jsonb),
         'scans', coalesce((
             select jsonb_agg(to_jsonb(l) order by l.scanned_at desc, l.id desc)
             from (
@@ -987,6 +1229,45 @@ begin
 end;
 $$;
 
+-- Undo an honored report: the scan it created is removed (the duck re-opens
+-- and the points come back off) and the report no longer counts.
+create or replace function public.admin_reverse_report(p_id bigint)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+    v_report public.code_reports;
+begin
+    perform private.require_admin();
+    select * into v_report from public.code_reports where id = p_id for update;
+    if not found or v_report.status <> 'honored' then
+        raise exception 'Only honored reports can be undone';
+    end if;
+    if v_report.log_id is not null then
+        delete from public.duck_log where id = v_report.log_id;
+    end if;
+    if v_report.code_ref is not null and v_report.duck_id is not null then
+        update public.ducks set broken_reports = greatest(broken_reports - 1, 0) where duck_id = v_report.duck_id;
+    end if;
+    update public.code_reports set status = 'reversed', outcome = outcome || ' (Undone by an admin.)' where id = p_id;
+end;
+$$;
+
+-- The duck's label has been fixed or reprinted.
+create or replace function public.admin_clear_duck_reports(p_duck_id text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    perform private.require_admin();
+    update public.ducks set broken_reports = 0 where duck_id = p_duck_id;
+end;
+$$;
+
 -- Turn the hunt on or off for everyone. When turning it off, the title and
 -- text become the crawl players see (left as they were when null).
 drop function if exists public.admin_set_hunt_open(boolean);
@@ -1097,7 +1378,9 @@ revoke execute on function
     public.admin_post_announcement(text, text),
     public.admin_delete_announcement(bigint),
     public.admin_set_hunt_open(boolean, text, text),
-    public.admin_unfreeze_player(text)
+    public.admin_unfreeze_player(text),
+    public.admin_reverse_report(bigint),
+    public.admin_clear_duck_reports(text)
 from public, anon;
 grant execute on function
     public.is_admin(),
@@ -1119,5 +1402,7 @@ grant execute on function
     public.admin_post_announcement(text, text),
     public.admin_delete_announcement(bigint),
     public.admin_set_hunt_open(boolean, text, text),
-    public.admin_unfreeze_player(text)
+    public.admin_unfreeze_player(text),
+    public.admin_reverse_report(bigint),
+    public.admin_clear_duck_reports(text)
 to authenticated;
