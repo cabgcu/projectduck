@@ -710,6 +710,7 @@
                     player = rows[0];
                     saveSession();
                     navigate('login', 'home');
+                    claimPendingDuck(3000); // after the hyperspeed transition
                 } catch (err) {
                     showFormError('login-error', err.message || 'Couldn\'t sign in. Try again.');
                 }
@@ -743,6 +744,7 @@
                     player = { student_id: result.student_id, first_name: result.first_name, last_name: result.last_name };
                     saveSession();
                     navigate('register', 'home');
+                    claimPendingDuck(3000); // after the hyperspeed transition
                     if (result.status === 'exists') setTimeout(() => showToast('Welcome back! You were already registered.'), 3000);
                 } catch (err) {
                     showFormError('register-error', err.message || 'Couldn\'t register. Try again.');
@@ -1030,15 +1032,22 @@
 
         async function onScanSuccess(decodedText) {
             if (!scanning || claimInFlight || !player) return;
+            const code = duckCodeFrom(decodedText);
             // Keep the camera running; just ignore the same code while it stays in frame.
-            const now = Date.now();
-            if (decodedText === lastCode && now - lastCodeAt < SAME_CODE_COOLDOWN_MS) return;
-            lastCode = decodedText;
+            if (code === lastCode && Date.now() - lastCodeAt < SAME_CODE_COOLDOWN_MS) return;
+            await claimDuck(code);
+        }
+
+        // Claims a duck for the signed-in rescuer. Used by the in-app scanner and
+        // by duck links opened from a phone's own camera app.
+        async function claimDuck(code) {
+            if (!player || claimInFlight || !code) return;
+            lastCode = code;
             claimInFlight = true;
 
             try {
                 const before = document.getElementById('rank-position').textContent;
-                const result = await rpc('claim_duck', { p_student_id: player.student_id, p_qr_code: decodedText });
+                const result = await rpc('claim_duck', { p_student_id: player.student_id, p_qr_code: code });
                 const name = result.duck_type ? `${result.duck_type} Duck` : 'this duck';
 
                 if (result.status === 'claimed') {
@@ -1063,6 +1072,48 @@
                 lastCodeAt = Date.now();
                 claimInFlight = false;
             }
+        }
+
+        // ---------- DUCK LINKS (phone camera scans) ----------
+        // Printed QR codes are links like https://<site>/?duck=<code>. Opening one
+        // claims the duck right away, or after the rescuer signs in or registers.
+        const PENDING_DUCK_KEY = 'duckhunt.pendingDuck';
+        const PENDING_DUCK_MAX_AGE_MS = 60 * 60 * 1000;
+
+        // Accepts a duck link or a bare code (older printed labels).
+        function duckCodeFrom(text) {
+            const raw = String(text || '').trim();
+            try {
+                const code = new URL(raw).searchParams.get('duck');
+                if (code) return code.trim();
+            } catch (e) {}
+            return raw;
+        }
+
+        function takeDuckFromUrl() {
+            const params = new URLSearchParams(location.search);
+            const code = (params.get('duck') || '').trim();
+            if (!code) return;
+            params.delete('duck');
+            const query = params.toString();
+            history.replaceState(history.state, '', location.pathname + (query ? '?' + query : '') + location.hash);
+            try { localStorage.setItem(PENDING_DUCK_KEY, JSON.stringify({ code, at: Date.now() })); } catch (e) {}
+        }
+
+        function pendingDuck() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(PENDING_DUCK_KEY));
+                if (saved && saved.code && Date.now() - saved.at < PENDING_DUCK_MAX_AGE_MS) return saved.code;
+                localStorage.removeItem(PENDING_DUCK_KEY);
+            } catch (e) {}
+            return null;
+        }
+
+        function claimPendingDuck(delay) {
+            const code = pendingDuck();
+            if (!code || !player) return;
+            try { localStorage.removeItem(PENDING_DUCK_KEY); } catch (e) {}
+            setTimeout(() => claimDuck(code), delay || 0);
         }
 
         // ---------- BOTTOM NAV ----------
@@ -1121,6 +1172,9 @@
             initStars();
             animate();
 
+            // Opened from a duck QR code with the phone's camera
+            takeDuckFromUrl();
+
             // Returning user: skip straight to home
             loadSession();
             if (player) {
@@ -1129,6 +1183,9 @@
                 const home = document.getElementById('home-view');
                 home.classList.remove('hidden', 'opacity-0');
                 home.classList.add('opacity-100');
+                claimPendingDuck(600);
+            } else if (pendingDuck()) {
+                showFormError('login-error', 'You found a duck! Sign in or register to rescue it.');
             }
 
             // Keep the leaderboard live while the home screen is open

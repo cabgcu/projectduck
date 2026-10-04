@@ -868,12 +868,21 @@
             new QRCode(el, { text, width: size, height: size, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
         }
 
+        // Printed QR codes are links to the student app (index.html next to this
+        // page), so a phone's own camera opens it and claims the duck. The in-app
+        // scanner reads them too.
+        function duckLink(duck) {
+            const url = new URL('./', location.href);
+            url.searchParams.set('duck', duck.qr_code);
+            return url.href;
+        }
+
         let qrDuckId = null;
         function openQRDialog(duck) {
             qrDuckId = duck.duck_id;
             $('qr-title').textContent = `${duck.duck_id}${duck.duck_type ? ' · ' + duck.duck_type : ''}`;
             $('qr-text').textContent = duck.qr_code;
-            renderQR($('qr-box'), duck.qr_code, 512);
+            renderQR($('qr-box'), duckLink(duck), 512);
             $('qr-dialog').showModal();
         }
 
@@ -886,7 +895,7 @@
                     <b>${esc(d.duck_id)}</b>
                     <span>${esc(d.duck_type ? d.duck_type + ' Duck' : 'Duck')} · ${esc(d.points)} pts</span>
                 </div>`).join('');
-            ducks.forEach((d, i) => renderQR($('print-qr-' + i), d.qr_code, 400));
+            ducks.forEach((d, i) => renderQR($('print-qr-' + i), duckLink(d), 400));
             setTimeout(() => window.print(), 300);
         }
 

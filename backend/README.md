@@ -23,6 +23,7 @@ Everything runs on Supabase. There's no Google Sheet anymore.
 ## Game rules
 
 - **Each duck can be claimed once**, by the first rescuer to scan it.
+- **QR codes are links** (`https://<your-site>/?duck=<code>`). Scanning one with the phone's normal camera opens the site and claims the duck; if the rescuer isn't signed in yet, it's claimed right after they sign in or register. The in-app scanner reads these links and older plain-code labels.
 - **The leaderboard ranks by points.** Players with equal points share a place.
 - **Undoing a scan, or re-opening a duck,** takes the points back and lets anyone claim the duck again.
 - **Deleting a duck** retires it: its QR code stops working, but rescuers keep the points they already earned from it.
