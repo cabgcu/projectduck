@@ -388,7 +388,9 @@ as $$
 $$;
 
 -- Rebel Coordinates: how many active, unclaimed ducks are at each location.
--- Ducks without a location are grouped as null.
+-- Ducks without a location are grouped as null. Virtual / hologram codes
+-- (duck type "Virtual" or "Hologram", optionally followed by "duck" or
+-- "code") aren't hidden anywhere physical, so they're left out.
 create or replace function public.get_rebel_coordinates()
 returns table (location text, ducks bigint)
 language sql
@@ -399,6 +401,7 @@ as $$
     select d.location, count(*)
     from public.ducks d
     where d.active and not d.claimed
+      and lower(trim(coalesce(d.duck_type, ''))) !~ '^(virtual|hologram|holo)( (duck|code))?$'
     group by d.location
     order by d.location is null, count(*) desc, lower(d.location);
 $$;
