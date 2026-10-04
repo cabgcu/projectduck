@@ -76,6 +76,10 @@ create table if not exists public.announcements (
 );
 
 -- A single row. While hunt_open is false nobody can claim ducks.
+-- When an admin last unfroze a rescuer: hologram scans before this don't
+-- count toward today's limit.
+alter table public.players add column if not exists hologram_reset_at timestamptz;
+
 create table if not exists public.game_settings (
     id         boolean primary key default true check (id),
     hunt_open  boolean not null default true,
@@ -219,6 +223,20 @@ as $$
     select date_trunc('day', now() at time zone 'America/Phoenix') at time zone 'America/Phoenix';
 $$;
 
+-- Hologram scans a rescuer has used toward today's limit (since midnight,
+-- or since an admin unfroze them, whichever is later).
+create or replace function private.holograms_today(p_student_id text, p_reset_at timestamptz)
+returns integer
+language sql
+stable
+set search_path = ''
+as $$
+    select count(*)::integer from public.duck_log l
+    where l.student_id = p_student_id
+      and l.scanned_at >= greatest(private.today_start(), coalesce(p_reset_at, '-infinity'::timestamptz))
+      and private.is_hologram(l.duck_type);
+$$;
+
 
 -- ---------------------------------------------------------------------
 -- API used by the app (callable with the publishable / anon key)
@@ -326,12 +344,8 @@ begin
 
     -- Daily cap on hologram codes (the player row is locked above, so two
     -- scans at once can't both slip under the limit)
-    if private.is_hologram(v_duck.duck_type) and (
-        select count(*) from public.duck_log l
-        where l.student_id = v_player.student_id
-          and l.scanned_at >= private.today_start()
-          and private.is_hologram(l.duck_type)
-    ) >= private.hologram_daily_limit() then
+    if private.is_hologram(v_duck.duck_type)
+       and private.holograms_today(v_player.student_id, v_player.hologram_reset_at) >= private.hologram_daily_limit() then
         return jsonb_build_object(
             'status', 'hologram_limit',
             'limit', private.hologram_daily_limit(),
@@ -593,10 +607,13 @@ begin
         'players', coalesce((
             select jsonb_agg(to_jsonb(p) order by p.points desc, p.created_at)
             from (
-                select p.*, rank() over (order by p.points desc) as place
+                select p.*, rank() over (order by p.points desc) as place, h.holograms_today,
+                       h.holograms_today >= private.hologram_daily_limit() as frozen
                 from public.players p
+                cross join lateral (select private.holograms_today(p.student_id, p.hologram_reset_at) as holograms_today) h
             ) p
         ), '[]'::jsonb),
+        'hologram_limit', private.hologram_daily_limit(),
         'scans', coalesce((
             select jsonb_agg(to_jsonb(l) order by l.scanned_at desc, l.id desc)
             from (
@@ -920,6 +937,23 @@ begin
 end;
 $$;
 
+-- Unfreeze a rescuer who hit the hologram limit: they get a fresh set of
+-- hologram scans for the rest of today.
+create or replace function public.admin_unfreeze_player(p_student_id text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+    perform private.require_admin();
+    update public.players set hologram_reset_at = now() where student_id = p_student_id;
+    if not found then
+        raise exception 'Rescuer % no longer exists', p_student_id;
+    end if;
+end;
+$$;
+
 -- Turn the hunt on or off for everyone.
 create or replace function public.admin_set_hunt_open(p_open boolean)
 returns boolean
@@ -1023,7 +1057,8 @@ revoke execute on function
     public.admin_delete_location(text),
     public.admin_post_announcement(text, text),
     public.admin_delete_announcement(bigint),
-    public.admin_set_hunt_open(boolean)
+    public.admin_set_hunt_open(boolean),
+    public.admin_unfreeze_player(text)
 from public, anon;
 grant execute on function
     public.is_admin(),
@@ -1044,5 +1079,6 @@ grant execute on function
     public.admin_delete_location(text),
     public.admin_post_announcement(text, text),
     public.admin_delete_announcement(bigint),
-    public.admin_set_hunt_open(boolean)
+    public.admin_set_hunt_open(boolean),
+    public.admin_unfreeze_player(text)
 to authenticated;

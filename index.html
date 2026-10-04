@@ -33,6 +33,54 @@
             font-family: 'Rajdhani', sans-serif;
         }
 
+        /* Scan feedback: camera frame flash + result splash */
+        #scan-box { transition: border-color 0.3s; }
+        #scan-box.flash-ok { animation: frame-ok 1.6s ease-out; }
+        #scan-box.flash-warn { animation: frame-warn 1.4s ease-out; }
+        #scan-box.flash-err { animation: frame-err 1.4s ease-out; }
+        @keyframes frame-ok {
+            0%, 45% { box-shadow: 0 0 0 4px #34c759, 0 0 50px 12px rgba(52, 199, 89, 0.65), inset 0 0 70px 12px rgba(52, 199, 89, 0.5); }
+            100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent, inset 0 0 0 0 transparent; }
+        }
+        @keyframes frame-warn {
+            0%, 40% { box-shadow: 0 0 0 4px #ffb020, 0 0 40px 8px rgba(255, 176, 32, 0.55), inset 0 0 60px 10px rgba(255, 176, 32, 0.4); }
+            100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent, inset 0 0 0 0 transparent; }
+        }
+        @keyframes frame-err {
+            0%, 40% { box-shadow: 0 0 0 4px #ff3b30, 0 0 40px 8px rgba(255, 59, 48, 0.55), inset 0 0 60px 10px rgba(255, 59, 48, 0.4); }
+            100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent, inset 0 0 0 0 transparent; }
+        }
+        .spin { animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #scan-splash { position: fixed; inset: 0; z-index: 75; display: flex; align-items: center; justify-content: center; padding: 24px; pointer-events: none; }
+        #scan-splash .card {
+            pointer-events: auto; cursor: pointer; width: 100%; max-width: 320px; text-align: center; color: #fff;
+            padding: 26px 22px 22px; border-radius: 22px; background: rgba(5, 8, 15, 0.92);
+            border: 2px solid var(--tone); box-shadow: 0 0 40px var(--glow), inset 0 0 30px var(--glow);
+            animation: splash-in 0.45s cubic-bezier(.2, 1.5, .4, 1) both;
+        }
+        #scan-splash.leaving .card { animation: splash-out 0.3s ease-in both; }
+        #scan-splash .icon {
+            width: 76px; height: 76px; margin: 0 auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            background: var(--glow); border: 2px solid var(--tone); color: var(--tone); box-shadow: 0 0 24px var(--glow);
+        }
+        #scan-splash .icon svg { width: 42px; height: 42px; }
+        #scan-splash .icon svg path { stroke-dasharray: 40; stroke-dashoffset: 40; animation: draw 0.45s 0.2s ease-out forwards; }
+        #scan-splash .title { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.04em; line-height: 1.1; }
+        #scan-splash .points { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 44px; line-height: 1; margin-top: 6px; color: var(--tone); text-shadow: 0 0 18px var(--glow); }
+        #scan-splash .sub { margin-top: 8px; font-size: 15px; color: #cbd5e1; line-height: 1.35; }
+        .splash-ok { --tone: #34c759; --glow: rgba(52, 199, 89, 0.35); }
+        .splash-warn { --tone: #ffb020; --glow: rgba(255, 176, 32, 0.3); }
+        .splash-err { --tone: #ff453a; --glow: rgba(255, 69, 58, 0.3); }
+        @keyframes splash-in { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+        @keyframes splash-out { to { opacity: 0; transform: scale(0.9); } }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+        @media (prefers-reduced-motion: reduce) {
+            #scan-splash .card, #scan-splash.leaving .card { animation: none; }
+            #scan-splash .icon svg path { animation: none; stroke-dashoffset: 0; }
+        }
+
         /* Duck Vader: Force grip, screen crumbles, video plays */
         .force-grip { animation: force-shake 0.9s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes force-shake {
@@ -605,8 +653,14 @@
                             <span id="scan-status" class="text-[12px] px-3 py-1 rounded-full bg-white/5 border border-white/15 text-gray-400">Idle</span>
                         </div>
 
-                        <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-black/70 border border-white/15 shadow-[inset_0_0_30px_rgba(0,0,0,0.9)]">
+                        <div id="scan-box" class="relative w-full aspect-square rounded-xl overflow-hidden bg-black/70 border border-white/15 shadow-[inset_0_0_30px_rgba(0,0,0,0.9)]">
                             <div id="qr-reader" class="absolute inset-0"></div>
+
+                            <!-- Shown the moment a code is read, while it's being claimed -->
+                            <div id="scan-checking" class="hidden absolute inset-0 z-[3] flex flex-col items-center justify-center gap-3 bg-black/60">
+                                <svg class="spin w-12 h-12 text-[#ffe81f]" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"/><path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+                                <p class="font-tech font-bold tracking-wider text-white text-[18px]">Checking duck…</p>
+                            </div>
 
                             <div id="scan-idle" class="absolute inset-0 flex flex-col items-center justify-center text-center px-8 z-[2]">
                                 <svg class="w-16 h-16 text-white/30 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75h-.75v-.75zM13.5 19.5h.75v.75h-.75v-.75zM19.5 13.5h.75v.75h-.75v-.75zM19.5 19.5h.75v.75h-.75v-.75zM16.5 16.5h.75v.75h-.75v-.75z"/></svg>
@@ -1665,42 +1719,136 @@
             if (!player || claimInFlight || !code) return;
             lastCode = code;
             claimInFlight = true;
+            setChecking(true);
+            scanSound('tick');
+            if (navigator.vibrate) navigator.vibrate(25);
 
             try {
                 const before = document.getElementById('rank-position').textContent;
                 const result = await rpc('claim_duck', { p_student_id: player.student_id, p_qr_code: code });
-                const name = result.duck_type ? `${result.duck_type} Duck` : 'this duck';
+                const name = duckName(result.duck_type);
+                setChecking(false);
 
                 if (result.status === 'claimed') {
+                    scanFeedback('ok', `${name || 'Duck'} rescued!`, `+${result.points} pts`, 'Added to your score 🦆');
                     if (isVaderDuck(result.duck_type)) forceCrumble();
                     else if (isNormalDuck(result.duck_type)) saberDuckBurst();
                     const me = await refreshHome();
-                    const after = me ? '#' + me.place : before;
                     const rankUp = me && before.startsWith('#') && me.place < parseInt(before.slice(1), 10);
-                    showToast(rankUp ? `+${result.points} pts! You're now ${after}` : `${name} rescued! +${result.points} pts 🦆`);
+                    if (rankUp) setTimeout(() => showToast(`You moved up to #${me.place}! 🚀`), 1800);
                 } else if (result.status === 'already_yours') {
-                    showToast(`You already rescued ${name}!`);
+                    scanFeedback('warn', 'Already yours', null, `You already rescued ${name || 'this duck'}. No extra points.`);
                 } else if (result.status === 'already_claimed') {
-                    showToast(`Another rescuer already claimed ${name}.`);
+                    scanFeedback('warn', 'Already claimed', null, `Another rescuer got ${name || 'this duck'} first. Keep hunting!`);
                 } else if (result.status === 'closed') {
-                    showToast('Duck Hunt is offline right now. Stand by!');
+                    scanFeedback('err', 'Hunt offline', null, 'Duck Hunt is paused right now. Stand by!');
                     refreshHuntStatus();
                 } else if (result.status === 'hologram_limit') {
+                    scanFeedback('err', null);
                     freezeScreen(result.limit || 10);
                 } else if (result.status === 'inactive') {
-                    showToast(`${name === 'this duck' ? 'This duck' : name} isn't in play yet. Check back soon!`);
+                    scanFeedback('warn', 'Not in play yet', null, `${name || 'This duck'} hasn't been activated. Check back soon!`);
                 } else if (result.status === 'unknown_player') {
                     showToast('Your rescuer profile wasn\'t found. Please sign in again.');
                     signOut();
                 } else {
-                    showToast('That\'s not a Duck Hunt code.');
+                    scanFeedback('err', 'Not a Duck Hunt code', null, 'That QR code isn\'t one of our ducks.');
                 }
             } catch (err) {
-                showToast(err.message || 'Couldn\'t claim that duck. Try again.');
+                setChecking(false);
+                scanFeedback('err', 'Scan didn\'t go through', null, (err.message || 'Check your connection') + '. Try again.');
             } finally {
+                setChecking(false);
                 lastCodeAt = Date.now();
                 claimInFlight = false;
             }
+        }
+
+        // "Golden" → "Golden Duck", "Duck Vader" stays as is, no type → ''
+        function duckName(type) {
+            const t = String(type || '').trim();
+            if (!t) return '';
+            return /duck/i.test(t) ? t : `${t} Duck`;
+        }
+
+        // ---------- SCAN FEEDBACK ----------
+        // Every scan gets an obvious result: the camera frame flashes, a big card
+        // pops up in the middle of the screen, a sound plays and the phone buzzes.
+        function setChecking(on) {
+            document.getElementById('scan-checking').classList.toggle('hidden', !on || !scanning);
+        }
+
+        const SPLASH_ICONS = {
+            ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.75l6 6 9-13.5"/></svg>',
+            warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v7M12 17.5v.5"/></svg>',
+            err: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+        };
+
+        function scanFeedback(kind, title, points, sub) {
+            // Camera frame
+            const box = document.getElementById('scan-box');
+            box.classList.remove('flash-ok', 'flash-warn', 'flash-err');
+            void box.offsetWidth; // restart the animation for back-to-back scans
+            box.classList.add('flash-' + kind);
+
+            scanSound(kind);
+            if (navigator.vibrate) navigator.vibrate(kind === 'ok' ? [60, 40, 120] : kind === 'warn' ? [80] : [120, 60, 120]);
+            if (!title) return;
+
+            // Result card
+            document.getElementById('scan-splash')?.remove();
+            clearTimeout(scanFeedback.timer);
+            const splash = document.createElement('div');
+            splash.id = 'scan-splash';
+            splash.className = 'splash-' + kind;
+            splash.setAttribute('role', 'status');
+            splash.innerHTML = `<div class="card"><div class="icon">${SPLASH_ICONS[kind]}</div>
+                <div class="title"></div>${points ? '<div class="points"></div>' : ''}<div class="sub"></div></div>`;
+            splash.querySelector('.title').textContent = title;
+            if (points) splash.querySelector('.points').textContent = points;
+            splash.querySelector('.sub').textContent = sub || '';
+            const dismiss = () => {
+                if (!splash.isConnected || splash.classList.contains('leaving')) return;
+                splash.classList.add('leaving');
+                setTimeout(() => splash.remove(), 300);
+            };
+            splash.querySelector('.card').addEventListener('click', dismiss);
+            document.body.appendChild(splash);
+            scanFeedback.timer = setTimeout(dismiss, kind === 'ok' ? 2600 : 3200);
+        }
+
+        // Short synthesized sounds (no files to load). Browsers only allow audio
+        // after a tap, so the audio context is unlocked on the first tap.
+        let audioCtx = null;
+        function unlockAudio() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } catch (e) {}
+        }
+        document.addEventListener('pointerdown', unlockAudio, { passive: true });
+
+        function scanSound(kind) {
+            if (!audioCtx || audioCtx.state !== 'running') return;
+            const notes = {
+                tick: [[1200, 0, 0.05, 'sine', 0.08]],
+                ok:   [[784, 0, 0.12, 'sine', 0.2], [1175, 0.1, 0.25, 'sine', 0.2]],
+                warn: [[520, 0, 0.18, 'triangle', 0.18]],
+                err:  [[180, 0, 0.14, 'square', 0.08], [180, 0.18, 0.14, 'square', 0.08]]
+            }[kind] || [];
+            const now = audioCtx.currentTime;
+            notes.forEach(([freq, start, dur, type, vol]) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.0001, now + start);
+                gain.gain.exponentialRampToValueAtTime(vol, now + start + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+                osc.connect(gain).connect(audioCtx.destination);
+                osc.start(now + start);
+                osc.stop(now + start + dur + 0.02);
+            });
         }
 
         // ---------- DUCK LINKS (phone camera scans) ----------
