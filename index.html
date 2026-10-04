@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
@@ -31,6 +32,30 @@
         .font-tech {
             font-family: 'Rajdhani', sans-serif;
         }
+
+        /* Duck Vader: Force grip, screen crumbles, video plays */
+        .force-grip { animation: force-shake 0.9s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes force-shake {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            10% { transform: translate(-4px, 2px) scale(1.005); }
+            20% { transform: translate(5px, -3px) scale(0.995); }
+            30% { transform: translate(-7px, 4px) scale(1.01); }
+            40% { transform: translate(8px, -2px) scale(0.99); }
+            50% { transform: translate(-9px, -5px) scale(1.015); }
+            60% { transform: translate(10px, 5px) scale(0.985); }
+            70% { transform: translate(-10px, 3px) scale(1.02); }
+            80% { transform: translate(9px, -6px) scale(0.98); }
+            90% { transform: translate(-6px, 4px) scale(1.01); }
+        }
+        #force-vignette {
+            position: fixed; inset: 0; z-index: 94; pointer-events: none;
+            background: radial-gradient(ellipse at center, transparent 35%, rgba(150, 0, 0, 0.75) 100%);
+            animation: force-pulse 0.9s ease-in-out both;
+        }
+        @keyframes force-pulse { 0% { opacity: 0; } 30% { opacity: 1; } 55% { opacity: 0.5; } 80%, 100% { opacity: 1; } }
+        #force-stage { position: fixed; inset: 0; z-index: 95; background: #000; display: flex; align-items: center; justify-content: center; }
+        #force-stage video { width: 100%; height: 100%; object-fit: contain; }
+        .force-shard { position: fixed; z-index: 96; pointer-events: none; background-repeat: no-repeat; will-change: transform, opacity; }
 
         /* Hologram transmissions (admin announcements) */
         #holo-overlay { animation: holo-in 0.35s ease-out; }
@@ -1350,6 +1375,135 @@
             }
         }
 
+        // ---------- DUCK VADER ----------
+        // Claiming a "Vader" duck: the screen is Force-gripped, crumbles away and
+        // the video plays full screen.
+        const VADER_VIDEO_SRC = 'https://i.imgur.com/EWAI3nV.mp4';
+        let forceRunning = false;
+
+        function isVaderDuck(type) {
+            return /vader/i.test(String(type || ''));
+        }
+
+        // Picture of the current screen, or null if it can't be taken
+        async function snapshotScreen() {
+            if (typeof html2canvas === 'undefined') return null;
+            try {
+                const shot = html2canvas(document.body, {
+                    backgroundColor: '#000', useCORS: true, logging: false,
+                    ignoreElements: el => el.id === 'force-vignette',
+                    scale: Math.min(window.devicePixelRatio || 1, 1.5),
+                    x: window.scrollX, y: window.scrollY, width: window.innerWidth, height: window.innerHeight,
+                    windowWidth: window.innerWidth, windowHeight: window.innerHeight
+                });
+                const timeout = new Promise(resolve => setTimeout(() => resolve(null), 2500));
+                return await Promise.race([shot, timeout]);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Break the screenshot into pieces that crack apart and fall
+        function crumble(shot) {
+            const w = window.innerWidth, h = window.innerHeight;
+            const url = shot.toDataURL('image/jpeg', 0.85);
+            const cols = w < 600 ? 7 : 12;
+            const size = w / cols;
+            const rows = Math.ceil(h / size);
+            const shards = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const el = document.createElement('div');
+                    el.className = 'force-shard';
+                    el.style.left = c * size + 'px';
+                    el.style.top = r * size + 'px';
+                    el.style.width = el.style.height = Math.ceil(size) + 1 + 'px';
+                    el.style.backgroundImage = `url(${url})`;
+                    el.style.backgroundSize = `${w}px ${h}px`;
+                    el.style.backgroundPosition = `${-c * size}px ${-r * size}px`;
+                    document.body.appendChild(el);
+                    shards.push(el);
+
+                    // Pieces nearest the middle break first; everything falls with gravity
+                    const dx = (c + 0.5) * size - w / 2, dy = (r + 0.5) * size - h / 2;
+                    const dist = Math.hypot(dx, dy) / Math.hypot(w / 2, h / 2);
+                    const crack = `translate(${(Math.random() - 0.5) * 6}px, ${(Math.random() - 0.5) * 6}px) rotate(${(Math.random() - 0.5) * 4}deg)`;
+                    const fall = `translate(${dx * 0.4 + (Math.random() - 0.5) * 160}px, ${h * (0.9 + Math.random() * 0.5)}px) ` +
+                        `rotate(${(Math.random() - 0.5) * 540}deg) scale(${0.4 + Math.random() * 0.4})`;
+                    el.animate([
+                        { transform: 'none', opacity: 1 },
+                        { transform: crack, opacity: 1, offset: 0.15 },
+                        { transform: fall, opacity: 0 }
+                    ], {
+                        duration: 1400 + Math.random() * 700,
+                        delay: dist * 500 + Math.random() * 200,
+                        easing: 'cubic-bezier(.5, 0, .9, .5)',
+                        fill: 'forwards'
+                    });
+                }
+            }
+            setTimeout(() => shards.forEach(el => el.remove()), 3200);
+        }
+
+        function playVaderVideo() {
+            const stage = document.createElement('div');
+            stage.id = 'force-stage';
+            stage.innerHTML = `
+                <video src="${VADER_VIDEO_SRC}" playsinline preload="auto"></video>
+                <button type="button" aria-label="Close" class="absolute right-4 top-4 z-[97] p-2 rounded-xl bg-black/60 border border-white/20 text-gray-200 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+                <button type="button" data-sound class="hidden absolute bottom-10 left-1/2 -translate-x-1/2 z-[97] px-5 py-3 rounded-xl bg-red-600/80 border border-red-400/60 text-white font-bold">Tap for sound</button>`;
+            document.body.appendChild(stage);
+            const video = stage.querySelector('video');
+            const sound = stage.querySelector('[data-sound]');
+            const close = () => endForce(stage);
+            stage.querySelector('[aria-label="Close"]').addEventListener('click', close);
+            video.addEventListener('ended', () => setTimeout(close, 400));
+            video.addEventListener('error', close);
+            sound.addEventListener('click', () => { video.muted = false; video.play(); sound.classList.add('hidden'); });
+            // Phones block sound without a tap: fall back to muted with a button
+            video.play().catch(() => {
+                video.muted = true;
+                sound.classList.remove('hidden');
+                video.play().catch(close);
+            });
+            return stage;
+        }
+
+        let forceResumeScanner = false;
+        function endForce(stage) {
+            if (!stage.isConnected) return;
+            stage.remove();
+            forceRunning = false;
+            if (forceResumeScanner) startScanner();
+        }
+
+        async function forceCrumble() {
+            if (forceRunning) return;
+            forceRunning = true;
+            forceResumeScanner = scanning;
+            if (scanning) stopScanner();
+            if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 600]);
+
+            const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reduceMotion) return playVaderVideo();
+
+            // 1. Force grip: shake and darken while the screenshot is taken
+            const home = document.getElementById('home-view');
+            const vignette = document.createElement('div');
+            vignette.id = 'force-vignette';
+            document.body.appendChild(vignette);
+            home.classList.add('force-grip');
+            const [shot] = await Promise.all([snapshotScreen(), new Promise(r => setTimeout(r, 900))]);
+            home.classList.remove('force-grip');
+
+            // 2. The video starts behind the screen as it crumbles away
+            playVaderVideo();
+            if (shot) crumble(shot);
+            vignette.remove();
+        }
+
         // ---------- QR SCANNER ----------
         let qrScanner = null;
         let scanning = false;
@@ -1426,7 +1580,8 @@
                 const name = result.duck_type ? `${result.duck_type} Duck` : 'this duck';
 
                 if (result.status === 'claimed') {
-                    if (isNormalDuck(result.duck_type)) saberDuckBurst();
+                    if (isVaderDuck(result.duck_type)) forceCrumble();
+                    else if (isNormalDuck(result.duck_type)) saberDuckBurst();
                     const me = await refreshHome();
                     const after = me ? '#' + me.place : before;
                     const rankUp = me && before.startsWith('#') && me.place < parseInt(before.slice(1), 10);
