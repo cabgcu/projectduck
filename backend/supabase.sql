@@ -472,6 +472,12 @@ create policy admins_read on public.duck_locations for select to authenticated u
 drop policy if exists admins_read on public.announcements;
 create policy admins_read on public.announcements for select to authenticated using (public.is_admin());
 
+-- Announcements are public: players may read them so Supabase Realtime can
+-- push new ones to the app the moment they're sent.
+grant select on public.announcements to anon;
+drop policy if exists players_read on public.announcements;
+create policy players_read on public.announcements for select to anon using (true);
+
 do $$
 declare
     t text;
