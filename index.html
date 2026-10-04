@@ -926,6 +926,7 @@
         // ---------- HOME RENDERING ----------
         function renderHome() {
             if (!player) return;
+            listenForTransmissions();
             document.getElementById('welcome-name').textContent = player.first_name || 'Rescuer';
             refreshHome();
         }
@@ -1084,6 +1085,7 @@
         new Image().src = HOLO_IMG; // preload so the pop-up shows instantly
         let announcements = [];
         let holoIndex = 0;
+        let holoPoppedId = 0; // newest transmission that has already popped up
 
         function holoSeenId() {
             try { return Number(localStorage.getItem(HOLO_SEEN_KEY)) || 0; } catch (e) { return 0; }
@@ -1150,16 +1152,39 @@
 
         function showUnseenAnnouncement() {
             const newest = announcements[0];
-            if (!player || !newest || Number(newest.id) <= holoSeenId() || holoOpen()) return;
-            const home = document.getElementById('home-view');
-            // Wait out the sign-in hyperspeed transition before popping up
-            if (home.classList.contains('hidden') || home.classList.contains('opacity-0')) {
+            if (!player || !newest || Number(newest.id) <= holoSeenId()) return;
+            if (Number(newest.id) <= holoPoppedId) return; // already interrupted for this one
+            // Pop up over home or any full-screen page, but wait out the sign-in
+            // hyperspeed transition
+            const settled = ['home', ...SUB_PAGES].some(name => {
+                const view = document.getElementById(name + '-view');
+                return !view.classList.contains('hidden') && !view.classList.contains('opacity-0');
+            });
+            if (!settled) {
                 clearTimeout(showUnseenAnnouncement.timer);
                 showUnseenAnnouncement.timer = setTimeout(showUnseenAnnouncement, 1000);
                 return;
             }
-            openHolo(0);
+            holoPoppedId = Number(newest.id);
+            openHolo(0); // a newer one replaces whatever is on screen
+            if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
         }
+
+        // Live: Supabase Realtime pushes new transmissions the moment an admin
+        // sends one, so they interrupt whatever the player is doing. The
+        // 30-second refresh and returning to the app are fallbacks.
+        function listenForTransmissions() {
+            if (!db || listenForTransmissions.channel) return;
+            listenForTransmissions.channel = db.channel('transmissions')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
+                    if (player) refreshAnnouncements();
+                })
+                .subscribe();
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && player) refreshAnnouncements();
+        });
 
         function renderHolo() {
             const a = announcements[holoIndex];
