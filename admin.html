@@ -183,6 +183,8 @@
         .badge-open { background: var(--line-soft); color: var(--muted); }
         .badge-claimed { background: var(--green-soft); color: var(--green); }
         .badge-inactive { background: transparent; color: var(--muted); border: 1px dashed var(--line); }
+        .badge-banned { background: #fce8e6; color: var(--red); }
+        td.details { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* Dialogs */
         dialog {
@@ -273,6 +275,7 @@
             <button type="button" class="tab active" data-action="tab" data-tab="ducks">Ducks<span id="count-ducks" class="count"></span></button>
             <button type="button" class="tab" data-action="tab" data-tab="rescuers">Rescuers<span id="count-rescuers" class="count"></span></button>
             <button type="button" class="tab" data-action="tab" data-tab="scans">Scans<span id="count-scans" class="count"></span></button>
+            <button type="button" class="tab" data-action="tab" data-tab="bans">Banned<span id="count-bans" class="count"></span></button>
         </nav>
 
         <main>
@@ -373,6 +376,35 @@
                 </div>
                 <p class="summary" style="margin-top:8px">Showing the latest 200 scans. Download CSV for all of them.</p>
             </section>
+
+            <!-- Banned -->
+            <section id="panel-bans" hidden>
+                <div class="toolbar">
+                    <input id="ban-search" type="search" placeholder="Search bans">
+                    <label class="muted" style="display:flex;align-items:center;gap:6px"><input id="ban-show-lifted" type="checkbox"> Show lifted bans</label>
+                    <span class="spacer"></span>
+                    <button type="button" class="btn" data-action="download-bans">Download CSV</button>
+                    <button type="button" class="btn btn-primary" data-action="add-ban">Ban</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Banned</th>
+                                <th>What</th>
+                                <th>Device code / Student ID</th>
+                                <th>Rescuer</th>
+                                <th>Reason</th>
+                                <th>Details</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="ban-rows"></tbody>
+                    </table>
+                </div>
+                <p class="summary" style="margin-top:8px">The app bans a device when someone opens developer tools, views the source, or sends commands the app doesn't send, and bans their Student ID too if they're signed in. A banned Student ID signing in on another device bans that device as well, so unban both to let someone back in. A banned player sees their device code on the blocked screen.</p>
+            </section>
         </main>
     </div>
 
@@ -442,6 +474,21 @@
         </form>
     </dialog>
 
+    <dialog id="ban-dialog">
+        <form id="ban-form" method="dialog">
+            <h2>Ban a device or Student ID</h2>
+            <div class="field"><label for="f-ban-kind">Ban</label>
+                <select id="f-ban-kind"><option value="student">Student ID</option><option value="device">Device code</option></select></div>
+            <div class="field"><label for="f-ban-value">Student ID or device code</label><input id="f-ban-value" type="text" required></div>
+            <div class="field"><label for="f-ban-reason">Reason</label><input id="f-ban-reason" type="text" placeholder="Banned by an admin"></div>
+            <p id="ban-error" class="error" hidden></p>
+            <div class="dialog-actions">
+                <button type="button" class="btn" data-action="close-dialog">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="background:var(--red);border-color:var(--red)">Ban</button>
+            </div>
+        </form>
+    </dialog>
+
     <dialog id="qr-dialog">
         <h2 id="qr-title"></h2>
         <div id="qr-box" class="qr-box"></div>
@@ -480,7 +527,7 @@
         }
 
         // ---------- STATE ----------
-        const state = { ducks: [], players: [], scans: [], total_scans: 0 };
+        const state = { ducks: [], players: [], scans: [], total_scans: 0, bans: [] };
         const sort = { ducks: { key: 'duck_id', dir: 1 }, players: { key: 'place', dir: 1 } };
         const selected = new Set();
         let activeTab = 'ducks';
@@ -622,7 +669,12 @@
         // ---------- DATA ----------
         async function load() {
             try {
-                Object.assign(state, await rpc('admin_overview'));
+                const [overview, bans] = await Promise.all([
+                    rpc('admin_overview'),
+                    // Missing until backend/bans.sql has been run
+                    rpc('admin_list_bans').catch(() => [])
+                ]);
+                Object.assign(state, overview, { bans: bans || [] });
                 // Forget selections for ducks that no longer exist
                 const ids = new Set(state.ducks.map(d => d.duck_id));
                 [...selected].forEach(id => { if (!ids.has(id)) selected.delete(id); });
@@ -645,7 +697,7 @@
         function subscribe() {
             if (channel) db.removeChannel(channel);
             channel = db.channel('admin-live');
-            ['duck_log', 'players', 'ducks'].forEach(table => {
+            ['duck_log', 'players', 'ducks', 'bans'].forEach(table => {
                 channel.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleLoad);
             });
             channel.subscribe(status => {
@@ -673,6 +725,7 @@
             renderDucks();
             renderRescuers();
             renderScans();
+            renderBans();
             renderSortArrows();
         }
 
@@ -686,6 +739,7 @@
             $('count-ducks').textContent = state.ducks.length;
             $('count-rescuers').textContent = state.players.length;
             $('count-scans').textContent = state.total_scans;
+            $('count-bans').textContent = state.bans.filter(b => b.active).length;
         }
 
         function sorted(list, kind) {
@@ -779,6 +833,33 @@
                 `<tr><td class="empty" colspan="7">${state.scans.length ? 'No scans match your search.' : 'No scans yet. They appear here live.'}</td></tr>`;
         }
 
+        function visibleBans() {
+            const term = $('ban-search').value.trim().toLowerCase();
+            const lifted = $('ban-show-lifted').checked;
+            return state.bans.filter(b => (lifted || b.active) &&
+                matches(b, ['value', 'student_id', 'device_id', 'player_name', 'reason', 'details'], term));
+        }
+
+        function banLabel(b) {
+            return b.kind === 'device' ? 'Device' : 'Student ID';
+        }
+
+        function renderBans() {
+            const bans = visibleBans();
+            $('ban-rows').innerHTML = bans.length ? bans.map(b => `
+                <tr>
+                    <td class="muted">${esc(formatDate(b.created_at))}</td>
+                    <td>${esc(banLabel(b))}</td>
+                    <td class="mono">${esc(b.value)}${b.kind === 'student' && b.device_id ? `<br><span class="muted">on ${esc(b.device_id)}</span>` : ''}</td>
+                    <td>${esc(b.player_name)}${b.kind === 'device' && b.student_id ? `<br><span class="muted mono">${esc(b.student_id)}</span>` : ''}</td>
+                    <td>${esc(b.reason)}</td>
+                    <td class="muted details" title="${esc(b.details + (b.user_agent ? '\n' + b.user_agent : ''))}">${esc(b.details)}</td>
+                    <td>${b.active ? '<span class="badge badge-banned">Banned</span>' : `<span class="badge badge-open">Lifted ${esc(formatDate(b.unbanned_at))}</span>`}</td>
+                    <td class="actions">${b.active ? `<button type="button" class="link" data-action="unban" data-id="${esc(b.id)}">Unban</button>` : ''}</td>
+                </tr>`).join('') :
+                `<tr><td class="empty" colspan="8">${state.bans.length ? 'No bans match.' : 'Nobody has been banned.'}</td></tr>`;
+        }
+
         function renderSortArrows() {
             document.querySelectorAll('th.sortable').forEach(th => {
                 const s = sort[th.dataset.sort];
@@ -790,7 +871,7 @@
         function switchTab(tab) {
             activeTab = tab;
             document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-            ['ducks', 'rescuers', 'scans'].forEach(t => { $('panel-' + t).hidden = t !== tab; });
+            ['ducks', 'rescuers', 'scans', 'bans'].forEach(t => { $('panel-' + t).hidden = t !== tab; });
         }
 
         // ---------- DUCK DIALOGS ----------
@@ -949,6 +1030,30 @@
                 case 'confirm-no': return $('confirm-dialog').close();
                 case 'new-code': $('f-duck-qr').value = randomCode(); return;
                 case 'add-duck': return openDuckDialog(null);
+                case 'add-ban':
+                    $('ban-form').reset();
+                    showError('ban-error', '');
+                    return $('ban-dialog').showModal();
+                case 'unban': {
+                    const b = state.bans.find(x => String(x.id) === id);
+                    if (!b) return;
+                    const other = state.bans.find(x => x.active && x.id !== b.id &&
+                        (b.kind === 'device' ? x.kind === 'student' && x.value === b.student_id : x.kind === 'device' && x.value === b.device_id));
+                    const ok = await confirmDialog(`Unban ${b.kind === 'device' ? 'device' : 'Student ID'} ${b.value}?`,
+                        other ? `${other.kind === 'device' ? 'Their device ' : 'Student ID '}${other.value} is still banned. Unban it too if they should be let back in.`
+                              : 'They can use Duck Hunt again the next time the app checks, within 30 seconds.', 'Unban');
+                    if (!ok) return;
+                    return busy(el, async () => {
+                        await rpc('admin_unban', { p_id: b.id });
+                        snackbar('Ban lifted.');
+                        await load();
+                    });
+                }
+                case 'download-bans':
+                    return downloadCSV(`duck-hunt-bans-${today()}.csv`,
+                        ['Banned at', 'What', 'Device code / Student ID', 'Rescuer', 'Student ID', 'Device', 'Reason', 'Details', 'Browser', 'Status', 'Lifted at'],
+                        visibleBans().map(b => [b.created_at, banLabel(b), b.value, b.player_name, b.student_id, b.device_id,
+                            b.reason, b.details, b.user_agent, b.active ? 'Banned' : 'Lifted', b.unbanned_at]));
                 case 'edit-duck': return openDuckDialog(findDuck(id));
                 case 'bulk-create': return openBulkDialog();
                 case 'show-qr': return openQRDialog(findDuck(id));
@@ -1148,6 +1253,27 @@
         $('duck-search').addEventListener('input', renderDucks);
         $('rescuer-search').addEventListener('input', renderRescuers);
         $('scan-search').addEventListener('input', renderScans);
+        $('ban-search').addEventListener('input', renderBans);
+        $('ban-show-lifted').addEventListener('change', renderBans);
+
+        $('ban-form').addEventListener('submit', event => {
+            event.preventDefault();
+            busy(event.submitter, async () => {
+                try {
+                    await rpc('admin_ban', {
+                        p_kind: $('f-ban-kind').value,
+                        // Device codes are shown in capitals on the blocked screen
+                        p_value: $('f-ban-kind').value === 'device' ? $('f-ban-value').value.trim().toUpperCase() : $('f-ban-value').value.trim(),
+                        p_reason: $('f-ban-reason').value
+                    });
+                    $('ban-dialog').close();
+                    snackbar('Banned.');
+                    await load();
+                } catch (err) {
+                    showError('ban-error', err.message);
+                }
+            });
+        });
 
         // ---------- FORMS ----------
         $('duck-form').addEventListener('submit', event => {

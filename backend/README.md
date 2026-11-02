@@ -18,7 +18,9 @@ Everything runs on Supabase. There's no Google Sheet anymore.
   - **Rescuers:** edit Points in the table, edit names and email, delete a rescuer (their ducks re-open), and download CSV.
   - **Scans:** live as students scan. **Undo** removes a scan; the player loses the points and the duck can be found again. Download CSV gets every scan.
   - Changing a duck's points only affects future scans. Points already awarded stay the same.
+- **Banned:** every device and Student ID that's been banned, with who, why and when. **Unban** lifts a ban (the row stays, marked lifted; tick **Show lifted bans** to see them). **Ban** bans a Student ID or device code by hand. Download CSV gets the log.
 - **`supabase.sql`** creates the whole database. It's safe to re-run, and also removes the old Google Sheet sync if it was installed.
+- **`bans.sql`** adds the bans table and ban enforcement. Run it after `supabase.sql`. It doesn't change any game function, so it's safe on a database that has newer versions of them.
 
 ## Game rules
 
@@ -37,11 +39,32 @@ Everything runs on Supabase. There's no Google Sheet anymore.
 - **Deleting a duck** retires it: its QR code stops working, but rescuers keep the points they already earned from it.
 - **Deleting a rescuer** removes their scans and re-opens the ducks they found.
 
+## Bans
+
+The student app watches for people inspecting it. Any of these bans the device straight away, and the rescuer's Student ID too if they're signed in:
+
+- Opening developer tools (caught when dev tools pause the app, or when they're docked and shrink the page for 3 seconds).
+- Dev tools, view-source or save-page shortcuts (F12, Ctrl/Cmd+Shift+I/J/C/K, Ctrl/Cmd+U, Ctrl/Cmd+S and the Mac Cmd+Option versions).
+- Sending database requests the app itself never sends: calling an admin function or reading a table from the console, or any request typed in by hand.
+
+A banned player sees an **Access blocked** screen with their **device code** (like `KQ7M-PLZ2-88RT`), which matches the code on the admin **Banned** tab. Bans spread: a banned Student ID signing in on another device bans that device too, and signing in on a banned device bans that Student ID. To let someone back in, unban both their device and their Student ID. The app checks every 30 seconds and comes back on its own.
+
+The database enforces bans, not just the app. Every request from the app carries the device code and Student ID, and a pre-request hook (`duckhunt_pre_request`) refuses requests from banned ones. Triggers also stop a banned Student ID from registering, being awarded ducks or filing reports, however the request is made.
+
+Limits worth knowing:
+
+- The device code lives in the browser's storage and a cookie. Clearing all site data or using a different browser gives a new code. Their Student ID stays banned, and signing in with it bans the new device.
+- Students sign in with just their Student ID, so someone who knows another student's ID could get that ID banned. Check the Rescuer and device columns before deciding, and unban if it looks wrong.
+- Admins testing the student app with dev tools open will ban their own device. Unban it on the Banned tab.
+- If another PostgREST pre-request hook is already installed, `bans.sql` leaves it alone and prints a warning; the triggers still work.
+
 ## Setup
 
 ### 1. Create or update the database
 
 In the Supabase dashboard, open **SQL Editor**, paste all of [`supabase.sql`](./supabase.sql) and click **Run**. Re-run it whenever this file changes.
+
+Then do the same with [`bans.sql`](./bans.sql). Run it **before** publishing the student app version that bans devices: until it's in place, a banned player has no way to be unbanned.
 
 ### 2. Create your admin account
 
